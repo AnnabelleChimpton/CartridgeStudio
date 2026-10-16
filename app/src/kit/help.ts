@@ -28,13 +28,19 @@ export function busyFixes(g: KitGame, max = 3): BusyFix[] {
   const add = (text: string, tab: KitTab, after: number, size: number) =>
     fixes.push({ text, tab, after, enough: after <= CPU_BUDGET, size });
 
+  /** The game with the first k of one kind taken out of the first room. */
+  const without = (i: number, k: number): KitGame => {
+    let left = k;
+    const ch = Object.entries(g.room.legend).find(([, v]) => v === g.types[i]!.id)?.[0];
+    const rows = g.room.rows.map((r) => [...r].map((c) => (c === ch && left-- > 0 ? " " : c)).join(""));
+    return { ...g, room: { ...g.room, rows } };
+  };
   // Fewest copies of one thing to take out of the room (never the player).
   g.types.forEach((t, i) => {
     const n = placed.filter((p) => p.type === i).length;
     if (n === 0 || isPlayer(t)) return;
     for (let k = 1; k <= n; k++) {
-      let left = k;
-      const after = cpuCost(g, placed.filter((p) => p.type !== i || left-- <= 0));
+      const after = cpuCost(without(i, k));
       if (after <= CPU_BUDGET || k === n) {
         const what = k === 1 ? `one ${t.label}` : k === n ? `every ${t.label}` : `${k} of the ${n} ${plural(t.label)}`;
         add(`Take ${what} out of the room`, "room", after, k);
@@ -44,17 +50,18 @@ export function busyFixes(g: KitGame, max = 3): BusyFix[] {
   });
   // One rule to delete.
   g.rules.forEach((r, i) => {
-    const after = cpuCost({ ...g, rules: g.rules.filter((_, j) => j !== i) }, placed);
+    const after = cpuCost({ ...g, rules: g.rules.filter((_, j) => j !== i) });
     add(`Delete rule ${i + 1}: “${ruleSentence(r, g)}”`, "rules", after, 2);
   });
-  // A number on screen costs as much as a moving thing.
-  const shown = g.counters.find((c) => c.show);
-  if (shown) {
-    const after = cpuCost({ ...g, counters: g.counters.map((c) => ({ ...c, show: false })) }, placed);
+  // A number on screen costs about as much as a moving thing.
+  for (const h of g.hud) {
+    const shown = g.counters.find((c) => c.id === h.show);
+    if (!shown) continue;
+    const after = cpuCost({ ...g, hud: g.hud.filter((x) => x !== h) });
     add(`Stop showing ${shown.label} on screen`, "game", after, 1);
   }
 
-  const now = cpuCost(g, placed);
+  const now = cpuCost(g);
   const enough = fixes.filter((f) => f.enough).sort((a, b) => a.size - b.size || a.after - b.after);
   const helps = fixes.filter((f) => !f.enough && f.after < now).sort((a, b) => a.after - b.after);
   return (enough.length ? enough : helps).slice(0, max).map(({ size: _, ...f }) => f);
@@ -63,10 +70,11 @@ export function busyFixes(g: KitGame, max = 3): BusyFix[] {
 const ADVICE: [RegExp, string][] = [
   [/too busy/i, "The meter under the game lists what to take out."],
   [/at least one thing in the room/i, "Open Room, pick a thing's brush and click a square."],
-  [/Only one player/i, "Open Room and erase the extra player with the Eraser."],
   [/A room can hold/i, "Open Room and erase a few things."],
   [/side by side/i, "Open Room and move some things in that row up or down a row."],
-  [/Only one counter can be shown/i, "Open Game and untick Show on screen for one counter."],
+  [/same place/i, "Open Game and untick Show on screen for one counter."],
+  [/coming soon/i, "Change that part back, or delete the rule that uses it, for now."],
+  [/can hold \d+ things at once/i, "Open Room and erase a few things, or lower how many of a thing rules can create."],
   [/Two counters have the same name/i, "Open Game and rename one of them."],
   [/must be removed or moved back/i, "Add “remove”, “send back to start” or “lose the game” to that rule."],
   [/turns something into itself|can't turn into/i, "Change what that rule turns it into."],

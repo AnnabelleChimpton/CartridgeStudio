@@ -155,8 +155,8 @@ test("a newer build cancels an older one, and a hung build times out", async ({ 
     const cs = window.__cs!;
     const p1 = structuredClone(cs.kitStore!.getState().project);
     const p2 = structuredClone(p1);
-    p1.lives = 4;
-    p2.lives = 5;
+    p1.counters.find((c) => c.id === "lives")!.start = 4;
+    p2.counters.find((c) => c.id === "lives")!.start = 5;
     const [a, b] = await Promise.all([cs.service!.build(p1), cs.service!.build(p2)]);
     const quick = cs.createService!({ timeoutMs: 1 });
     const t = await quick.build(p1);
@@ -165,7 +165,7 @@ test("a newer build cancels an older one, and a hung build times out", async ({ 
     return {
       a: a.kind,
       b: b.kind,
-      bLives: b.kind === "built" ? /STARTLIVES = (\d)/.exec(b.source)?.[1] : null,
+      bLives: b.kind === "built" ? /^ lives = (\d)$/m.exec(b.source)?.[1] : null,
       timeout: t.kind === "failed" ? t.stage : t.kind,
       after: after.kind,
     };
@@ -192,7 +192,7 @@ for (const rate of [1, 4, 6]) {
     const walls: number[] = [];
     for (const lives of [1, 2, 4, 5, 6, 7, 8, 9]) {
       const n = await buildCount(page);
-      await page.evaluate((v) => window.__cs!.kitStore!.getState().edit((d) => void (d.lives = v)), lives);
+      await page.evaluate((v) => window.__cs!.kitStore!.getState().edit((d) => void (d.counters.find((c) => c.id === "lives")!.start = v)), lives);
       const b = await waitForBuild(page, n + 1);
       expect(b.kind).toBe("built");
       expect(b.cached).toBe(false);
@@ -278,17 +278,18 @@ test("sounds: the shooting sound and each rule's sound reach the game", async ({
   await open(page);
   const generated = () => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
   // What the Classic shooter's Sounds tab set is here too: shooting on the Game tab, the rest as rule actions.
-  expect(await generated()).toMatch(/gosub spawnobj\s+playsfx sfx_zap/);
-  expect(await generated()).toMatch(/r0_do[\s\S]*?playsfx sfx_boom/);
+  // (Shooting is a rule too, after the game's own rules: its sound is one of its actions.)
+  const shootRule = async () => /^(rule\d+)$/m.exec((await generated()).split("When button 1 is pressed")[1] ?? "")![1];
+  expect(await generated()).toMatch(new RegExp(`${await shootRule()}_do[\\s\\S]*?playsfx sfx_zap`));
+  expect(await generated()).toMatch(/rule1_do[\s\S]*?playsfx sfx_boom/);
   let n = await buildCount(page);
   await openTab(page, "Game");
   await page.getByLabel("Shooting sound").selectOption({ label: "Boom" });
   await waitForBuild(page, n + 1);
-  expect(await generated()).toMatch(/gosub spawnobj\s+playsfx sfx_boom/);
+  expect(await generated()).toMatch(new RegExp(`${await shootRule()}_do[\\s\\S]*?playsfx sfx_boom`));
   n = await buildCount(page);
   await page.getByLabel("Shooting sound").selectOption({ label: "None" });
   await waitForBuild(page, n + 1);
-  expect(await generated()).toContain("rem no shooting sound");
   expect(await generated()).not.toContain("sfx_zap");
 });
 
@@ -354,19 +355,21 @@ test("lockstep runs are repeatable and game variables are readable from RAM", as
   const b = await run();
   expect(a).toEqual(b);
   expect(Number(a.score)).toBeGreaterThan(0);
-  expect(a.lives).toBe(3);
+  // (Read from RAM: the bombs may have cost a life by now.)
+  expect(a.lives).toBeGreaterThanOrEqual(1);
+  expect(a.lives).toBeLessThanOrEqual(3);
 });
 
 test("game keys only reach the game while it has focus", async ({ page }) => {
   await open(page);
-  // The runtime sets fireheld while the fire button is down.
-  const fireheld = await symbol(page, "fireheld");
+  // The runtime reads joystick 1 into pad1 every frame; 16 is the fire button.
+  const pad1 = await symbol(page, "pad1");
   const fireHeld = () =>
     page.evaluate(async (addr) => {
       const e = window.__cs!.emulator!;
       await e.stepFrames(3);
-      return (await e.readMemory(addr, 1))[0] !== 0;
-    }, fireheld);
+      return ((await e.readMemory(addr, 1))[0]! & 16) !== 0;
+    }, pad1);
   // Start the game from the title screen, in lockstep.
   const startGame = () =>
     page.evaluate(async () => {

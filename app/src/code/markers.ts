@@ -1,8 +1,10 @@
 // Finds the lines the kit generator wrote for one rule or one thing, from the
-// markers it leaves in game.bas: `rem rule N: …` and the r<N-1>_… labels for
+// markers it leaves in game.bas: `rem rule N: …` and the ruleN… labels for
 // a rule, `rem <label>` (and `rem <label> frame 2`) for a thing's graphics and
-// draw routine, `rem palette <id>` for its colors. Reading the output keeps
-// this independent of the generator's internals.
+// draw loop, `rem ---- <label>: …` for its movement, `rem palette <id>` for
+// its colors. Reading the output keeps this independent of the generator's
+// internals. (generateKit also returns exact source spans from its IR,
+// `KitResult.spans`, keyed on rule and thing ids, for a future switch.)
 
 /** What the kit editor has selected. Rules count from 1, as the markers do. */
 export type CodeRef = { rule: number } | { thing: string; palette?: string };
@@ -46,12 +48,12 @@ function segments(lines: string[]): Segment[] {
 function owns(marker: string, ref: CodeRef): boolean {
   if ("rule" in ref) {
     if (new RegExp(`^rem:rule ${ref.rule}(:|$)`).test(marker)) return true;
-    const m = /^label:r(\d+)_\w+$/.exec(marker);
-    return !!m && Number(m[1]) === ref.rule - 1;
+    const m = /^label:rule(\d+)(_\w+)?$/.exec(marker);
+    return !!m && Number(m[1]) === ref.rule;
   }
   if (!marker.startsWith("rem:")) return false;
   const text = marker.slice(4);
-  if (text === ref.thing || new RegExp(`^${escape(ref.thing)} frame \\d+$`).test(text)) return true;
+  if (text === ref.thing || new RegExp(`^${escape(ref.thing)} frame \\d+$`).test(text) || text.startsWith(`---- ${ref.thing}: `)) return true;
   return ref.palette !== undefined && text === `palette ${ref.palette}`;
 }
 

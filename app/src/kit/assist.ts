@@ -3,13 +3,15 @@
 // switch's B position (the console's usual "novice" setting) plays easier and
 // A plays the game as made. With it off, the switch does nothing.
 //
-// Easier means other things move at half speed and the player starts with two
-// extra lives. The player, and what the player shoots, keep their speed.
+// Easier means other things move one speed step slower and the lives counter
+// starts two higher. The player, and what the player shoots, keep their speed.
 //
 // The setting lives on the game as `assist`. The kit schema doesn't list it
 // yet, so loadKit carries it through by hand (see readAssist).
 
-import { PLAYER_BEHAVIOURS, type KitGame, type KitType } from "./schema.ts";
+import { livesOf, shootsOf } from "./edit.ts";
+import { isControlled } from "./parts.ts";
+import type { KitGame, KitType } from "./schema.ts";
 
 export interface Assist {
   easier: boolean;
@@ -37,19 +39,10 @@ export function setEasier(g: KitGame, on: boolean) {
   else delete d.assist;
 }
 
-/** True for a type the assist slows: anything but the player and its shots. */
+/** True for a type the assist slows: anything but a controlled thing and its shots. */
 export function slowedByAssist(g: KitGame, t: KitType): boolean {
-  if (PLAYER_BEHAVIOURS.includes(t.behaviour)) return false;
-  return !g.types.some((p) => PLAYER_BEHAVIOURS.includes(p.behaviour) && p.shoots === t.id);
-}
-
-/**
- * A type's speed (1-4: a quarter, half, one or two pixels a frame) when the
- * game plays easier. Each step down halves it; a quarter pixel a frame is the
- * slowest the runtime moves, so speed 1 stays 1.
- */
-export function easierSpeed(g: KitGame, t: KitType): number {
-  return slowedByAssist(g, t) ? Math.max(1, t.speed - 1) : t.speed;
+  if (isControlled(t)) return false;
+  return !g.types.some((p) => isControlled(p) && shootsOf(g, p.id) === t.id);
 }
 
 export const easierLives = (lives: number) => Math.min(MAX_LIVES, lives + EASIER_EXTRA_LIVES);
@@ -62,6 +55,6 @@ export function assistData(g: KitGame): { hasEasier: boolean; typeslow: number[]
   return {
     hasEasier: easierOn(g),
     typeslow: g.types.map((t) => (slowedByAssist(g, t) ? 1 : 0)),
-    easierLives: easierLives(g.lives),
+    easierLives: easierLives(livesOf(g) ?? 3),
   };
 }

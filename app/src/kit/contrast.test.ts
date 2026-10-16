@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toColor } from "../ui/ntsc.ts";
-import { assistData, easierLives, easierOn, easierSpeed, setEasier } from "./assist.ts";
+import { assistData, easierLives, easierOn, setEasier } from "./assist.ts";
+import { isPlayer, shootsOf } from "./edit.ts";
 import { allContrast, clearerColor, contrastFix, contrastMessage, contrastRatio, gameContrast, luminance, SHAPE_RATIO, TEXT_RATIO, thingContrast } from "./contrast.ts";
 import { loadKit } from "./migrations.ts";
 import { KIT_PRESETS } from "./presets.ts";
@@ -89,17 +90,10 @@ describe("contrast warnings", () => {
 });
 
 describe("the easier assist", () => {
-  it("slows everything but the player and its shots by one step, down to a quarter pixel", () => {
+  it("slows everything but the player and its shots", () => {
     const g = preset("shooter");
-    const player = g.types.find((t) => t.shoots)!;
-    const shot = g.types.find((t) => t.id === player.shoots)!;
-    const enemy = g.types.find((t) => t !== player && t !== shot)!;
-    expect(easierSpeed(g, player)).toBe(player.speed);
-    expect(easierSpeed(g, shot)).toBe(shot.speed);
-    enemy.speed = 3;
-    expect(easierSpeed(g, enemy)).toBe(2);
-    enemy.speed = 1;
-    expect(easierSpeed(g, enemy)).toBe(1);
+    const player = g.types.find(isPlayer)!;
+    const shot = g.types.find((t) => t.id === shootsOf(g, player.id))!;
     expect(assistData(g).typeslow).toEqual(g.types.map((t) => (t === player || t === shot ? 0 : 1)));
   });
 

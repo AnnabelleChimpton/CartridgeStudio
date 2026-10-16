@@ -1,14 +1,35 @@
 import { describe, expect, it } from "vitest";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { addCounter, addThing, cellAt, makePlayer, moveRule, paintCell, placements, removeCounter, removeThing, resizeThing, setAnimated, setBehaviour, showCounter } from "./edit.ts";
+import {
+  addCounter,
+  addThing,
+  cellAt,
+  dropsOf,
+  makePlayer,
+  moveRule,
+  paintCell,
+  placements,
+  removeCounter,
+  removeThing,
+  resizeThing,
+  setAnimated,
+  setBehaviour,
+  setDrops,
+  setShoots,
+  setSpeed,
+  shootsOf,
+  showCounter,
+} from "./edit.ts";
 import { validateKit } from "./generate.ts";
+import { presetOf } from "./parts.ts";
 import { KIT_PRESETS } from "./presets.ts";
+import { MAX_COUNTERS } from "./schema.ts";
 
 const preset = (id: string) => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
 
 describe("kit presets", () => {
-  it("are the spike genres and Ghost Panic, all valid", () => {
-    expect(KIT_PRESETS.map((p) => p.id)).toEqual(["shooter", "maze", "ghost-panic", "dodger"]);
+  it("are the spike genres, Ghost Panic and Key Quest, all valid", () => {
+    expect(KIT_PRESETS.map((p) => p.id)).toEqual(["shooter", "maze", "ghost-panic", "dodger", "key-quest"]);
     for (const p of KIT_PRESETS) expect(validateKit(p.game, SOUND_LIBRARY).ok, p.id).toBe(true);
   });
 });
@@ -45,7 +66,7 @@ describe("kit editing", () => {
     const g = preset("shooter");
     removeThing(g, "bomb");
     expect(g.types.some((t) => t.id === "bomb")).toBe(false);
-    expect(g.types.find((t) => t.id === "invader")!.drops).toBeUndefined();
+    expect(dropsOf(g, "invader")).toBeNull();
     expect(g.rules.some((r) => JSON.stringify(r).includes("bomb"))).toBe(false);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
 
@@ -58,7 +79,7 @@ describe("kit editing", () => {
     const g = preset("ghost-panic");
     removeThing(g, "fast-ghost");
     expect(JSON.stringify(g.rules)).not.toContain("fast-ghost");
-    expect(g.rules.some((r) => r.then.some((a) => "turnAll" in a && a.turnAll.type === "ghost"))).toBe(true);
+    expect(g.rules.some((r) => r.then.some((a) => "turn" in a && JSON.stringify(a.turn.who) === '{"every":"ghost"}'))).toBe(true);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
     removeThing(g, "cat");
     expect(g.rules.some((r) => "onTile" in r.when)).toBe(false);
@@ -67,20 +88,20 @@ describe("kit editing", () => {
   it("adds, shows and removes counters, and their rules go with them", () => {
     const g = preset("ghost-panic");
     const keys = addCounter(g)!;
-    showCounter(g, keys);
-    showCounter(g, "combo");
-    expect(g.counters.filter((c) => c.show).map((c) => c.id)).toEqual(["combo"]);
-    g.rules.push({ when: { reaches: [keys, 3] }, then: [{ win: true }] });
-    // (Showing a counter costs frame time Ghost Panic doesn't have spare.)
-    expect(validateKit(g, SOUND_LIBRARY, { ignoreBudget: true }).ok).toBe(true);
+    showCounter(g, keys, true);
+    showCounter(g, "combo", true);
+    expect(g.hud.map((h) => h.show)).toEqual(["score", "lives", keys, "combo"]);
+    g.rules.push({ id: "r-new", when: { test: { a: { counter: keys }, op: "gte", b: 3 } }, then: [{ id: "a-new", gameOver: "won" }] });
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
     removeCounter(g, keys);
     removeCounter(g, "combo");
-    expect(g.counters).toEqual([]);
+    expect(g.counters.map((c) => c.id)).toEqual(["lives", "level", "pace"]);
+    expect(g.hud.map((h) => h.show)).toEqual(["score", "lives"]);
     expect(JSON.stringify(g.rules)).not.toMatch(/combo|counter-/);
-    expect(g.rules.every((r) => r.then.length > 0 && r.if === undefined)).toBe(true);
+    expect(g.rules.every((r) => r.then.length > 0)).toBe(true);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
     while (addCounter(g));
-    expect(g.counters).toHaveLength(4);
+    expect(g.counters).toHaveLength(MAX_COUNTERS);
   });
 
   it("moves rules", () => {
@@ -107,28 +128,62 @@ describe("kit editing", () => {
 
   it("making a thing the player demotes the old player and stops it shooting", () => {
     const g = preset("shooter");
+    expect(shootsOf(g, "ship")).toBe("shot");
     setBehaviour(g, "invader", "player-lr");
-    expect(g.types.find((t) => t.id === "ship")!.behaviour).toBe("still");
-    expect(g.types.find((t) => t.id === "ship")!.shoots).toBeUndefined();
+    expect(presetOf(g.types.find((t) => t.id === "ship")!)?.behaviour).toBe("still");
+    expect(shootsOf(g, "ship")).toBeNull();
+    // The march's turn went with the march.
+    expect(g.rules.some((r) => "edge" in r.when && r.when.edge[1] === "sides")).toBe(false);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
     expect(placements(g).filter((p) => g.types[p.type]!.id === "invader")).toHaveLength(1);
     setBehaviour(g, "invader", "march");
-    expect(g.types.find((t) => t.id === "invader")!.shoots).toBeUndefined();
+    expect(shootsOf(g, "invader")).toBeNull();
+    expect(g.rules.filter((r) => "edge" in r.when && r.when.edge[1] === "sides")).toHaveLength(1);
+  });
+
+  it("shooting and dropping are rules the Things tab edits in plain words", () => {
+    const g = preset("shooter");
+    setShoots(g, "ship", "bomb");
+    expect(shootsOf(g, "ship")).toBe("bomb");
+    setShoots(g, "ship", null);
+    expect(shootsOf(g, "ship")).toBeNull();
+    expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 4 });
+    setDrops(g, "invader", { type: "bomb", chance: 20 });
+    expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 20 });
+    setSpeed(g, "invader", 4);
+    expect(presetOf(g.types.find((t) => t.id === "invader")!)).toEqual({ behaviour: "march", speed: 4 });
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
   });
 });
 
 describe("rule sentences", () => {
-  it("reads Ghost Panic's rules as plain English", async () => {
-    const { ruleSentence, editableRule } = await import("./sentence.ts");
-    const { KitGameSchema } = await import("./schema.ts");
-    const raw = (await import("../../../templates/kit/games/ghost-panic.json")).default;
-    const g = KitGameSchema.parse(raw);
+  it("reads Ghost Panic's rules as plain English, and every one can be edited", async () => {
+    const { ruleSentence } = await import("./sentence.ts");
+    const { editableRule } = await import("./KitRulesPanel.tsx");
+    const g = preset("ghost-panic");
     const lines = g.rules.map((r) => ruleSentence(r, g));
     expect(lines).toContain("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.");
     expect(lines).toContain("Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.");
-    expect(lines).toContain("When the level reaches 4: win the game.");
+    expect(lines).toContain("When Level is at least 4: win the game.");
+    expect(lines).toContain("When the room starts, only if Level is at least 3: set Pace to 1.");
     expect(g.rules.every(editableRule)).toBe(true);
-    expect(editableRule({ when: { someday: 1 }, then: [{ win: true }] } as never)).toBe(false);
+    // A shape the menus don't offer shows as a sentence instead.
+    const fancy = { id: "r-x", when: { touch: ["cat", "ghost"] }, then: [{ id: "a-x", step: { who: { nearest: "ghost" }, dx: 8, dy: 0 } }] } as const;
+    expect(editableRule(fancy as never)).toBe(false);
+    expect(ruleSentence(fancy as never, g)).toBe("When Cat touches Dust ghost: step the nearest Dust ghost by (8, 0).");
+  });
+
+  it("every preset's rules can be edited, or read as a sentence", async () => {
+    const { ruleSentence } = await import("./sentence.ts");
+    const { editableRule } = await import("./KitRulesPanel.tsx");
+    for (const p of KIT_PRESETS) {
+      for (const r of p.game.rules) {
+        expect(ruleSentence(r, p.game), `${p.id} ${r.id}`).toMatch(/^(When|While|Every) .+\.$/);
+        // The presets only use words the editor offers, except the rules that come with things
+        // (shooting, dropping, the march's turn, falling back to the top), which the Things tab edits.
+        if (!editableRule(r)) expect(r.id, p.id).toMatch(/^r-p-(shoot|drop|march|fall)/);
+      }
+    }
   });
 });
 
@@ -141,7 +196,7 @@ describe("makePlayer", () => {
     expect(makePlayer(g, "ghost")).toBe("cat");
     const cat = g.types.find((t) => t.id === "cat")!;
     expect({ label: cat.label, frames: cat.frames, palette: cat.palette }).toEqual(look);
-    expect(cat.behaviour).toBe("player-4way");
+    expect(presetOf(cat)?.behaviour).toBe("player-4way");
     expect(g.types.find((t) => t.id === "ghost")!.label).toBe("Cat");
     expect(g.rules).toEqual(before.rules);
     expect(g.room).toEqual(before.room);
@@ -150,5 +205,17 @@ describe("makePlayer", () => {
 
   it("does nothing for the player itself", () => {
     expect(makePlayer(preset("maze"), "cat")).toBeNull();
+  });
+});
+
+describe("what's in the room", () => {
+  it("lists each thing with where it starts, then the tiles and exits", async () => {
+    const { whatsInTheRoom } = await import("./room-list.ts");
+    const lines = whatsInTheRoom(preset("ghost-panic"));
+    expect(lines[0]).toBe("Cat, player: moves in 4 directions: row 2, column 2");
+    expect(lines).toContain("Dust ghost, chases the player: row 2, column 19");
+    expect(lines.some((l) => /^Wall: \d+ squares$/.test(l))).toBe(true);
+    expect(lines).toContain("Spikes: row 6 column 10; row 8 column 14");
+    expect(whatsInTheRoom(preset("key-quest"), 3).at(-1)).toBe("Exits: left to room 3, up to room 2");
   });
 });

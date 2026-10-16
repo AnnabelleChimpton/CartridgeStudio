@@ -1,0 +1,2148 @@
+{
+ "title": "Key Quest",
+ "types": [
+  {
+   "index": 0,
+   "id": "knight",
+   "label": "Knight",
+   "sym": "T_KNIGHT",
+   "name": "knight",
+   "sprite": "spr_knight",
+   "width": 8,
+   "height": 14,
+   "palette": 0,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "control": {
+    "joystick": 1,
+    "axes": "4way",
+    "mode": "direct",
+    "speed": {
+     "step": 3,
+     "max": 6
+    }
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": false
+   },
+   "own": [
+    0,
+    0
+   ],
+   "loop": [
+    0,
+    0
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": true,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "knight"
+   }
+  },
+  {
+   "index": 1,
+   "id": "shadow",
+   "label": "Shadow",
+   "sym": "T_SHADOW",
+   "name": "shadow",
+   "sprite": "spr_shadow",
+   "width": 8,
+   "height": 12,
+   "palette": 1,
+   "frames": "2 frame(s)",
+   "anim": 2,
+   "dirSets": 1,
+   "animate": 8,
+   "steer": {
+    "target": 0,
+    "away": false,
+    "speed": {
+     "step": 1,
+     "max": 6
+    },
+    "every": 1
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    1,
+    1
+   ],
+   "loop": [
+    1,
+    1
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "shadow"
+   }
+  },
+  {
+   "index": 2,
+   "id": "key",
+   "label": "Key",
+   "sym": "T_KEY",
+   "name": "key",
+   "sprite": "spr_key",
+   "width": 8,
+   "height": 6,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "stop",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    2,
+    2
+   ],
+   "loop": [
+    2,
+    2
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": false
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "key"
+   }
+  },
+  {
+   "index": 3,
+   "id": "door",
+   "label": "Locked door",
+   "sym": "T_DOOR",
+   "name": "door",
+   "sprite": "spr_door",
+   "width": 16,
+   "height": 16,
+   "palette": 3,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "stop",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    3,
+    3
+   ],
+   "loop": [
+    3,
+    3
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": false
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "door"
+   }
+  },
+  {
+   "index": 4,
+   "id": "crown",
+   "label": "Crown",
+   "sym": "T_CROWN",
+   "name": "crown",
+   "sprite": "spr_crown",
+   "width": 8,
+   "height": 8,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "stop",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    4,
+    4
+   ],
+   "loop": [
+    4,
+    4
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": false
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "crown"
+   }
+  },
+  {
+   "index": 5,
+   "id": "gem",
+   "label": "Gem",
+   "sym": "T_GEM",
+   "name": "gem",
+   "sprite": "spr_gem",
+   "width": 8,
+   "height": 8,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "stop",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    5,
+    5
+   ],
+   "loop": [
+    5,
+    5
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": false
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "gem"
+   }
+  }
+ ],
+ "rooms": [
+  {
+   "index": 0,
+   "rows": [
+    "####################",
+    "#                  #",
+    "#   ###      ###   #",
+    "#                  #",
+    "#                   ",
+    "# P                 ",
+    "#                   ",
+    "#   ###      ###   #",
+    "#                  #",
+    "# S                #",
+    "#########  #########"
+   ],
+   "tiles": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "spawns": [
+    {
+     "type": 0,
+     "x": 16,
+     "y": 96,
+     "slot": 0,
+     "place": 0
+    },
+    {
+     "type": 1,
+     "x": 16,
+     "y": 160,
+     "slot": 1,
+     "place": 1
+    }
+   ],
+   "exits": {
+    "right": 1,
+    "down": 2
+   },
+   "span": {
+    "kind": "room",
+    "id": "room-1"
+   }
+  },
+  {
+   "index": 1,
+   "rows": [
+    "####################",
+    "#                S #",
+    "#   ###      ###   #",
+    "#                  #",
+    "                   #",
+    "       K           #",
+    "                   #",
+    "#  ###       ###   #",
+    "#                  #",
+    "#                  #",
+    "#########  #########"
+   ],
+   "tiles": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "spawns": [
+    {
+     "type": 1,
+     "x": 136,
+     "y": 32,
+     "slot": 1,
+     "place": 0
+    },
+    {
+     "type": 2,
+     "x": 56,
+     "y": 96,
+     "slot": 2,
+     "place": 1
+    }
+   ],
+   "exits": {
+    "left": 0,
+    "down": 3
+   },
+   "span": {
+    "kind": "room",
+    "id": "room-2"
+   }
+  },
+  {
+   "index": 2,
+   "rows": [
+    "#########  #########",
+    "#                  #",
+    "#  S               #",
+    "#     ###    ###   #",
+    "#                  #",
+    "#       G          #",
+    "#                  #",
+    "#                   ",
+    "#     ~~            ",
+    "#                   ",
+    "####################"
+   ],
+   "tiles": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "spawns": [
+    {
+     "type": 1,
+     "x": 24,
+     "y": 48,
+     "slot": 1,
+     "place": 0
+    },
+    {
+     "type": 5,
+     "x": 64,
+     "y": 96,
+     "slot": 5,
+     "place": 1
+    }
+   ],
+   "exits": {
+    "right": 3,
+    "up": 0
+   },
+   "span": {
+    "kind": "room",
+    "id": "room-3"
+   }
+  },
+  {
+   "index": 3,
+   "rows": [
+    "#########  #########",
+    "#                  #",
+    "#                  #",
+    "#       #D #       #",
+    "#       #  #       #",
+    "#       #C #       #",
+    "#       ####       #",
+    "                   #",
+    "                   #",
+    "   S               #",
+    "####################"
+   ],
+   "tiles": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "spawns": [
+    {
+     "type": 3,
+     "x": 72,
+     "y": 64,
+     "slot": 3,
+     "place": 0
+    },
+    {
+     "type": 4,
+     "x": 72,
+     "y": 96,
+     "slot": 4,
+     "place": 1
+    },
+    {
+     "type": 1,
+     "x": 24,
+     "y": 160,
+     "slot": 1,
+     "place": 2
+    }
+   ],
+   "exits": {
+    "left": 2,
+    "up": 1
+   },
+   "span": {
+    "kind": "room",
+    "id": "room-4"
+   }
+  }
+ ],
+ "counters": [
+  {
+   "id": "lives",
+   "label": "Lives",
+   "name": "lives",
+   "start": 3,
+   "keep": "game",
+   "span": {
+    "kind": "counter",
+    "id": "lives"
+   }
+  },
+  {
+   "id": "keys",
+   "label": "Keys",
+   "name": "cnt_keys",
+   "start": 0,
+   "keep": "game",
+   "span": {
+    "kind": "counter",
+    "id": "keys"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "n": 1,
+   "id": "r-1",
+   "label": "rule1",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 2
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-2",
+     "span": {
+      "kind": "action",
+      "id": "a-2"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "other",
+      "type": 2
+     }
+    },
+    {
+     "id": "a-3",
+     "span": {
+      "kind": "action",
+      "id": "a-3"
+     },
+     "k": "counter",
+     "mode": "add",
+     "name": "cnt_keys",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-4",
+     "span": {
+      "kind": "action",
+      "id": "a-4"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 50
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-5",
+     "span": {
+      "kind": "action",
+      "id": "a-5"
+     },
+     "k": "sound",
+     "label": "sfx_up"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 2,
+   "span": {
+    "kind": "rule",
+    "id": "r-1"
+   }
+  },
+  {
+   "n": 2,
+   "id": "r-6",
+   "label": "rule2",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 3
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [
+    {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "cnt_keys"
+      },
+      "signed": false
+     },
+     "op": "gte",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    }
+   ],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-7",
+     "span": {
+      "kind": "action",
+      "id": "a-7"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "other",
+      "type": 3
+     }
+    },
+    {
+     "id": "a-8",
+     "span": {
+      "kind": "action",
+      "id": "a-8"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "cnt_keys",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-9",
+     "span": {
+      "kind": "action",
+      "id": "a-9"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 100
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-10",
+     "span": {
+      "kind": "action",
+      "id": "a-10"
+     },
+     "k": "sound",
+     "label": "sfx_chime"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 3,
+   "span": {
+    "kind": "rule",
+    "id": "r-6"
+   }
+  },
+  {
+   "n": 3,
+   "id": "r-11",
+   "label": "rule3",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 3
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [
+    {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "cnt_keys"
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   ],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-12",
+     "span": {
+      "kind": "action",
+      "id": "a-12"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "it",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-13",
+     "span": {
+      "kind": "action",
+      "id": "a-13"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 3,
+   "span": {
+    "kind": "rule",
+    "id": "r-11"
+   }
+  },
+  {
+   "n": 4,
+   "id": "r-14",
+   "label": "rule4",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 5
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-15",
+     "span": {
+      "kind": "action",
+      "id": "a-15"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "other",
+      "type": 5
+     }
+    },
+    {
+     "id": "a-16",
+     "span": {
+      "kind": "action",
+      "id": "a-16"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 20
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-17",
+     "span": {
+      "kind": "action",
+      "id": "a-17"
+     },
+     "k": "sound",
+     "label": "sfx_blip"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 5,
+   "span": {
+    "kind": "rule",
+    "id": "r-14"
+   }
+  },
+  {
+   "n": 5,
+   "id": "r-18",
+   "label": "rule5",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 1
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-19",
+     "span": {
+      "kind": "action",
+      "id": "a-19"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-20",
+     "span": {
+      "kind": "action",
+      "id": "a-20"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-21",
+     "span": {
+      "kind": "action",
+      "id": "a-21"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-22",
+     "span": {
+      "kind": "action",
+      "id": "a-22"
+     },
+     "k": "sound",
+     "label": "sfx_crash"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 1,
+   "span": {
+    "kind": "rule",
+    "id": "r-18"
+   }
+  },
+  {
+   "n": 6,
+   "id": "r-23",
+   "label": "rule6",
+   "trigger": {
+    "k": "tile",
+    "type": 0,
+    "tile": 2
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-24",
+     "span": {
+      "kind": "action",
+      "id": "a-24"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-25",
+     "span": {
+      "kind": "action",
+      "id": "a-25"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-26",
+     "span": {
+      "kind": "action",
+      "id": "a-26"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-27",
+     "span": {
+      "kind": "action",
+      "id": "a-27"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-23"
+   }
+  },
+  {
+   "n": 7,
+   "id": "r-28",
+   "label": "rule7",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 4
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-29",
+     "span": {
+      "kind": "action",
+      "id": "a-29"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 500
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-30",
+     "span": {
+      "kind": "action",
+      "id": "a-30"
+     },
+     "k": "sound",
+     "label": "sfx_chime"
+    },
+    {
+     "id": "a-31",
+     "span": {
+      "kind": "action",
+      "id": "a-31"
+     },
+     "k": "gameOver",
+     "won": true
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 4,
+   "span": {
+    "kind": "rule",
+    "id": "r-28"
+   }
+  },
+  {
+   "n": 8,
+   "id": "r-32",
+   "label": "rule8",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "lives"
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 0
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-33",
+     "span": {
+      "kind": "action",
+      "id": "a-33"
+     },
+     "k": "gameOver",
+     "won": false
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-32"
+   }
+  }
+ ],
+ "hud": [
+  {
+   "show": "score",
+   "at": "left",
+   "name": "score"
+  },
+  {
+   "show": "keys",
+   "at": "middle",
+   "name": "cnt_keys"
+  },
+  {
+   "show": "lives",
+   "at": "right",
+   "name": "lives"
+  }
+ ],
+ "messages": [],
+ "palettes": [
+  {
+   "id": "knight",
+   "colors": [
+    "$1A",
+    "$0F",
+    "$84"
+   ]
+  },
+  {
+   "id": "shadow",
+   "colors": [
+    "$54",
+    "$0F",
+    "$42"
+   ]
+  },
+  {
+   "id": "gold",
+   "colors": [
+    "$1C",
+    "$1A",
+    "$46"
+   ]
+  },
+  {
+   "id": "door",
+   "colors": [
+    "$22",
+    "$26",
+    "$20"
+   ]
+  },
+  {
+   "id": "walls",
+   "colors": [
+    "$94",
+    "$92",
+    "$90"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  }
+ ],
+ "background": "$00",
+ "textPalette": 5,
+ "wallPalette": 4,
+ "text": {
+  "title": "Key Quest",
+  "win": "The crown is yours",
+  "lose": "Game over"
+ },
+ "flow": {
+  "title": true,
+  "attract": {
+   "after": 20,
+   "input": [
+    8,
+    40,
+    24,
+    2,
+    8,
+    30,
+    0,
+    10,
+    4,
+    50,
+    20,
+    2,
+    4,
+    30,
+    1,
+    20,
+    2,
+    20,
+    16,
+    2,
+    0,
+    20
+   ]
+  },
+  "end": {
+   "show": [
+    {
+     "label": "score",
+     "name": "score"
+    }
+   ],
+   "after": 0
+  },
+  "remember": true
+ },
+ "sounds": [
+  {
+   "label": "sfx_up",
+   "id": "up"
+  },
+  {
+   "label": "sfx_chime",
+   "id": "chime"
+  },
+  {
+   "label": "sfx_down",
+   "id": "down"
+  },
+  {
+   "label": "sfx_blip",
+   "id": "blip"
+  },
+  {
+   "label": "sfx_crash",
+   "id": "crash"
+  }
+ ],
+ "code": {
+  "init": "",
+  "startroom": "",
+  "frame": "",
+  "draw": "",
+  "routines": [],
+  "cost": 10
+ },
+ "features": {
+  "walls": true,
+  "tileMap": true,
+  "timers": false,
+  "protect": true,
+  "timedTurns": false,
+  "facing": false,
+  "contact": false,
+  "latchThings": false,
+  "globalLatches": 1,
+  "everyCounters": [],
+  "messages": false,
+  "rooms": 4,
+  "exits": true,
+  "remember": true,
+  "vars": false,
+  "place": true,
+  "joy2": false
+ }
+}

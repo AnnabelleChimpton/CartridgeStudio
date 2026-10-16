@@ -14,14 +14,22 @@ import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { musicInclude } from "./audio.ts";
 import { generateKit } from "./generate.ts";
-import type { Behaviour, KitGame, KitType } from "./schema.ts";
+import { loadKit } from "./migrations.ts";
+import type { KitGame } from "./schema.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
-const type = (id: string, behaviour: Behaviour, extra: Partial<KitType> = {}): KitType => ({
+const type = (id: string, behaviour: string, extra: Record<string, unknown> = {}) => ({
   id, label: id, width: 8, height: 8, frames: [box(8, 8)], palette: "p", behaviour, speed: 3, ...extra,
 });
 
+/** The measurement game, written as a version 1 game and migrated (the same path old saves take). */
 function base(fillers: number): KitGame {
+  const g = loadKit(baseV1(fillers));
+  if (!g.ok) throw new Error(g.errors.join(" "));
+  return g.game;
+}
+
+function baseV1(fillers: number) {
   const rows = ["####################", ...Array.from({ length: 9 }, () => "#                  #"), "####################"].map((r) => [...r]);
   rows[9]![2] = "P";
   for (let k = 0; k < 8; k++) rows[1 + (k % 4) * 2]![2 + Math.floor(k / 4) * 4] = "M";

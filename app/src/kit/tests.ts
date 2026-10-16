@@ -7,28 +7,44 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { BehaviourTestSchema, runRomOnHost, type BehaviourResult, type WatchMap } from "../harness/behaviour.ts";
 import type { SoundEffect } from "../project/schema.ts";
 import { generateKit, type KitOptions } from "./generate.ts";
-import { KitRuleSchema, type KitGame } from "./schema.ts";
+import { PART_RULE, rulesFromV1 } from "./migrations.ts";
+import { KitRuleSchema, LIVES, type KitGame } from "./schema.ts";
+import { KitRuleV1Schema } from "./schema-v1.ts";
 
-/** Variables every kit ROM has. The player is always in slot 0 (placed things are sorted by type, the player's first). */
+/** Variables every kit ROM has. Slot 0 holds the first placed thing of the first kind (the player, in every preset). */
 export const KIT_WATCH: WatchMap = {
   score: { symbol: "score0", bytes: 3, bcd: true },
+  /** The counter "lives" (0 when a game has none). */
   lives: { symbol: "lives" },
-  /** 0 title, 1 playing, 2 won, 3 lost */
+  /** 0 title, 1 playing, 2 won, 3 lost, 4 the demo */
   state: { symbol: "gamestate" },
   seconds: { symbol: "seconds" },
   /** Main-loop passes since power-on; equal to frames at 60 fps. */
   loops: { symbol: "loopslo", bytes: 2 },
   heroX: { symbol: "ox" },
   heroY: { symbol: "oy" },
-  /** The built-in level counter (1 at the start). */
+  /** The counter "level" (0 when a game has none). */
   level: { symbol: "levelnum" },
+  /** The current room, counting from 1. */
+  room: { symbol: "roomnum" },
 };
 
 export const KitTestSchema = z
   .object({
     name: z.string(),
-    /** Changes to the game for this test. */
-    game: z.object({ lives: z.number().int().min(1).max(9).optional(), rules: z.array(KitRuleSchema).optional() }).strict().default({}),
+    /**
+     * Changes to the game for this test: lives to start with, and rules to
+     * use instead of the game's own. Rules may be kit v1 rules (older tests);
+     * those replace the game's rules except the ones that stand in for v1
+     * type properties (`r-p-…`: shooting, dropping, the march, falling, lives).
+     */
+    game: z
+      .object({
+        lives: z.number().int().min(1).max(9).optional(),
+        rules: z.union([z.array(KitRuleSchema), z.array(KitRuleV1Schema)]).optional(),
+      })
+      .strict()
+      .default({}),
     steps: BehaviourTestSchema.shape.steps,
   })
   .strict();
@@ -36,8 +52,22 @@ export type KitTest = z.infer<typeof KitTestSchema>;
 
 export function gameFor(test: KitTest, game: KitGame): KitGame {
   const g = structuredClone(game);
-  if (test.game.lives) g.lives = test.game.lives;
-  if (test.game.rules) g.rules = structuredClone(test.game.rules);
+  if (test.game.lives) {
+    const lives = g.counters.find((c) => c.id === LIVES);
+    if (lives) lives.start = test.game.lives;
+  }
+  const rules = test.game.rules;
+  if (rules) {
+    const v2 = z.array(KitRuleSchema).safeParse(rules);
+    if (v2.success) g.rules = v2.data;
+    else {
+      const players = g.types.filter((t) => t.control?.joystick === 1).map((t) => t.id);
+      const migrated = rulesFromV1(z.array(KitRuleV1Schema).parse(rules), { players });
+      const parts = g.rules.filter((r) => r.id.startsWith(PART_RULE));
+      // As the migration orders them: the game's own rules, then the ones from type properties and flow.
+      g.rules = [...migrated, ...parts];
+    }
+  }
   return g;
 }
 

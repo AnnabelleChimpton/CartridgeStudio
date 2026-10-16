@@ -35,13 +35,14 @@ const DESCRIPTIONS: Record<string, [string, string]> = {
   maze: ["A maze game", "Collect all the yarn while ghosts chase you through the walls."],
   "ghost-panic": ["A chase game", "Catnip makes the ghosts run from you for a few seconds. Mind the spikes; three mazes to clear."],
   dodger: ["A dodging game", "Rocks fall from the sky. Catch the stars and survive."],
+  "key-quest": ["An adventure", "Four rooms, one key, a locked door and a crown. Shadows follow you from room to room."],
 };
 
 const IDEAS: Record<string, KitIdea[]> = {
   shooter: [
     { text: "Make the vacuums drop more dust", how: "Pick the Vacuum, open More options and move the Drops slider.", tab: "things", thing: "invader" },
     { text: "Give your ship a faster shot", how: "Pick the Shot, open More options and set Speed to Very fast.", tab: "things", thing: "shot" },
-    { text: "Win when every vacuum is gone", how: "In the last rule (when the vacuums are all gone), change “start the room again” to “win the game”.", tab: "rules" },
+    { text: "Win when every vacuum is gone", how: "In the rule for when the vacuums are all gone, change “start the room again” to “win the game”.", tab: "rules" },
   ],
   maze: [
     { text: "Make the ghost faster", how: "Pick the Dust ghost, open More options and change its Speed.", tab: "things", thing: "ghost" },
@@ -53,8 +54,13 @@ const IDEAS: Record<string, KitIdea[]> = {
     { text: "Add spikes to the maze", how: "Pick the Spikes brush and click empty squares. Touching spikes costs a life.", tab: "room" },
     { text: "Start with more lives", how: "Change Lives to 5.", tab: "game" },
   ],
+  "key-quest": [
+    { text: "Make the shadows faster", how: "Pick the Shadow and change its Speed under More options.", tab: "things", thing: "shadow" },
+    { text: "Hide another gem", how: "Pick the Gem brush and click a square in the first room.", tab: "room" },
+    { text: "Start with more lives", how: "Change Lives to 5.", tab: "game" },
+  ],
   dodger: [
-    { text: "Survive for a whole minute", how: "In the last rule, change 30 seconds to 60.", tab: "rules" },
+    { text: "Survive for a whole minute", how: "In the rule for 30 seconds, change 30 to 60.", tab: "rules" },
     { text: "Make the rocks fall faster", how: "Pick the Rock, open More options and change its Speed.", tab: "things", thing: "rock" },
     { text: "Drop more stars to catch", how: "Pick the Star brush and click squares near the top of the room.", tab: "room" },
   ],

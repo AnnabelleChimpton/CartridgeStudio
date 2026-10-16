@@ -1,0 +1,385 @@
+{
+ "kit": 2,
+ "title": "Key Quest",
+ "palettes": [
+  {
+   "id": "knight",
+   "colors": [ "$1A", "$0F", "$84" ]
+  },
+  {
+   "id": "shadow",
+   "colors": [ "$54", "$0F", "$42" ]
+  },
+  {
+   "id": "gold",
+   "colors": [ "$1C", "$1A", "$46" ]
+  },
+  {
+   "id": "door",
+   "colors": [ "$22", "$26", "$20" ]
+  },
+  {
+   "id": "walls",
+   "colors": [ "$94", "$92", "$90" ]
+  },
+  {
+   "id": "text",
+   "colors": [ "$0F", "$0F", "$0F" ]
+  }
+ ],
+ "background": "$00",
+ "wallPalette": "walls",
+ "textPalette": "text",
+ "types": [
+  {
+   "id": "knight",
+   "label": "Knight",
+   "width": 8,
+   "height": 14,
+   "frames": [
+    [ "00111100", "01111110", "01222210", "01200210", "01222210", "00111100", "00033000", "03333330", "33133133", "30333303", "00333300", "00300300", "00300300", "03300330" ]
+   ],
+   "palette": "knight",
+   "control": {
+    "joystick": 1,
+    "axes": "4way",
+    "mode": "direct",
+    "speed": { "step": 3 }
+   },
+   "move": { "vx": 0, "vy": 0, "wall": "slide", "edge": "stop" }
+  },
+  {
+   "id": "shadow",
+   "label": "Shadow",
+   "width": 8,
+   "height": 12,
+   "frames": [
+    [ "01000010", "11100111", "11111111", "12111121", "11111111", "01111110", "01311310", "00111100", "01100110", "11000011", "10000001", "00000000" ],
+    [ "00000000", "01000010", "11100111", "11111111", "12111121", "11111111", "01111110", "01311310", "00111100", "00111100", "01100110", "01000010" ]
+   ],
+   "palette": "shadow",
+   "steer": {
+    "toward": "knight",
+    "speed": { "step": 1 },
+    "every": 1
+   },
+   "move": { "vx": 0, "vy": 0, "wall": "slide", "edge": "stop" },
+   "display": { "animate": 8 }
+  },
+  {
+   "id": "key",
+   "label": "Key",
+   "width": 8,
+   "height": 6,
+   "frames": [
+    [ "01100000", "10010000", "10011111", "10010101", "01100101", "00000000" ]
+   ],
+   "palette": "gold",
+   "move": { "vx": 0, "vy": 0, "wall": "stop", "edge": "stop" }
+  },
+  {
+   "id": "door",
+   "label": "Locked door",
+   "width": 16,
+   "height": 16,
+   "frames": [
+    [ "0111111111111110", "1122122112212211", "1122122112212211", "1122122112212211", "1122122112212211", "1111111111111111", "1122122112212211", "1122122112212211", "1122122332212211", "1122122332212211", "1111111111111111", "1122122112212211", "1122122112212211", "1122122112212211", "1122122112212211", "1111111111111111" ]
+   ],
+   "palette": "door",
+   "move": { "vx": 0, "vy": 0, "wall": "stop", "edge": "stop" }
+  },
+  {
+   "id": "crown",
+   "label": "Crown",
+   "width": 8,
+   "height": 8,
+   "frames": [
+    [ "10011001", "11011011", "11111111", "12131211", "11111111", "11111111", "22222222", "00000000" ]
+   ],
+   "palette": "gold",
+   "move": { "vx": 0, "vy": 0, "wall": "stop", "edge": "stop" }
+  },
+  {
+   "id": "gem",
+   "label": "Gem",
+   "width": 8,
+   "height": 8,
+   "frames": [
+    [ "00011000", "00122100", "01233210", "12333321", "01233210", "00122100", "00011000", "00000000" ]
+   ],
+   "palette": "gold",
+   "move": { "vx": 0, "vy": 0, "wall": "stop", "edge": "stop" }
+  }
+ ],
+ "room": {
+  "rows": [
+   "####################",
+   "#                  #",
+   "#   ###      ###   #",
+   "#                  #",
+   "#                   ",
+   "# P                 ",
+   "#                   ",
+   "#   ###      ###   #",
+   "#                  #",
+   "# S                #",
+   "#########  #########"
+  ],
+  "legend": {
+   "#": "wall",
+   "~": "hazard",
+   "P": "knight",
+   "S": "shadow",
+   "K": "key",
+   "D": "door",
+   "C": "crown",
+   "G": "gem"
+  },
+  "exits": { "right": 2, "down": 3 }
+ },
+ "rooms": [
+  {
+   "rows": [
+    "####################",
+    "#                S #",
+    "#   ###      ###   #",
+    "#                  #",
+    "                   #",
+    "       K           #",
+    "                   #",
+    "#  ###       ###   #",
+    "#                  #",
+    "#                  #",
+    "#########  #########"
+   ],
+   "exits": { "left": 1, "down": 4 }
+  },
+  {
+   "rows": [
+    "#########  #########",
+    "#                  #",
+    "#  S               #",
+    "#     ###    ###   #",
+    "#                  #",
+    "#       G          #",
+    "#                  #",
+    "#                   ",
+    "#     ~~            ",
+    "#                   ",
+    "####################"
+   ],
+   "exits": { "up": 1, "right": 4 }
+  },
+  {
+   "rows": [
+    "#########  #########",
+    "#                  #",
+    "#                  #",
+    "#       #D #       #",
+    "#       #  #       #",
+    "#       #C #       #",
+    "#       ####       #",
+    "                   #",
+    "                   #",
+    "   S               #",
+    "####################"
+   ],
+   "exits": { "up": 2, "left": 3 }
+  }
+ ],
+ "counters": [
+  { "id": "lives", "label": "Lives", "start": 3 },
+  { "id": "keys", "label": "Keys", "start": 0 }
+ ],
+ "hud": [
+  { "show": "score", "at": "left" },
+  { "show": "keys", "at": "middle" },
+  { "show": "lives", "at": "right" }
+ ],
+ "rules": [
+  {
+   "id": "r-1",
+   "when": {
+    "touch": [ "knight", "key" ]
+   },
+   "then": [
+    { "id": "a-2", "destroy": "other" },
+    {
+     "id": "a-3",
+     "add": {
+      "what": { "counter": "keys" },
+      "by": 1
+     }
+    },
+    {
+     "id": "a-4",
+     "add": {
+      "what": { "counter": "score" },
+      "by": 50
+     }
+    },
+    { "id": "a-5", "sound": "up" }
+   ]
+  },
+  {
+   "id": "r-6",
+   "when": {
+    "touch": [ "knight", "door" ]
+   },
+   "if": [
+    {
+     "a": { "counter": "keys" },
+     "op": "gte",
+     "b": 1
+    }
+   ],
+   "then": [
+    { "id": "a-7", "destroy": "other" },
+    {
+     "id": "a-8",
+     "take": {
+      "what": { "counter": "keys" },
+      "by": 1
+     }
+    },
+    {
+     "id": "a-9",
+     "add": {
+      "what": { "counter": "score" },
+      "by": 100
+     }
+    },
+    { "id": "a-10", "sound": "chime" }
+   ]
+  },
+  {
+   "id": "r-11",
+   "when": {
+    "touch": [ "knight", "door" ]
+   },
+   "if": [
+    {
+     "a": { "counter": "keys" },
+     "op": "eq",
+     "b": 0
+    }
+   ],
+   "then": [
+    { "id": "a-12", "toStart": "it" },
+    { "id": "a-13", "sound": "down" }
+   ]
+  },
+  {
+   "id": "r-14",
+   "when": {
+    "touch": [ "knight", "gem" ]
+   },
+   "then": [
+    { "id": "a-15", "destroy": "other" },
+    {
+     "id": "a-16",
+     "add": {
+      "what": { "counter": "score" },
+      "by": 20
+     }
+    },
+    { "id": "a-17", "sound": "blip" }
+   ]
+  },
+  {
+   "id": "r-18",
+   "when": {
+    "touch": [ "knight", "shadow" ]
+   },
+   "then": [
+    {
+     "id": "a-19",
+     "take": {
+      "what": { "counter": "lives" },
+      "by": 1
+     }
+    },
+    {
+     "id": "a-20",
+     "toStart": { "every": "knight" }
+    },
+    {
+     "id": "a-21",
+     "protect": {
+      "who": { "every": "knight" },
+      "tenths": 15
+     }
+    },
+    { "id": "a-22", "sound": "crash" }
+   ]
+  },
+  {
+   "id": "r-23",
+   "when": {
+    "onTile": [ "knight", "hazard" ]
+   },
+   "then": [
+    {
+     "id": "a-24",
+     "take": {
+      "what": { "counter": "lives" },
+      "by": 1
+     }
+    },
+    {
+     "id": "a-25",
+     "toStart": { "every": "knight" }
+    },
+    {
+     "id": "a-26",
+     "protect": {
+      "who": { "every": "knight" },
+      "tenths": 15
+     }
+    },
+    { "id": "a-27", "sound": "down" }
+   ]
+  },
+  {
+   "id": "r-28",
+   "when": {
+    "touch": [ "knight", "crown" ]
+   },
+   "then": [
+    {
+     "id": "a-29",
+     "add": {
+      "what": { "counter": "score" },
+      "by": 500
+     }
+    },
+    { "id": "a-30", "sound": "chime" },
+    { "id": "a-31", "gameOver": "won" }
+   ]
+  },
+  {
+   "id": "r-32",
+   "when": {
+    "test": {
+     "a": { "counter": "lives" },
+     "op": "eq",
+     "b": 0
+    }
+   },
+   "fires": "once",
+   "then": [
+    { "id": "a-33", "gameOver": "lost" }
+   ]
+  }
+ ],
+ "text": { "title": "Key Quest", "win": "The crown is yours", "lose": "Game over" },
+ "flow": {
+  "title": true,
+  "attract": { "after": 20 },
+  "end": {
+   "show": [ "score" ],
+   "after": 0
+  },
+  "remember": true
+ }
+}

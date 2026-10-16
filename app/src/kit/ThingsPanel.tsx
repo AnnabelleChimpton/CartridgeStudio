@@ -1,5 +1,7 @@
-// Things: the kinds of thing in a kit game. Each has a sprite, a behaviour,
-// a speed and, for the player, what it shoots; anything can drop something.
+// Things: the kinds of thing in a kit game. Each has a sprite, a way of
+// moving (a preset of movement parts), a speed and, for the player, what it
+// shoots; anything can drop something. Parts that aren't a preset show as
+// "Moves its own way", read-only until the parts editor comes.
 
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
 import { SOUND_LIBRARY } from "../project/templates.ts";
@@ -8,20 +10,30 @@ import { ColorPicker } from "../ui/ColorPicker.tsx";
 import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import {
+  BEHAVIOURS,
   BEHAVIOUR_LABELS,
   SPEED_LABELS,
   addThing,
+  dropsOf,
   isPlayer,
+  launchedBy,
   makePlayer,
+  movementLabel,
   placements,
   removeThing,
   resizeThing,
   setAnimated,
   setBehaviour,
+  setDrops,
+  setShoots,
+  setSpeed,
+  shootsOf,
+  type Behaviour,
 } from "./edit.ts";
 import { thingContrast } from "./contrast.ts";
 import { ContrastNotes } from "./ContrastNotes.tsx";
-import { BEHAVIOURS, MAX_TYPES, type Behaviour, type KitGame, type KitType } from "./schema.ts";
+import { presetOf } from "./parts.ts";
+import { MAX_TYPES, type KitGame, type KitType } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const WIDTHS = [4, 8, 12, 16];
@@ -94,7 +106,7 @@ export function ThingsPanel({ selected, onSelect, onPlace }: Props) {
                   <span className="sprite-meta">
                     <span className="sprite-name">{t.label}</span>
                     <span className="muted">
-                      {BEHAVIOUR_LABELS[t.behaviour]} · {counts.get(i) ?? 0} in the room
+                      {movementLabel(t)} · {counts.get(i) ?? 0} in the room
                     </span>
                   </span>
                 </button>
@@ -159,7 +171,11 @@ function ThingEditor({
   const player = game.types.find(isPlayer);
   const [deleting, setDeleting] = useState(false);
   const ids = useId();
-  const launchedBy = game.types.find((t) => t.shoots === thing.id || t.drops?.type === thing.id);
+  const launched = launchedBy(game, thing.id);
+  const launcher = launched && game.types.find((t) => t.id === launched.by);
+  const preset = presetOf(thing);
+  const shoots = shootsOf(game, thing.id);
+  const drops = dropsOf(game, thing.id);
   const change = (recipe: (t: KitType) => void, key?: string) =>
     edit((d) => {
       const t = d.types.find((x) => x.id === thing.id);
@@ -170,8 +186,8 @@ function ThingEditor({
     <label>
       <span>Shoots</span>
       <select
-        value={thing.shoots ?? ""}
-        onChange={(e) => change((t) => (e.target.value ? (t.shoots = e.target.value) : delete t.shoots))}
+        value={shoots ?? ""}
+        onChange={(e) => edit((d) => setShoots(d, thing.id, e.target.value || null))}
       >
         <option value="">Nothing</option>
         {others.map((t) => (
@@ -218,9 +234,13 @@ function ThingEditor({
       {(placed === 0 || !isPlayer(thing)) && (
         <div className="thing-actions">
           {placed === 0 &&
-            (launchedBy ? (
+            (launched ? (
               <span className="muted small">
-                {launchedBy.shoots === thing.id ? `Appears when ${launchedBy.label} shoots.` : `Appears when ${launchedBy.label} drops one.`}
+                {launched.how === "shoots" && launcher
+                  ? `Appears when ${launcher.label} shoots.`
+                  : launched.how === "drops" && launcher
+                    ? `Appears when ${launcher.label} drops one.`
+                    : "Appears when a rule creates one."}
               </span>
             ) : (
               <>
@@ -258,9 +278,10 @@ function ThingEditor({
         <label>
           <span>How it moves</span>
           <select
-            value={thing.behaviour}
-            onChange={(e) => edit((d) => setBehaviour(d, thing.id, e.target.value as Behaviour))}
+            value={preset?.behaviour ?? "custom"}
+            onChange={(e) => e.target.value !== "custom" && edit((d) => setBehaviour(d, thing.id, e.target.value as Behaviour))}
           >
+            {!preset && <option value="custom">Moves its own way</option>}
             {BEHAVIOURS.map((b) => (
               <option key={b} value={b}>
                 {BEHAVIOUR_LABELS[b]}
@@ -268,6 +289,12 @@ function ThingEditor({
             ))}
           </select>
         </label>
+        {!preset && (
+          <p className="muted small">
+            {thing.label} moves by its own parts (from a file or another tool), and it still works in the game. Changing them here is coming soon; picking a way to
+            move above replaces them.
+          </p>
+        )}
         {shootsField}
         {isPlayer(thing) && sizeField}
       </div>
@@ -342,7 +369,7 @@ function ThingEditor({
         <div className="field-grid">
           <label>
             <span>Speed</span>
-            <select value={thing.speed} onChange={(e) => change((t) => void (t.speed = Number(e.target.value)))}>
+            <select value={preset?.speed ?? 2} disabled={!preset} onChange={(e) => edit((d) => setSpeed(d, thing.id, Number(e.target.value)))}>
               {[1, 2, 3, 4].map((s) => (
                 <option key={s} value={s}>
                   {SPEED_LABELS[s]}
@@ -356,17 +383,8 @@ function ThingEditor({
             <span className="inline">
               <select
                 aria-label="What it drops"
-                value={thing.drops?.type ?? ""}
-                onChange={(e) =>
-                  change((t) =>
-                    e.target.value
-                      ? (t.drops = {
-                          type: e.target.value,
-                          chance: t.drops?.chance ?? 4,
-                        })
-                      : delete t.drops,
-                  )
-                }
+                value={drops?.type ?? ""}
+                onChange={(e) => edit((d) => setDrops(d, thing.id, e.target.value ? { type: e.target.value, chance: drops?.chance ?? 4 } : null))}
               >
                 <option value="">Nothing</option>
                 {others.map((t) => (
@@ -375,14 +393,14 @@ function ThingEditor({
                   </option>
                 ))}
               </select>
-              {thing.drops && (
+              {drops && (
                 <input
                   type="range"
                   aria-label="How often it drops"
                   min={1}
                   max={40}
-                  value={thing.drops.chance}
-                  onChange={(e) => change((t) => void (t.drops!.chance = Number(e.target.value)), `drops:${thing.id}`)}
+                  value={drops.chance}
+                  onChange={(e) => edit((d) => setDrops(d, thing.id, { type: drops.type, chance: Number(e.target.value) }), `drops:${thing.id}`)}
                 />
               )}
             </span>

@@ -2,16 +2,22 @@
 // over the game's own things and counters. Only valid combinations are
 // offered (e.g. "the second thing" only exists when two things touch), and
 // the rarer parts ("only if", "for N seconds") appear when asked for.
+//
+// Kit model v2 rules can say more than these menus offer (targets like "the
+// nearest X", values, messages…). The editor recognises the shapes it can
+// edit; any other rule shows as its sentence, still in the game and movable,
+// with a note that editing it here is coming. Lists are keyed on the rules'
+// stable ids, so focus and drag state stay with the right rule.
 
 import { useEffect, useId, useRef, useState } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { isPlayer, moveRule } from "./edit.ts";
-import { ruleThing } from "./generate.ts";
-import { LEVEL, type KitAction, type KitCondition, type KitGame, type KitRule, type KitTrigger } from "./schema.ts";
-import { editableRule, ruleSentence } from "./sentence.ts";
+import { act, isPlayer, loseLife, moveRule, newId, nextLevel } from "./edit.ts";
+import { triggerThing } from "./ir.ts";
+import { LEVEL, SCORE, type KitAction, type KitCompare, type KitGame, type KitRule, type KitTarget, type KitTrigger } from "./schema.ts";
+import { ruleSentence } from "./sentence.ts";
 import { useKitStore } from "./store.ts";
 
-type TriggerKind = "touch" | "allGone" | "reachesBottom" | "onHazard" | "onGoal" | "timer" | "every" | "reaches";
+type TriggerKind = "touch" | "allGone" | "reachesBottom" | "leaves" | "onHazard" | "onGoal" | "fire" | "timer" | "every" | "reaches" | "counterIs" | "roomStart";
 type ActionKind =
   | "remove"
   | "respawn"
@@ -21,24 +27,34 @@ type ActionKind =
   | "set"
   | "turn"
   | "turnAll"
+  | "respawnAll"
+  | "protect"
+  | "create"
   | "loseLife"
   | "win"
   | "lose"
   | "restartRoom"
   | "nextLevel"
   | "sound";
-type Who = "first" | "second";
+type Who = "it" | "other";
+type Op = KitCompare["op"];
 
 const TRIGGERS: { kind: TriggerKind; label: string }[] = [
   { kind: "touch", label: "touches" },
   { kind: "allGone", label: "are all gone" },
   { kind: "reachesBottom", label: "reaches the bottom" },
+  { kind: "leaves", label: "leaves the screen" },
   { kind: "onHazard", label: "is on spikes" },
   { kind: "onGoal", label: "is on a goal" },
+  { kind: "fire", label: "fire is pressed" },
   { kind: "timer", label: "seconds have passed" },
   { kind: "every", label: "every" },
   { kind: "reaches", label: "reaches" },
+  { kind: "counterIs", label: "is" },
+  { kind: "roomStart", label: "the room starts" },
 ];
+/** Triggers that name one thing first ("When the Rock …"). */
+const ONE_THING: TriggerKind[] = ["allGone", "reachesBottom", "leaves", "onHazard", "onGoal"];
 
 // Lower case: they're read mid-sentence ("When …, remove the yarn ball").
 const ACTION_LABELS: Record<ActionKind, string> = {
@@ -50,6 +66,9 @@ const ACTION_LABELS: Record<ActionKind, string> = {
   set: "set",
   turn: "turn",
   turnAll: "turn every",
+  respawnAll: "send every … back to start",
+  protect: "protect",
+  create: "create",
   loseLife: "lose a life",
   win: "win the game",
   lose: "lose the game",
@@ -57,54 +76,124 @@ const ACTION_LABELS: Record<ActionKind, string> = {
   nextLevel: "go to the next level",
   sound: "play a sound",
 };
+/** Menu choices that add several actions at once; they're not kinds an action can be. */
+const GROUPS: ActionKind[] = ["loseLife", "nextLevel"];
 
-const OPS: { op: KitCondition["op"]; label: string }[] = [
+const OPS: { op: Op; label: string }[] = [
   { op: "eq", label: "is" },
   { op: "ne", label: "isn't" },
   { op: "gte", label: "is at least" },
   { op: "lte", label: "is at most" },
+  { op: "gt", label: "is more than" },
+  { op: "lt", label: "is less than" },
 ];
+const PLACES = [
+  { place: "above", label: "above" },
+  { place: "below", label: "below" },
+  { place: "centre", label: "in the middle of" },
+  { place: "on", label: "at" },
+] as const;
 
 const POINTS = [10, 20, 50, 100, 200, 300, 500];
 
 /** Sizes a select to its chosen option, so rules read as sentences without cut-off words. */
 const fit = (text: string) => ({ width: `calc(${text.length}ch + 36px)` });
 
-function triggerKind(w: KitTrigger): TriggerKind {
-  if ("onTile" in w) return w.onTile[1] === "hazard" ? "onHazard" : "onGoal";
-  return Object.keys(w)[0] as TriggerKind;
+const isCounterValue = (v: unknown): v is { counter: string } => typeof v === "object" && v !== null && Object.keys(v).length === 1 && "counter" in v;
+const isCountValue = (v: unknown): v is { count: string } => typeof v === "object" && v !== null && Object.keys(v).length === 1 && "count" in v;
+const isWho = (t: KitTarget): t is Who => t === "it" || t === "other";
+const isEvery = (t: KitTarget): t is { every: string } => typeof t === "object" && "every" in t && !t.where;
+
+/** The editor's name for a trigger, or null when this rule's trigger is one it can't edit yet. */
+function triggerKind(r: KitRule): TriggerKind | null {
+  const w = r.when;
+  const fires = r.fires;
+  if (r.any) return null;
+  if ("touch" in w) return !fires || fires === "while" ? "touch" : null;
+  if ("onTile" in w) return !fires || fires === "while" ? (w.onTile[1] === "hazard" ? "onHazard" : "onGoal") : null;
+  if ("edge" in w) return w.edge[1] === "bottom" && fires === "while" ? "reachesBottom" : null;
+  if ("leaves" in w) return "leaves";
+  if ("button" in w) return w.button.joy === 1 && w.button.button === 1 && !w.button.released ? "fire" : null;
+  if ("after" in w) return "timer";
+  if ("every" in w) return w.frames ? null : "every";
+  if ("roomStart" in w) return "roomStart";
+  if ("test" in w && (!fires || fires === "once")) {
+    const t = w.test;
+    if (isCountValue(t.a) && t.op === "eq" && t.b === 0) return "allGone";
+    if (isCounterValue(t.a) && typeof t.b === "number" && t.a.counter !== SCORE) return t.op === "gte" ? "reaches" : "counterIs";
+  }
+  return null;
 }
-const actionKind = (a: KitAction): ActionKind => Object.keys(a)[0] as ActionKind;
+
+/** The editor's name for an action, or null when it can't edit it yet. */
+function actionKind(a: KitAction): ActionKind | null {
+  if ("destroy" in a) return isWho(a.destroy) ? "remove" : null;
+  if ("toStart" in a) return isWho(a.toStart) ? "respawn" : isEvery(a.toStart) ? "respawnAll" : null;
+  const counterOp = (s: { what: object; by?: unknown; to?: unknown }) => "counter" in s.what && typeof (s.by ?? s.to) === "number";
+  if ("add" in a) return counterOp(a.add) ? ((a.add.what as { counter: string }).counter === SCORE ? "score" : "add") : null;
+  if ("take" in a) return counterOp(a.take) && (a.take.what as { counter: string }).counter !== SCORE ? "take" : null;
+  if ("set" in a) return counterOp(a.set) && (a.set.what as { counter: string }).counter !== SCORE ? "set" : null;
+  if ("turn" in a) return isWho(a.turn.who) ? "turn" : isEvery(a.turn.who) ? "turnAll" : null;
+  if ("protect" in a) return isWho(a.protect.who) || isEvery(a.protect.who) ? "protect" : null;
+  if ("create" in a) {
+    const c = a.create;
+    return typeof c.at === "string" && c.place !== undefined && c.dx === undefined && c.dy === undefined && c.vx === undefined && c.vy === undefined ? "create" : null;
+  }
+  if ("gameOver" in a) return a.gameOver === "won" ? "win" : "lose";
+  if ("restartRoom" in a) return "restartRoom";
+  if ("sound" in a) return "sound";
+  return null;
+}
+
+/** True when every part of the rule is something these menus offer. */
+export function editableRule(r: KitRule): boolean {
+  if (!triggerKind(r)) return false;
+  if ((r.if ?? []).some((c) => !isCounterValue(c.a) || typeof c.b !== "number" || c.a.counter === SCORE)) return false;
+  return r.then.every((a) => actionKind(a) !== null);
+}
 
 /** The things a rule's actions can point at: both when two touch, one when a single thing triggers it. */
-const whoChoices = (w: KitTrigger): Who[] => ("touch" in w ? ["first", "second"] : ruleThing(w, "first") ? ["first"] : []);
-
-const actionWho = (a: KitAction): Who | null => ("remove" in a ? a.remove : "respawn" in a ? a.respawn : "turn" in a ? a.turn.who : null);
+const whoChoices = (w: KitTrigger, g: KitGame): Who[] => ("touch" in w ? ["it", "other"] : thingOf(w, "it", g) ? ["it"] : []);
+/** The kind a rule's "it" or "other" is (fire: the player). */
+function thingOf(w: KitTrigger, who: Who, g: KitGame): string | null {
+  if ("button" in w) return who === "it" ? (g.types.find(isPlayer)?.id ?? null) : null;
+  if ("test" in w && who === "it") return null;
+  return triggerThing(w, who);
+}
 
 /** Kinds of thing that can change into other kinds (never the player). */
 const turnable = (g: KitGame) => g.types.filter((t) => !isPlayer(t)).map((t) => t.id);
 const playerId = (g: KitGame, id: string | null) => !!id && g.types.some((t) => t.id === id && isPlayer(t));
 
-function defaultTrigger(kind: TriggerKind, g: KitGame, from: KitTrigger): KitTrigger {
-  const first = ruleThing(from, "first") ?? ("allGone" in from ? from.allGone : null) ?? g.types[0]!.id;
+function defaultTrigger(kind: TriggerKind, g: KitGame, from: KitRule): Pick<KitRule, "when" | "fires"> {
+  const first = thingOf(from.when, "it", g) ?? ("test" in from.when && isCountValue(from.when.test.a) ? from.when.test.a.count : null) ?? g.types[0]!.id;
   const second = g.types.find((t) => t.id !== first)?.id ?? first;
   switch (kind) {
     case "touch":
-      return { touch: [first, second] };
+      return { when: { touch: [first, second] } };
     case "allGone":
-      return { allGone: first };
+      return { when: { test: { a: { count: first }, op: "eq", b: 0 } } };
     case "reachesBottom":
-      return { reachesBottom: first };
+      return { when: { edge: [first, "bottom"] }, fires: "while" };
+    case "leaves":
+      return { when: { leaves: first } };
     case "onHazard":
     case "onGoal":
       // Usually the player stepping on spikes or reaching the goal.
-      return { onTile: [g.types.find(isPlayer)?.id ?? first, kind === "onHazard" ? "hazard" : "goal"] };
+      return { when: { onTile: [g.types.find(isPlayer)?.id ?? first, kind === "onHazard" ? "hazard" : "goal"] } };
+    case "fire":
+      return { when: { button: { joy: 1, button: 1 } } };
     case "timer":
-      return { timer: 30 };
+      return { when: { after: 30 } };
     case "every":
-      return { every: 10 };
+      return { when: { every: 10 } };
     case "reaches":
-      return { reaches: [g.counters[0]?.id ?? LEVEL, 3] };
+    case "counterIs":
+      return {
+        when: { test: { a: { counter: g.counters.find((c) => c.id !== "lives")?.id ?? g.counters[0]?.id ?? LEVEL }, op: kind === "reaches" ? "gte" : "eq", b: kind === "reaches" ? 3 : 0 } },
+      };
+    case "roomStart":
+      return { when: { roomStart: true } };
   }
 }
 
@@ -116,52 +205,74 @@ const turnTarget = (g: KitGame, from: string | null, prefer?: string) => {
 
 /** Who a "turn" action can change: a thing in the rule that isn't the player and has something to become. */
 const turnWho = (g: KitGame, w: KitTrigger): Who | null => {
-  const ok = whoChoices(w).filter((who) => {
-    const from = ruleThing(w, who);
+  const ok = whoChoices(w, g).filter((who) => {
+    const from = thingOf(w, who, g);
     return !playerId(g, from) && turnTarget(g, from) !== null;
   });
-  return ok.includes("second") ? "second" : (ok[0] ?? null);
+  return ok.includes("other") ? "other" : (ok[0] ?? null);
 };
 
-function defaultAction(kind: ActionKind, w: KitTrigger, g: KitGame): KitAction {
-  const counter = g.counters[0]?.id ?? "";
+const counterIds = (g: KitGame) => g.counters.map((c) => c.id);
+
+function defaultActions(kind: ActionKind, w: KitTrigger, g: KitGame): KitAction[] {
+  const counter = g.counters.find((c) => c.id !== "lives")?.id ?? g.counters[0]?.id ?? "";
+  const a = (x: Record<string, unknown>) => [act(g, x)];
   switch (kind) {
     case "remove":
-      return { remove: "touch" in w ? "second" : "first" };
+      return a({ destroy: "touch" in w ? "other" : "it" });
     case "respawn":
-      return { respawn: "touch" in w ? "second" : "first" };
+      return a({ toStart: "touch" in w ? "other" : "it" });
+    case "respawnAll":
+      return a({ toStart: { every: g.types.find(isPlayer)?.id ?? g.types[0]!.id } });
     case "score":
-      return { score: 10 };
+      return a({ add: { what: { counter: SCORE }, by: 10 } });
     case "sound":
-      return { sound: SOUND_LIBRARY[0]!.id };
+      return a({ sound: SOUND_LIBRARY[0]!.id });
     case "add":
-      return { add: [counter, 1] };
+      return a({ add: { what: { counter }, by: 1 } });
     case "take":
-      return { take: [counter, 1] };
+      return a({ take: { what: { counter }, by: 1 } });
     case "set":
-      return { set: [counter, 0] };
+      return a({ set: { what: { counter }, to: 0 } });
     case "turn": {
-      const who = turnWho(g, w) ?? "first";
-      return { turn: { who, into: turnTarget(g, ruleThing(w, who))! } };
+      const who = turnWho(g, w) ?? "it";
+      return a({ turn: { who, into: turnTarget(g, thingOf(w, who, g))! } });
     }
     case "turnAll": {
       const type = turnable(g)[0]!;
-      return { turnAll: { type, into: turnTarget(g, type)! } };
+      return a({ turn: { who: { every: type }, into: turnTarget(g, type)! } });
     }
-    default:
-      return { [kind]: true } as KitAction;
+    case "protect":
+      return a({ protect: { who: whoChoices(w, g)[0] ?? { every: g.types.find(isPlayer)?.id ?? g.types[0]!.id }, tenths: 15 } });
+    case "create": {
+      const at = whoChoices(w, g)[0];
+      const type = g.types.find((t) => t.id !== thingOf(w, at ?? "it", g))?.id ?? g.types[0]!.id;
+      return a({ create: { type, at: at ?? "it", place: "above" } });
+    }
+    case "loseLife":
+      return loseLife(g);
+    case "nextLevel":
+      return nextLevel(g);
+    case "win":
+      return a({ gameOver: "won" });
+    case "lose":
+      return a({ gameOver: "lost" });
+    case "restartRoom":
+      return a({ restartRoom: true });
   }
 }
 
 /** Actions that make sense for a trigger in this game (`keep` is always offered, so a select never loses its value). */
-function actionKinds(w: KitTrigger, g: KitGame, keep?: ActionKind): ActionKind[] {
-  const thing = whoChoices(w).length > 0;
+function actionKinds(w: KitTrigger, g: KitGame, keep?: ActionKind | null): ActionKind[] {
+  const thing = whoChoices(w, g).length > 0;
+  const counters = counterIds(g).length > 0;
   return (Object.keys(ACTION_LABELS) as ActionKind[]).filter((k) => {
     if (k === keep) return true;
-    if (k === "remove" || k === "respawn") return thing;
-    if (k === "add" || k === "take" || k === "set") return g.counters.length > 0;
+    if (k === "remove" || k === "respawn" || k === "create") return thing;
+    if (k === "add" || k === "take" || k === "set") return counters;
     if (k === "turn") return turnWho(g, w) !== null;
     if (k === "turnAll") return turnable(g).length > 1;
+    if (k === "loseLife") return g.counters.some((c) => c.id === "lives");
     return true;
   });
 }
@@ -169,9 +280,9 @@ function actionKinds(w: KitTrigger, g: KitGame, keep?: ActionKind): ActionKind[]
 /** After the trigger changes: drops actions about things the rule no longer has. */
 function fitActions(r: KitRule, g: KitGame) {
   r.then = r.then.filter((a) => {
-    const who = actionWho(a);
-    if (!who) return true;
-    const thing = ruleThing(r.when, who);
+    const who = "destroy" in a ? a.destroy : "toStart" in a ? a.toStart : "turn" in a ? a.turn.who : "protect" in a ? a.protect.who : "create" in a ? a.create.at : null;
+    if (who === null || !isWho(who as KitTarget)) return true;
+    const thing = thingOf(r.when, who as Who, g);
     if (!thing) return false;
     if (!("turn" in a)) return true;
     const into = turnTarget(g, thing, a.turn.into);
@@ -179,7 +290,7 @@ function fitActions(r: KitRule, g: KitGame) {
     a.turn.into = into;
     return true;
   });
-  if (r.then.length === 0) r.then = [{ score: 10 }];
+  if (r.then.length === 0) r.then = [act(g, { add: { what: { counter: SCORE }, by: 10 } })];
 }
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(v)));
@@ -204,17 +315,9 @@ export function KitRulesPanel() {
   });
 
   const name = (id: string) => game.types.find((t) => t.id === id)?.label ?? id;
-  const counterName = (id: string) => (id === LEVEL ? "the level" : (game.counters.find((c) => c.id === id)?.label ?? id));
-  const setRule = (i: number, recipe: (r: KitRule) => void, key?: string) => edit((d) => recipe(d.rules[i]!), key);
-  const setAction = <K extends ActionKind>(i: number, j: number, kind: K, recipe: (a: Extract<KitAction, Record<K, unknown>>) => void, key?: string) =>
-    setRule(
-      i,
-      (r) => {
-        const a = r.then[j]!;
-        if (kind in a) recipe(a as Extract<KitAction, Record<K, unknown>>);
-      },
-      key,
-    );
+  const counterName = (id: string) => (id === LEVEL && !game.counters.some((c) => c.id === LEVEL) ? "the level" : (game.counters.find((c) => c.id === id)?.label ?? id));
+  const setRule = (i: number, recipe: (r: KitRule, d: KitGame) => void, key?: string) => edit((d) => recipe(d.rules[i]!, d), key);
+  const setAction = (i: number, j: number, recipe: (a: KitAction) => void, key?: string) => setRule(i, (r) => recipe(r.then[j]!), key);
 
   const move = (from: number, to: number, focus: boolean) => {
     if (to < 0 || to >= game.rules.length || from === to) return;
@@ -236,14 +339,15 @@ export function KitRulesPanel() {
     );
   };
 
-  const counterSelect = (value: string, label: string, withLevel: boolean, onChange: (id: string) => void) => (
+  const counterSelect = (value: string, label: string, withSeconds: boolean, onChange: (id: string) => void) => (
     <select aria-label={label} className="fit" style={fit(counterName(value))} value={value} onChange={(e) => onChange(e.target.value)}>
       {game.counters.map((c) => (
         <option key={c.id} value={c.id}>
           {c.label}
         </option>
       ))}
-      {(withLevel || value === LEVEL) && <option value={LEVEL}>the level</option>}
+      {!game.counters.some((c) => c.id === value) && <option value={value}>{counterName(value)}</option>}
+      {withSeconds && value !== "seconds" && <option value="seconds">the seconds</option>}
     </select>
   );
 
@@ -346,13 +450,15 @@ export function KitRulesPanel() {
 
           if (!editableRule(rule)) {
             return (
-              <li key={i} className={liClass} {...dropProps}>
+              <li key={rule.id} className={liClass} {...dropProps}>
                 <div className="rule-row">
                   {handle}
                   <p className="rule-sentence readonly">{ruleSentence(rule, game)}</p>
                 </div>
                 <div className="rule-tools">
-                  <span className="muted small">This rule came from a newer Cartridge Studio, so it can't be changed here. It still works in the game.</span>
+                  <span className="muted small">
+                    This rule uses words the rule editor can't change yet (coming soon). It works in the game, and you can move or delete it.
+                  </span>
                   <span className="spacer" />
                   <button type="button" className="link danger" onClick={() => deleteRule(i)}>
                     Delete rule {n}
@@ -363,13 +469,13 @@ export function KitRulesPanel() {
           }
 
           const w = rule.when;
-          const kind = triggerKind(w);
+          const kind = triggerKind(rule)!;
           const conditions = rule.if ?? [];
           const whoLabel = (who: Who) => {
-            const thing = ruleThing(w, who);
+            const thing = thingOf(w, who, game);
             return thing ? `the ${name(thing)}` : "the thing";
           };
-          const whoSelect = (value: Who, label: string, onChange: (who: Who) => void, choices = whoChoices(w)) => (
+          const whoSelect = (value: Who, label: string, onChange: (who: Who) => void, choices = whoChoices(w, game)) => (
             <select aria-label={label} className="fit" style={fit(whoLabel(value))} value={value} onChange={(e) => onChange(e.target.value as Who)}>
               {(choices.includes(value) ? choices : [value, ...choices]).map((who) => (
                 <option key={who} value={who}>
@@ -378,11 +484,31 @@ export function KitRulesPanel() {
               ))}
             </select>
           );
+          /** "the Ship", "the Rock" or "every Cat". */
+          const targetSelect = (value: Who | { every: string }, label: string, onChange: (t: Who | { every: string }) => void) => {
+            const key = typeof value === "string" ? value : `every:${value.every}`;
+            const options: [string, string][] = [...whoChoices(w, game).map((who): [string, string] => [who, whoLabel(who)]), ...game.types.map((t): [string, string] => [`every:${t.id}`, `every ${t.label}`])];
+            return (
+              <select
+                aria-label={label}
+                className="fit"
+                style={fit(options.find(([k]) => k === key)?.[1] ?? "")}
+                value={key}
+                onChange={(e) => onChange(e.target.value.startsWith("every:") ? { every: e.target.value.slice(6) } : (e.target.value as Who))}
+              >
+                {options.map(([k, l]) => (
+                  <option key={k} value={k}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            );
+          };
           const seconds = (value: number | undefined, label: string, set: (s: number | undefined) => void) =>
             value ? (
               <>
                 <span className="kw">for</span>
-                {numInput(value, `${label} seconds`, 1, 60, set)}
+                {numInput(value, `${label} seconds`, 1, 25, set)}
                 <span className="kw">seconds</span>
                 <button type="button" className="icon" aria-label={`${label}: for good`} title="Keep it changed for good" onClick={() => set(undefined)}>
                   ×
@@ -393,33 +519,42 @@ export function KitRulesPanel() {
                 + for some seconds
               </button>
             );
+          const firstThing = ONE_THING.includes(kind) ? thingOf(w, "it", game) ?? ("test" in w && isCountValue(w.test.a) ? w.test.a.count : null) : null;
+          const setFirstThing = (id: string) =>
+            setRule(i, (r, d) => {
+              const x = r.when;
+              if ("test" in x && isCountValue(x.test.a)) x.test.a.count = id;
+              if ("edge" in x) x.edge[0] = id;
+              if ("leaves" in x) x.leaves = id;
+              if ("onTile" in x) x.onTile[0] = id;
+              fitActions(r, d);
+            });
 
           return (
-            <li key={i} className={liClass} {...dropProps}>
+            <li key={rule.id} className={liClass} {...dropProps}>
               <div className="rule-row">
                 {handle}
                 <p className="rule-sentence">
                   <span className="kw">When</span>
-                  {"touch" in w &&
-                    thingSelect(w.touch[0], `Rule ${n} first thing`, (id) => setRule(i, (r) => ("touch" in r.when && (r.when.touch[0] = id), fitActions(r, game))))}
-                  {"allGone" in w && thingSelect(w.allGone, `Rule ${n} thing`, (id) => setRule(i, (r) => void ("allGone" in r.when && (r.when.allGone = id))))}
-                  {"reachesBottom" in w &&
-                    thingSelect(w.reachesBottom, `Rule ${n} thing`, (id) => setRule(i, (r) => ("reachesBottom" in r.when && (r.when.reachesBottom = id), fitActions(r, game))))}
-                  {"onTile" in w &&
-                    thingSelect(w.onTile[0], `Rule ${n} thing`, (id) => setRule(i, (r) => ("onTile" in r.when && (r.when.onTile[0] = id), fitActions(r, game))))}
-                  {"timer" in w &&
-                    numInput(w.timer, `Rule ${n} seconds`, 1, 99, (v) => setRule(i, (r) => void ("timer" in r.when && (r.when.timer = v)), `timer:${i}`))}
-                  {"reaches" in w &&
-                    counterSelect(w.reaches[0], `Rule ${n} counter`, true, (id) => setRule(i, (r) => void ("reaches" in r.when && (r.when.reaches[0] = id))))}
+                  {"touch" in w && thingSelect(w.touch[0], `Rule ${n} first thing`, (id) => setRule(i, (r, d) => ("touch" in r.when && (r.when.touch[0] = id), fitActions(r, d))))}
+                  {firstThing && thingSelect(firstThing, `Rule ${n} thing`, setFirstThing)}
+                  {"after" in w && numInput(w.after, `Rule ${n} seconds`, 1, 99, (v) => setRule(i, (r) => void ("after" in r.when && (r.when.after = v)), `timer:${rule.id}`))}
+                  {(kind === "reaches" || kind === "counterIs") &&
+                    "test" in w &&
+                    isCounterValue(w.test.a) &&
+                    counterSelect(w.test.a.counter, `Rule ${n} counter`, false, (id) => setRule(i, (r) => void ("test" in r.when && (r.when.test.a = { counter: id }))))}
                   <select
                     aria-label={`Rule ${n} trigger`}
                     className="fit"
                     style={fit(TRIGGERS.find((t) => t.kind === kind)!.label)}
                     value={kind}
                     onChange={(e) =>
-                      setRule(i, (r) => {
-                        r.when = defaultTrigger(e.target.value as TriggerKind, game, r.when);
-                        fitActions(r, game);
+                      setRule(i, (r, d) => {
+                        const next = defaultTrigger(e.target.value as TriggerKind, d, r);
+                        r.when = next.when;
+                        if (next.fires) r.fires = next.fires;
+                        else delete r.fires;
+                        fitActions(r, d);
                       })
                     }
                   >
@@ -429,26 +564,42 @@ export function KitRulesPanel() {
                       </option>
                     ))}
                   </select>
-                  {"touch" in w &&
-                    thingSelect(w.touch[1], `Rule ${n} second thing`, (id) => setRule(i, (r) => ("touch" in r.when && (r.when.touch[1] = id), fitActions(r, game))))}
+                  {"touch" in w && thingSelect(w.touch[1], `Rule ${n} second thing`, (id) => setRule(i, (r, d) => ("touch" in r.when && (r.when.touch[1] = id), fitActions(r, d))))}
                   {"every" in w && (
                     <>
-                      {numInput(w.every, `Rule ${n} seconds`, 1, 60, (v) => setRule(i, (r) => void ("every" in r.when && (r.when.every = v)), `every:${i}`))}
+                      {numInput(w.every, `Rule ${n} seconds`, 1, 60, (v) => setRule(i, (r) => void ("every" in r.when && (r.when.every = v)), `every:${rule.id}`))}
                       <span className="kw">seconds</span>
                     </>
                   )}
-                  {"reaches" in w &&
-                    numInput(w.reaches[1], `Rule ${n} target`, 0, 99, (v) => setRule(i, (r) => void ("reaches" in r.when && (r.when.reaches[1] = v)), `reaches:${i}`))}
+                  {kind === "counterIs" && "test" in w && (
+                    <select
+                      aria-label={`Rule ${n} test`}
+                      className="fit"
+                      style={fit(OPS.find((o) => o.op === w.test.op)!.label)}
+                      value={w.test.op}
+                      onChange={(e) => setRule(i, (r) => void ("test" in r.when && (r.when.test.op = e.target.value as Op)))}
+                    >
+                      {OPS.filter((o) => o.op !== "gte").map((o) => (
+                        <option key={o.op} value={o.op}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {(kind === "reaches" || kind === "counterIs") &&
+                    "test" in w &&
+                    typeof w.test.b === "number" &&
+                    numInput(w.test.b, `Rule ${n} target`, 0, 99, (v) => setRule(i, (r) => void ("test" in r.when && (r.when.test.b = v)), `reaches:${rule.id}`))}
                   {conditions.map((c, k) => (
                     <span key={k} className="rule-action">
                       <span className="kw">{k === 0 ? ", only if" : "and"}</span>
-                      {counterSelect(c.counter, `Rule ${n} condition ${k + 1} counter`, true, (id) => setRule(i, (r) => void (r.if![k]!.counter = id)))}
+                      {isCounterValue(c.a) && counterSelect(c.a.counter, `Rule ${n} condition ${k + 1} counter`, true, (id) => setRule(i, (r) => void (r.if![k]!.a = { counter: id })))}
                       <select
                         aria-label={`Rule ${n} condition ${k + 1} test`}
                         className="fit"
                         style={fit(OPS.find((o) => o.op === c.op)!.label)}
                         value={c.op}
-                        onChange={(e) => setRule(i, (r) => void (r.if![k]!.op = e.target.value as KitCondition["op"]))}
+                        onChange={(e) => setRule(i, (r) => void (r.if![k]!.op = e.target.value as Op))}
                       >
                         {OPS.map((o) => (
                           <option key={o.op} value={o.op}>
@@ -456,7 +607,8 @@ export function KitRulesPanel() {
                           </option>
                         ))}
                       </select>
-                      {numInput(c.value, `Rule ${n} condition ${k + 1} value`, 0, 99, (v) => setRule(i, (r) => void (r.if![k]!.value = v), `if:${i}:${k}`))}
+                      {typeof c.b === "number" &&
+                        numInput(c.b, `Rule ${n} condition ${k + 1} value`, 0, 99, (v) => setRule(i, (r) => void (r.if![k]!.b = v), `if:${rule.id}:${k}`))}
                       <button
                         type="button"
                         className="icon"
@@ -475,114 +627,137 @@ export function KitRulesPanel() {
                   ))}
                   <span className="kw">,</span>
                   {rule.then.map((action, j) => {
-                    const ak = actionKind(action);
+                    const ak = actionKind(action)!;
                     const label = `Rule ${n} action ${j + 1}`;
                     return (
-                      <span key={j} className="rule-action">
+                      <span key={action.id} className="rule-action">
                         {j > 0 && <span className="kw">and</span>}
                         <select
                           aria-label={label}
                           className="fit"
                           style={fit(ACTION_LABELS[ak])}
                           value={ak}
-                          onChange={(e) => setRule(i, (r) => void (r.then[j] = defaultAction(e.target.value as ActionKind, r.when, game)))}
+                          onChange={(e) => setRule(i, (r, d) => void r.then.splice(j, 1, ...defaultActions(e.target.value as ActionKind, r.when, d)))}
                         >
-                          {actionKinds(w, game, ak).map((k) => (
-                            <option key={k} value={k}>
-                              {ACTION_LABELS[k]}
-                            </option>
-                          ))}
+                          {actionKinds(w, game, ak)
+                            .filter((k) => k === ak || !GROUPS.includes(k) || rule.then.length < 10)
+                            .map((k) => (
+                              <option key={k} value={k}>
+                                {ACTION_LABELS[k]}
+                              </option>
+                            ))}
                         </select>
-                        {"remove" in action &&
-                          whoSelect(action.remove, `${label} which`, (who) => setAction(i, j, "remove", (a) => void (a.remove = who)))}
-                        {"respawn" in action &&
-                          whoSelect(action.respawn, `${label} which`, (who) => setAction(i, j, "respawn", (a) => void (a.respawn = who)))}
-                        {"score" in action && (
+                        {"destroy" in action && isWho(action.destroy) && whoSelect(action.destroy, `${label} which`, (who) => setAction(i, j, (a) => void ("destroy" in a && (a.destroy = who))))}
+                        {"toStart" in action && isWho(action.toStart) && whoSelect(action.toStart, `${label} which`, (who) => setAction(i, j, (a) => void ("toStart" in a && (a.toStart = who))))}
+                        {"toStart" in action && isEvery(action.toStart) && thingSelect(action.toStart.every, `${label} which`, (id) => setAction(i, j, (a) => void ("toStart" in a && (a.toStart = { every: id }))))}
+                        {ak === "score" && "add" in action && typeof action.add.by === "number" && (
                           <select
                             aria-label={`${label} points`}
                             className="fit"
-                            style={fit(String(action.score))}
-                            value={action.score}
-                            onChange={(e) => setAction(i, j, "score", (a) => void (a.score = Number(e.target.value)))}
+                            style={fit(String(action.add.by))}
+                            value={action.add.by}
+                            onChange={(e) => setAction(i, j, (a) => void ("add" in a && (a.add.by = Number(e.target.value))))}
                           >
-                            {(POINTS.includes(action.score) ? POINTS : [...POINTS, action.score].sort((a, b) => a - b)).map((p) => (
+                            {(POINTS.includes(action.add.by) ? POINTS : [...POINTS, action.add.by].sort((a, b) => a - b)).map((p) => (
                               <option key={p} value={p}>
                                 {p}
                               </option>
                             ))}
                           </select>
                         )}
-                        {"add" in action && (
+                        {ak === "add" && "add" in action && "counter" in action.add.what && typeof action.add.by === "number" && (
                           <>
-                            {numInput(action.add[1], `${label} amount`, 1, 99, (v) => setAction(i, j, "add", (a) => void (a.add[1] = v), `act:${i}:${j}`))}
+                            {numInput(action.add.by, `${label} amount`, 1, 99, (v) => setAction(i, j, (a) => void ("add" in a && (a.add.by = v)), `act:${action.id}`))}
                             <span className="kw">to</span>
-                            {counterSelect(action.add[0], `${label} counter`, false, (id) => setAction(i, j, "add", (a) => void (a.add[0] = id)))}
+                            {counterSelect(action.add.what.counter, `${label} counter`, false, (id) => setAction(i, j, (a) => void ("add" in a && (a.add.what = { counter: id }))))}
                           </>
                         )}
-                        {"take" in action && (
+                        {ak === "take" && "take" in action && "counter" in action.take.what && typeof action.take.by === "number" && (
                           <>
-                            {numInput(action.take[1], `${label} amount`, 1, 99, (v) => setAction(i, j, "take", (a) => void (a.take[1] = v), `act:${i}:${j}`))}
+                            {numInput(action.take.by, `${label} amount`, 1, 99, (v) => setAction(i, j, (a) => void ("take" in a && (a.take.by = v)), `act:${action.id}`))}
                             <span className="kw">from</span>
-                            {counterSelect(action.take[0], `${label} counter`, false, (id) => setAction(i, j, "take", (a) => void (a.take[0] = id)))}
+                            {counterSelect(action.take.what.counter, `${label} counter`, false, (id) => setAction(i, j, (a) => void ("take" in a && (a.take.what = { counter: id }))))}
                           </>
                         )}
-                        {"set" in action && (
+                        {ak === "set" && "set" in action && "counter" in action.set.what && typeof action.set.to === "number" && (
                           <>
-                            {counterSelect(action.set[0], `${label} counter`, false, (id) => setAction(i, j, "set", (a) => void (a.set[0] = id)))}
+                            {counterSelect(action.set.what.counter, `${label} counter`, false, (id) => setAction(i, j, (a) => void ("set" in a && (a.set.what = { counter: id }))))}
                             <span className="kw">to</span>
-                            {numInput(action.set[1], `${label} amount`, 0, 99, (v) => setAction(i, j, "set", (a) => void (a.set[1] = v), `act:${i}:${j}`))}
+                            {numInput(action.set.to, `${label} amount`, 0, 99, (v) => setAction(i, j, (a) => void ("set" in a && (a.set.to = v)), `act:${action.id}`))}
                           </>
                         )}
-                        {"turn" in action && (
+                        {"turn" in action && isWho(action.turn.who) && (
                           <>
                             {whoSelect(
                               action.turn.who,
                               `${label} which`,
                               (who) =>
-                                setAction(i, j, "turn", (a) => {
+                                setAction(i, j, (a) => {
+                                  if (!("turn" in a)) return;
                                   a.turn.who = who;
-                                  a.turn.into = turnTarget(game, ruleThing(w, who), a.turn.into) ?? a.turn.into;
+                                  a.turn.into = turnTarget(game, thingOf(w, who, game), a.turn.into) ?? a.turn.into;
                                 }),
-                              whoChoices(w).filter((who) => !playerId(game, ruleThing(w, who))),
+                              whoChoices(w, game).filter((who) => !playerId(game, thingOf(w, who, game))),
                             )}
                             <span className="kw">into a</span>
                             {thingSelect(
                               action.turn.into,
                               `${label} into`,
-                              (id) => setAction(i, j, "turn", (a) => void (a.turn.into = id)),
-                              turnable(game).filter((id) => id !== ruleThing(w, action.turn.who)),
-                            )}
-                            {seconds(
-                              action.turn.seconds,
-                              label,
-                              (s) => setAction(i, j, "turn", (a) => (s ? (a.turn.seconds = s) : delete a.turn.seconds), `secs:${i}:${j}`),
+                              (id) => setAction(i, j, (a) => void ("turn" in a && (a.turn.into = id))),
+                              turnable(game).filter((id) => id !== thingOf(w, action.turn.who as Who, game)),
                             )}
                           </>
                         )}
-                        {"turnAll" in action && (
+                        {"turn" in action && isEvery(action.turn.who) && (
                           <>
                             {thingSelect(
-                              action.turnAll.type,
+                              action.turn.who.every,
                               `${label} which`,
                               (id) =>
-                                setAction(i, j, "turnAll", (a) => {
-                                  a.turnAll.type = id;
-                                  a.turnAll.into = turnTarget(game, id, a.turnAll.into) ?? a.turnAll.into;
+                                setAction(i, j, (a) => {
+                                  if (!("turn" in a)) return;
+                                  a.turn.who = { every: id };
+                                  a.turn.into = turnTarget(game, id, a.turn.into) ?? a.turn.into;
                                 }),
                               turnable(game),
                             )}
                             <span className="kw">into a</span>
                             {thingSelect(
-                              action.turnAll.into,
+                              action.turn.into,
                               `${label} into`,
-                              (id) => setAction(i, j, "turnAll", (a) => void (a.turnAll.into = id)),
-                              turnable(game).filter((id) => id !== action.turnAll.type),
+                              (id) => setAction(i, j, (a) => void ("turn" in a && (a.turn.into = id))),
+                              turnable(game).filter((id) => id !== (action.turn.who as { every: string }).every),
                             )}
-                            {seconds(
-                              action.turnAll.seconds,
-                              label,
-                              (s) => setAction(i, j, "turnAll", (a) => (s ? (a.turnAll.seconds = s) : delete a.turnAll.seconds), `secs:${i}:${j}`),
-                            )}
+                          </>
+                        )}
+                        {"turn" in action &&
+                          seconds(action.turn.seconds, label, (s) => setAction(i, j, (a) => void ("turn" in a && (s ? (a.turn.seconds = s) : delete a.turn.seconds)), `secs:${action.id}`))}
+                        {"protect" in action && (isWho(action.protect.who) || isEvery(action.protect.who)) && (
+                          <>
+                            {targetSelect(action.protect.who, `${label} which`, (t) => setAction(i, j, (a) => void ("protect" in a && (a.protect.who = t))))}
+                            <span className="kw">for</span>
+                            {numInput(action.protect.tenths, `${label} tenths`, 1, 255, (v) => setAction(i, j, (a) => void ("protect" in a && (a.protect.tenths = v)), `act:${action.id}`))}
+                            <span className="kw">tenths of a second</span>
+                          </>
+                        )}
+                        {"create" in action && isWho(action.create.at as KitTarget) && (
+                          <>
+                            <span className="kw">a</span>
+                            {thingSelect(action.create.type, `${label} what`, (id) => setAction(i, j, (a) => void ("create" in a && (a.create.type = id))))}
+                            <select
+                              aria-label={`${label} where`}
+                              className="fit"
+                              style={fit(PLACES.find((p) => p.place === action.create.place)?.label ?? "")}
+                              value={action.create.place}
+                              onChange={(e) => setAction(i, j, (a) => void ("create" in a && (a.create.place = e.target.value as (typeof PLACES)[number]["place"])))}
+                            >
+                              {PLACES.map((p) => (
+                                <option key={p.place} value={p.place}>
+                                  {p.label}
+                                </option>
+                              ))}
+                            </select>
+                            {whoSelect(action.create.at as Who, `${label} which`, (who) => setAction(i, j, (a) => void ("create" in a && (a.create.at = who))))}
                           </>
                         )}
                         {"sound" in action && (
@@ -591,7 +766,7 @@ export function KitRulesPanel() {
                             className="fit"
                             style={fit(SOUND_LIBRARY.find((x) => x.id === action.sound)?.label ?? "")}
                             value={action.sound}
-                            onChange={(e) => setAction(i, j, "sound", (a) => void (a.sound = e.target.value))}
+                            onChange={(e) => setAction(i, j, (a) => void ("sound" in a && (a.sound = e.target.value)))}
                           >
                             {SOUND_LIBRARY.map((s) => (
                               <option key={s.id} value={s.id}>
@@ -618,16 +793,18 @@ export function KitRulesPanel() {
                 </p>
               </div>
               <div className="rule-tools">
-                {rule.then.length < 6 && (
-                  <button type="button" className="link" onClick={() => setRule(i, (r) => void r.then.push({ score: 10 }))}>
+                {rule.then.length < 12 && (
+                  <button type="button" className="link" onClick={() => setRule(i, (r, d) => void r.then.push(act(d, { add: { what: { counter: SCORE }, by: 10 } })))}>
                     + another action
                   </button>
                 )}
-                {conditions.length < 2 && (
+                {conditions.length < 3 && (
                   <button
                     type="button"
                     className="link"
-                    onClick={() => setRule(i, (r) => void (r.if ??= []).push({ counter: game.counters[0]?.id ?? LEVEL, op: "gte", value: 1 }))}
+                    onClick={() =>
+                      setRule(i, (r, d) => void (r.if ??= []).push({ a: { counter: d.counters.find((c) => c.id !== "lives")?.id ?? d.counters[0]?.id ?? "seconds" }, op: "gte", b: 1 }))
+                    }
                   >
                     {conditions.length ? "+ and only if" : "+ only if"}
                   </button>
@@ -645,8 +822,14 @@ export function KitRulesPanel() {
         ref={addButton}
         type="button"
         className="secondary"
-        disabled={game.rules.length >= 16 || game.types.length === 0}
-        onClick={() => edit((d) => void d.rules.push({ when: defaultTrigger("touch", d, { allGone: d.types[0]!.id }), then: [{ score: 10 }] }))}
+        disabled={game.rules.length >= 24 || game.types.length === 0}
+        onClick={() =>
+          edit((d) => {
+            const first = d.types.find(isPlayer)?.id ?? d.types[0]!.id;
+            const second = d.types.find((t) => t.id !== first)?.id ?? first;
+            d.rules.push({ id: newId(d, "r"), when: { touch: [first, second] }, then: [act(d, { add: { what: { counter: SCORE }, by: 10 } })] });
+          })
+        }
       >
         Add rule
       </button>

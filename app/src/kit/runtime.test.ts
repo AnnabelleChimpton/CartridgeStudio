@@ -1,6 +1,10 @@
 // Kit runtime tests: one tiny game per behaviour or mechanism, run frame by
-// frame in the headless core. Placed things fill slots in type order (type 0
-// first), and launched things (shots, drops) use the slots after them.
+// frame in the headless core. Each kind of thing has its own slots, in kind
+// order (kind 0 first): what's placed, then room for what rules create.
+//
+// The first groups write kit v1 games (as saved before model v2) and run them
+// through the v1 → v2 migration, so they check the migration keeps each v1
+// behaviour. Later groups write v2 games and cover the new vocabulary.
 
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
@@ -8,8 +12,9 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { runRomOnHost, type Step, type WatchMap } from "../harness/behaviour.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import type { Behaviour, KitCounter, KitGame, KitMove, KitRule, KitType } from "./schema.ts";
+import type { Behaviour, KitCounterV1 as KitCounter, KitGameV1 as KitGame, KitRuleV1 as KitRule, KitTypeV1 as KitType } from "./schema-v1.ts";
 import type { KitOptions } from "./generate.ts";
+import { loadKit } from "./migrations.ts";
 import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
@@ -64,6 +69,13 @@ beforeAll(async () => {
 });
 
 async function run(g: KitGame, steps: Step[], watch: WatchMap = {}, opts: KitOptions = {}) {
+  const v2 = loadKit(g);
+  if (!v2.ok) throw new Error(v2.errors.join("\n"));
+  await runV2(v2.game, steps, watch, opts);
+}
+
+/** Runs a v2 game (as JSON, before defaults). */
+async function runV2(g: unknown, steps: Step[], watch: WatchMap = {}, opts: KitOptions = {}) {
   const rom = await buildKitRom(g, SOUND_LIBRARY, builder, false, opts);
   if (!rom.ok) throw new Error(rom.failure);
   const r = await runRomOnHost(host, rom.a78, rom.symbols, { ...KIT_WATCH, ...watch, ...slot(1), ...slot(2), ...slot(3) }, [...START, ...steps]);
@@ -155,7 +167,7 @@ describe("kit runtime behaviours", () => {
 
 describe("kit runtime: batch 1 (state)", () => {
   const counters = (...ids: string[]): KitCounter[] => ids.map((id) => ({ id, label: id, start: 0 }));
-  const CNT: WatchMap = { c0: { symbol: "cnt0" }, level: { symbol: "levelnum" } };
+  const CNT: WatchMap = { c0: { symbol: "cnt_keys" }, coins: { symbol: "cnt_coins" }, level: { symbol: "levelnum" } };
 
   it("counters and 'only if': a door opens only with a key", async () => {
     const rules: KitRule[] = [
@@ -178,7 +190,7 @@ describe("kit runtime: batch 1 (state)", () => {
     ];
     const g = { ...game(["", "", "", "", "P A A A"], [hero(), type("coin", "still")], rules), counters: counters("coins") };
     // The second coin wins, before the third is reached.
-    await run(g, [{ until: { state: 2 }, maxFrames: 120, steps: [{ hold: ["right"], frames: 1 }] }, { expect: { c0: 2, type3: 1 } }], CNT);
+    await run(g, [{ until: { state: 2 }, maxFrames: 120, steps: [{ hold: ["right"], frames: 1 }] }, { expect: { coins: 2, type3: 1 } }], CNT);
   });
 
   it("'turn into' for some seconds turns back by itself", async () => {
@@ -243,47 +255,6 @@ describe("kit runtime: batch 1 (state)", () => {
   });
 });
 
-const VELOCITY_MODES: [string, KitOptions][] = [
-  ["compiled", {}],
-  ["interpreted", { interpretVelocity: true }],
-  ["compiled, 8.8 fixed point", { fixed88: true }],
-];
-for (const [mode, opts] of VELOCITY_MODES) {
-  describe(`kit runtime: model v2 spike (velocity movement, ${mode})`, () => {
-    const VEL: WatchMap = { vx1: { symbol: "ovx", offset: 1 }, vy1: { symbol: "ovy", offset: 1 } };
-    /** How a velocity in quarter pixels reads in ovx/ovy: as is, or whole pixels in 8.8. */
-    const reads = (v: number) => (opts.fixed88 ? Math.floor(v / 4) : v) & 255;
-    const mover = (vx: number, vy: number, react: KitMove["react"]) => type("mover", "still", { move: { vx, vy, react } });
-    const walled = (row: string) => {
-      const w = ["####################", ...Array(9).fill("#                  #"), "####################"];
-      w[5] = row;
-      w[8] = "# P                #";
-      return w;
-    };
-
-    it("bounce: velocity flips at a wall, and fractions add up", async () => {
-      // 2 pixels a frame to the right; the wall at column 19 (x = 152) stops an 8-wide thing at x = 144.
-      const g = game(walled("#       A          #"), [hero(), mover(8, 0, "bounce")]);
-      await run(g, [{ until: { vx1: reads(-8) }, maxFrames: 120, steps: [{ frames: 1 }] }, { frames: 20 }, { expect: { x1: { lt: 120 }, y1: 96 } }], VEL, opts);
-      // A quarter pixel a frame: 10 pixels in 40 frames.
-      const slow = game(walled("#       A          #"), [hero(), mover(1, 0, "bounce")]);
-      await run(slow, [{ frames: 40 }, { expect: { x1: { gte: 72, lte: 76 } } }], VEL, opts);
-    });
-
-    it("stop, turn and destroy at a wall", async () => {
-      await run(game(walled("#       A          #"), [hero(), mover(8, 0, "stop")]), [{ frames: 60 }, { expect: { x1: 144, vx1: 0 } }], VEL, opts);
-      // A quarter turn clockwise: moving right becomes moving down.
-      await run(game(walled("#       A          #"), [hero(), mover(8, 0, "turn")]), [{ until: { vy1: reads(8) }, maxFrames: 120, steps: [{ frames: 1 }] }, { expect: { vx1: 0 } }], VEL, opts);
-      await run(game(walled("#       A          #"), [hero(), mover(-8, 0, "destroy")]), [{ until: { type1: 255 }, maxFrames: 120, steps: [{ frames: 1 }] }], VEL, opts);
-    });
-
-    it("wrap: leaving the right edge comes back at the left", async () => {
-      const g = game(["", "", "", "", "               A", "", "", "", "", "P"], [hero(), mover(8, 0, "wrap")]);
-      await run(g, [{ until: { x1: { gte: 150 } }, maxFrames: 120, steps: [{ frames: 1 }] }, { until: { x1: { lt: 16 } }, maxFrames: 20, steps: [{ frames: 1 }] }, { expect: { vx1: reads(8) } }], VEL, opts);
-    });
-  });
-}
-
 describe("kit runtime: fixes from the phase 2 audit", () => {
   it("a tile rule doesn't stop later event rules from firing (no border wall)", async () => {
     // The hero sits in column 0, where the tile lookup's column is 0; that used to clear the
@@ -295,16 +266,17 @@ describe("kit runtime: fixes from the phase 2 audit", () => {
     await run(game(["", "", "", "", "P"], [hero()], rules), [{ frames: 200 }, { expect: { score: 50 } }]);
   });
 
-  it("falling things come back in a column that fits, clear of walls", async () => {
-    // Only columns 15-19 of the top row are open; the rock starts in column 16.
-    const g = game(["###############", "                A", "", "", "", "", "", "", "", "P"], [hero(), type("rock", "fall", { speed: 4 })]);
+  it("falling things come back in a column that fits", async () => {
+    // Model v2: falling is a rule ("when it leaves the screen, set its x to a random column"), and
+    // a faller passes through walls, so it no longer avoids walled columns in the top row.
+    const g = game(["###############", "                A", "", "", "", "", "", "", "", "P"], [hero(), type("rock", "fall", { speed: 4, width: 16, frames: [box(16, 8)] })]);
     await run(g, [
       {
         repeat: 5,
         steps: [
           { until: { y1: { gte: 150 } }, maxFrames: 200, steps: [{ frames: 1 }] },
           { until: { y1: { lt: 40 } }, maxFrames: 200, steps: [{ frames: 1 }] },
-          { expect: { x1: { gte: 120, lte: 152 } } },
+          { expect: { x1: { lte: 144 } } },
         ],
       },
     ]);
@@ -317,5 +289,289 @@ describe("kit runtime: fixes from the phase 2 audit", () => {
     // The chip is in the last column (x = 152); as a 16-wide block it must move left to x = 144.
     const g = game(["", "", "", "", "P                  A"], [hero(), small, big], rules);
     await run(g, [{ until: { type1: 2 }, maxFrames: 200, steps: [{ hold: ["right"], frames: 1 }] }, { expect: { x1: 144 } }]);
+  });
+});
+
+// ---- kit model v2: the general vocabulary ----
+
+type V2Type = import("./schema.ts").KitGameInput["types"][number];
+type V2Rule = import("./schema.ts").KitRule;
+type V2Game = import("./schema.ts").KitGameInput;
+let ids = 0;
+/** A rule with fresh ids (actions without them get some). */
+const rule = (r: Omit<V2Rule, "id" | "then"> & { then: Record<string, unknown>[] }): V2Rule =>
+  ({ ...r, id: `r-t${++ids}`, then: r.then.map((a) => ({ id: `a-t${++ids}`, ...a })) }) as V2Rule;
+const thing = (id: string, extra: Partial<V2Type> = {}): V2Type => ({ id, label: id, width: 8, height: 8, frames: [box(8, 8)], palette: "p", ...extra });
+const player = (extra: Partial<V2Type> = {}) =>
+  thing("hero", { control: { joystick: 1, axes: "8way", mode: "direct", speed: { step: 3 } }, move: { wall: "slide", edge: "stop" }, ...extra });
+/** A v2 game from a picture of the room: `#` wall, `P` the first kind, `A`/`B`/`C` the next ones. */
+function v2(room: string[], types: V2Type[], rules: V2Rule[] = [], extra: Partial<V2Game> = {}): V2Game {
+  const rows = [...room, ...Array(11).fill("")].slice(0, 11).map((r) => r.padEnd(20, " "));
+  const legend: Record<string, string> = { "#": "wall", "~": "hazard", "*": "goal" };
+  "PABC".split("").forEach((ch, i) => types[i] && (legend[ch] = types[i]!.id));
+  return {
+    kit: 2,
+    title: "Test",
+    palettes: [{ id: "p", colors: ["$0F", "$46", "$86"] }],
+    background: "$00",
+    wallPalette: "p",
+    textPalette: "p",
+    types,
+    room: { rows, legend },
+    counters: [{ id: "lives", label: "Lives", start: 3 }],
+    rules,
+    text: { title: "T", win: "W", lose: "L" },
+    ...extra,
+  };
+}
+const walledRoom = (row: string, heroRow = "# P                #") => {
+  const w = ["####################", ...Array(9).fill("#                  #"), "####################"];
+  w[5] = row;
+  w[8] = heroRow;
+  return w;
+};
+const VEL: WatchMap = { vx1: { symbol: "ovx", offset: 1 }, vy1: { symbol: "ovy", offset: 1 }, vx0: { symbol: "ovx", offset: 0 }, vy0: { symbol: "ovy", offset: 0 } };
+
+describe("kit model v2: movement parts", () => {
+  it("velocity bounces at a wall, and 8.8 fractions add up", async () => {
+    // 2 pixels a frame (32 sixteenths) to the right; the wall at x = 152 stops an 8-wide thing at x = 144.
+    const fast = v2(walledRoom("#       A          #"), [player(), thing("ball", { move: { vx: 32, wall: "bounce", edge: "bounce" } })]);
+    await runV2(fast, [{ until: { vx1: 254 }, maxFrames: 120, steps: [{ frames: 1 }] }, { frames: 20 }, { expect: { x1: { lt: 120 }, y1: 96 } }], VEL);
+    // A sixteenth of a pixel a frame for 160 frames is 10 pixels (time-sliced or not).
+    const slow = v2(walledRoom("#       A          #"), [player(), thing("ball", { move: { vx: 1, wall: "bounce", edge: "bounce" } })]);
+    await runV2(slow, [{ frames: 160 }, { expect: { x1: { gte: 72, lte: 74 } } }], VEL);
+  });
+
+  it("stop, turn, slide and destroy at a wall; wrap and pass at an edge", async () => {
+    const mover = (move: object) => [player(), thing("m", { move: { wall: "stop", edge: "stop", ...move } })];
+    await runV2(v2(walledRoom("#       A          #"), mover({ vx: 32, wall: "stop" })), [{ frames: 60 }, { expect: { x1: 144, vx1: 0 } }], VEL);
+    // A quarter turn clockwise: moving right becomes moving down.
+    await runV2(v2(walledRoom("#       A          #"), mover({ vx: 32, wall: "turn" })), [{ until: { vy1: 2 }, maxFrames: 120, steps: [{ frames: 1 }] }, { expect: { vx1: 0 } }], VEL);
+    // Sliding stops only the blocked axis: it keeps falling along the wall.
+    await runV2(v2(walledRoom("#       A          #"), mover({ vx: 16, vy: 16, wall: "slide" })), [{ frames: 120 }, { expect: { x1: 144, y1: 168, vx1: 0 } }], VEL);
+    await runV2(v2(walledRoom("#       A          #"), mover({ vx: -32, wall: "destroy" })), [{ until: { type1: 255 }, maxFrames: 120, steps: [{ frames: 1 }] }]);
+    const open = ["", "", "", "", "               A", "", "", "", "", "P"];
+    await runV2(v2(open, mover({ vx: 32, edge: "wrap" })), [{ until: { x1: { gte: 150 } }, maxFrames: 120, steps: [{ frames: 1 }] }, { until: { x1: { lt: 16 } }, maxFrames: 20, steps: [{ frames: 1 }] }]);
+    // Passing with no rule to catch it: gone once it's wholly off the screen.
+    await runV2(v2(open, mover({ vx: 32, edge: "pass" })), [{ until: { type1: 255 }, maxFrames: 60, steps: [{ frames: 1 }] }, { expect: { x1: { gte: 160 } } }]);
+  });
+
+  it("steers toward the nearest of several, and away", async () => {
+    const chaser = thing("ghost", { steer: { toward: "coin", speed: { step: 3 } }, move: { wall: "slide", edge: "stop" } });
+    // Coins at x = 24 and x = 96; the ghost at x = 72 heads for the nearer one, on the right.
+    const g = v2(["", "", "", "", "P  B     A  B"], [player(), chaser, thing("coin")]);
+    await runV2(g, [{ frames: 40 }, { expect: { x1: 96 } }]);
+    const fleer = thing("mouse", { steer: { toward: "hero", away: true, speed: { step: 3 } }, move: { wall: "slide", edge: "stop" } });
+    await runV2(v2(["", "", "", "", "P  A"], [player(), fleer]), [{ frames: 60 }, { expect: { x1: { gte: 80 } } }]);
+  });
+
+  it("gravity pulls down to a top speed; a jump is a rule", async () => {
+    const jumper = player({
+      control: { joystick: 1, axes: "lr", mode: "direct", speed: { step: 3 } },
+      gravity: { amount: 4, max: 64 },
+      move: { wall: "slide", edge: "stop" },
+    });
+    const jump = rule({ when: { button: { joy: 1, button: 1 } }, if: [{ a: { contact: "bottom", of: "it" }, op: "eq", b: 1 }], then: [{ set: { what: { prop: "vy", of: "it" }, to: -48 } }] });
+    // The hero starts in the air above a floor (row 9 is wall): it lands at y = 160 - 8 = 152.
+    const room = ["", "   P", "", "", "", "", "", "", "", "####################"];
+    await runV2(v2(room, [jumper], [jump]), [
+      { until: { heroY: 152 }, maxFrames: 120, steps: [{ frames: 1 }] },
+      { frames: 10 },
+      { expect: { heroY: 152 } },
+      { hold: ["fire"], frames: 2 },
+      { frames: 8 },
+      { expect: { heroY: { lt: 140 } } },
+      { until: { heroY: 152 }, maxFrames: 120, steps: [{ frames: 1 }] },
+    ]);
+  });
+
+  it("'keep going' control keeps moving after the joystick is let go", async () => {
+    const snake = player({ control: { joystick: 1, axes: "4way", mode: "keep", speed: { step: 3 } } });
+    await runV2(v2(["", "", "", "", "P"], [snake]), [{ hold: ["right"], frames: 2 }, { frames: 40 }, { expect: { heroX: { gte: 40 } } }]);
+  });
+});
+
+describe("kit model v2: events", () => {
+  const CNT: WatchMap = { hits: { symbol: "cnt_hits" }, n: { symbol: "cnt_n" } };
+  const hits = [{ id: "lives", label: "Lives", start: 3 }, { id: "hits", label: "Hits", start: 0 }, { id: "n", label: "N", start: 0 }];
+
+  it("a thing that's removed can leave something where it was (destroyed, created)", async () => {
+    const rules = [
+      rule({ when: { touch: ["hero", "crate"] }, then: [{ destroy: "other" }] }),
+      rule({ when: { destroyed: "crate" }, then: [{ create: { type: "coin", at: "it" } }, { add: { what: { counter: "n" }, by: 1 } }] }),
+      rule({ when: { button: { joy: 1, button: 1 } }, then: [{ create: { type: "spark", at: "it" } }] }),
+      rule({ when: { created: "spark" }, then: [{ add: { what: { counter: "hits" }, by: 1 } }] }),
+    ];
+    // Slots: hero 0, crate 1, coin 2 and spark 3 (room for one of each created).
+    const g = v2(["", "", "", "", "P   A"], [player(), thing("crate"), thing("coin"), thing("spark")], rules, { counters: hits });
+    await runV2(g, [{ hold: ["right"], frames: 30 }, { frames: 2 }, { expect: { type1: 255, type2: 2, x2: 32, n: 1, hits: 0 } }, { hold: ["fire"], frames: 2 }, { expect: { type3: 3, hits: 1 } }], CNT);
+    // A rule run by a thing appearing or going can't set off another such rule (that could nest without end).
+    const nested = v2(["", "", "", "", "P   A"], [player(), thing("crate"), thing("coin")], [rules[0]!, rules[1]!, rule({ when: { created: "coin" }, then: [{ add: { what: { counter: SCORE_ID }, by: 10 } }] })]);
+    expect(await buildKitRom(nested, SOUND_LIBRARY, builder)).toMatchObject({ ok: false, failure: expect.stringContaining("sets off another such rule") });
+  });
+
+  it("a thing's own timer runs out", async () => {
+    const rules = [
+      rule({ when: { roomStart: true }, then: [{ set: { what: { prop: "timer", of: { every: "bomb" } }, to: 10 } }] }),
+      rule({ when: { timerOut: "bomb" }, then: [{ destroy: "it" }, { add: { what: { counter: SCORE_ID }, by: 50 } }] }),
+    ];
+    const g = v2(["", "", "", "", "P   A"], [player(), thing("bomb")], rules);
+    await runV2(g, [{ frames: 40 }, { expect: { type1: 1, score: 0 } }, { until: { type1: 255 }, maxFrames: 60, steps: [{ frames: 1 }] }, { frames: 2 }, { expect: { score: 50 } }]);
+  });
+
+  it("button released, joystick pushed, every N frames", async () => {
+    const rules = [
+      rule({ when: { button: { joy: 1, button: 1, released: true } }, then: [{ add: { what: { counter: "hits" }, by: 1 } }] }),
+      rule({ when: { pushed: { joy: 1, dir: "up" } }, then: [{ add: { what: { counter: "n" }, by: 10 } }] }),
+    ];
+    const g = v2(["", "", "", "", "P"], [player({ move: { wall: "slide", edge: "stop" } })], rules, { counters: hits });
+    // (Letting go of fire after starting the game counts once.)
+    await runV2(g, [{ expect: { hits: 1 } }, { hold: ["fire"], frames: 10 }, { expect: { hits: 1 } }, { frames: 2 }, { expect: { hits: 2 } }, { hold: ["up"], frames: 20 }, { expect: { n: 10 } }], CNT);
+    const every = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 10, frames: true }, then: [{ add: { what: { counter: "n" }, by: 1 } }] })], { counters: hits });
+    await runV2(every, [{ frames: 100 }, { expect: { n: { gte: 9, lte: 10 } } }], CNT);
+  });
+
+  it("messages wait for the next frame, so two rules sending each other can't hang", async () => {
+    const rules = [
+      rule({ when: { every: 1 }, then: [{ send: "ping" }] }),
+      rule({ when: { message: "ping" }, then: [{ add: { what: { counter: "hits" }, by: 1 } }, { send: "pong" }] }),
+      rule({ when: { message: "pong" }, then: [{ add: { what: { counter: "n" }, by: 1 } }, { send: "ping" }] }),
+    ];
+    const g = v2(["", "", "", "", "P"], [player()], rules, { counters: hits, messages: ["ping", "pong"] });
+    // Once started, the two message rules take turns, one a frame.
+    await runV2(g, [{ frames: 100 }, { expect: { hits: { gte: 15 }, n: { gte: 15 }, loops: { gte: 100 } } }], CNT);
+  });
+
+  it("a test fires once each time it becomes true; 'while' fires every frame", async () => {
+    const rules = [
+      rule({ when: { test: { a: { counter: "seconds" }, op: "gte", b: 1 } }, then: [{ add: { what: { counter: "hits" }, by: 1 } }] }),
+      rule({ when: { test: { a: { counter: "seconds" }, op: "gte", b: 1 } }, fires: "while", then: [{ add: { what: { counter: "n" }, by: 1 } }] }),
+    ];
+    const g = v2(["", "", "", "", "P"], [player()], rules, { counters: hits });
+    // "While" rules on tests run on odd frames: about 20 in 40 frames.
+    await runV2(g, [{ frames: 100 }, { expect: { hits: 1, n: { gte: 15, lte: 25 } } }], CNT);
+  });
+
+  it("any thing at an edge, once: a formation turns together", async () => {
+    const march = thing("inv", { move: { vx: 16, wall: "through", edge: "pass", smooth: true } });
+    const turn = rule({ when: { edge: ["inv", "sides"] }, any: true, fires: "once", then: [{ set: { what: { prop: "vx", of: { every: "inv" } }, to: { prop: "vx", of: "target", neg: true } } }, { add: { what: { prop: "y", of: { every: "inv" } }, by: 8 } }] });
+    const g = v2(["", "             A A A", "             A A A", "", "", "", "", "", "", "P"], [player(), march], [turn]);
+    // Slots 1-6; after the turn all six move left, 8 lower.
+    await runV2(g, [{ until: { y1: 40 }, maxFrames: 200, steps: [{ frames: 1 }] }, { frames: 10 }, { expect: { y3: 40, x1: { lt: 140 }, x3: { lt: 156 } } }]);
+  });
+});
+
+const SCORE_ID = "score";
+
+describe("kit model v2: targets, values and actions", () => {
+  const CNT: WatchMap = { hits: { symbol: "cnt_hits" }, a1: { symbol: "oa", offset: 1 }, a2: { symbol: "oa", offset: 2 }, a3: { symbol: "oa", offset: 3 } };
+  const hits = [{ id: "lives", label: "Lives", start: 3 }, { id: "hits", label: "Hits", start: 0 }];
+
+  it("every X whose …, the nearest X, a random X; per-thing variables", async () => {
+    const coin = thing("coin", { vars: { a: { name: "worth", start: 5 } } });
+    const rules = [
+      // Coins right of x = 60 get worth 9; the nearest coin to the hero gets 1.
+      rule({ when: { roomStart: true }, then: [{ set: { what: { prop: "a", of: { every: "coin", where: { a: { prop: "x", of: "target" }, op: "gt", b: 60 } } }, to: 9 } }] }),
+      rule({ when: { pushed: { joy: 1, dir: "any" } }, then: [{ set: { what: { prop: "a", of: { nearest: "coin" } }, to: 1 } }, { add: { what: { prop: "a", of: { random: "coin" } }, by: 100 } }] }),
+    ];
+    // Coins at x = 32, 72, 112 (slots 1-3).
+    const g = v2(["", "", "", "", "P   A    A    A"], [player(), coin], rules, { counters: hits });
+    await runV2(g, [{ frames: 4 }, { expect: { a1: 5, a2: 9, a3: 9 } }, { hold: ["up"], frames: 2 }, { frames: 2 }, { expect: { a1: { gte: 1 } } }], CNT);
+  });
+
+  it("values: joystick × a number gives an aimed shot's velocity; create at a point", async () => {
+    const rules = [
+      rule({
+        when: { button: { joy: 1, button: 1 } },
+        then: [{ create: { type: "bullet", at: "it", place: "centre", vx: { joy: 1, axis: "x", times: 16 }, vy: { joy: 1, axis: "y", times: 16 } } }],
+      }),
+      rule({ when: { roomStart: true }, then: [{ create: { type: "flag", at: { x: 100, y: { counter: "hits", plus: 50 } } } }] }),
+    ];
+    const bullet = thing("bullet", { width: 4, height: 4, frames: [box(4, 4)], move: { wall: "destroy", edge: "destroy", smooth: true }, cap: 2 });
+    const g = v2(["", "", "", "", "     P"], [player({ control: { joystick: 1, axes: "8way", mode: "direct", speed: { step: 1 } } }), bullet, thing("flag")], rules, { counters: hits });
+    // Slots: hero 0, bullets 1-2, flag 3. Fire while pushing left: the bullet (from x = 42) flies left, a pixel a frame.
+    await runV2(
+      g,
+      [{ expect: { x3: 100, y3: 50 } }, { hold: ["left", "fire"], frames: 2 }, { frames: 4 }, { expect: { type1: 1, x1: { gte: 34, lte: 38 }, y1: 82 } }],
+      { ...CNT, ...VEL },
+    );
+  });
+
+  it("step walks a thing and walls stop it; protect makes touches skip it", async () => {
+    const rules = [
+      rule({ when: { every: 1 }, then: [{ step: { who: { every: "box" }, dx: 8, dy: 0 } }] }),
+      rule({ when: { touch: ["hero", "spike"] }, then: [{ take: { what: { counter: "lives" }, by: 1 } }, { protect: { who: "it", tenths: 30 } }] }),
+    ];
+    // The box (slot 1) steps right once a second until the wall in column 9 stops it at x = 64.
+    const g = v2(["", "", "", "", "     A   #", "", "", "P B"], [player(), thing("box"), thing("spike")], rules);
+    await runV2(g, [{ frames: 300 }, { expect: { x1: 64 } }, { hold: ["right"], frames: 30 }, { expect: { lives: 2 } }]);
+  });
+
+  it("counters named like 7800basic's own variables still build", async () => {
+    // `a` is one of 7800basic's built-in variables; the runtime names counters cnt_<id>.
+    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ add: { what: { counter: "a" }, by: 1 } }] })], {
+      counters: [{ id: "a", label: "A", start: 0 }, { id: "switch", label: "Switch", start: 0 }],
+    });
+    await runV2(g, [{ frames: 130 }, { expect: { a: 2 } }], { a: { symbol: "cnt_a" } });
+    // "score" is the built-in score, so a counter can't take the name.
+    expect(await buildKitRom(v2(["P"], [player()], [], { counters: [{ id: "score", label: "Score", start: 0 }] }), SOUND_LIBRARY, builder)).toMatchObject({ ok: false });
+  });
+
+  it("run code: a rule calls the game's own routine; hooks run each frame", async () => {
+    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ run: "bonus" }] })], {
+      counters: hits,
+      code: { frame: " cnt_hits = 7", routines: [{ label: "bonus", body: " score0 = score0 + 100" }] },
+    });
+    await runV2(g, [{ frames: 130 }, { expect: { score: 200, hits: 7 } }], CNT);
+  });
+});
+
+describe("kit model v2: rooms and flow", () => {
+  it("exits lead to the next room, the hero comes along, and taken things stay taken", async () => {
+    const rules = [rule({ when: { touch: ["hero", "gem"] }, then: [{ destroy: "other" }, { add: { what: { counter: SCORE_ID }, by: 10 } }] })];
+    const g = v2(["", "", "", "", "P  A"], [player(), thing("gem")], rules, {
+      room: { rows: ["", "", "", "", "P  A"].concat(Array(6).fill("")).map((r) => r.padEnd(20)), legend: { P: "hero", A: "gem" }, exits: { right: 2 } },
+      rooms: [{ rows: Array(11).fill(" ".repeat(20)), exits: { left: 1 } }],
+      flow: { remember: true },
+    });
+    await runV2(g, [
+      { hold: ["right"], frames: 30 },
+      { expect: { score: 10, room: 1 } },
+      { until: { room: 2 }, maxFrames: 200, steps: [{ hold: ["right"], frames: 1 }] },
+      { expect: { heroX: { lt: 8 } } },
+      { until: { room: 1 }, maxFrames: 200, steps: [{ hold: ["left"], frames: 1 }] },
+      { frames: 2 },
+      // The gem was taken, so room 1 doesn't place it again.
+      { expect: { type1: 255, heroX: { gte: 140 } } },
+    ]);
+  });
+
+  it("no title screen: straight into play; the end screen goes back to the title by itself", async () => {
+    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { after: 1 }, then: [{ gameOver: "won" }] })], { flow: { title: false, end: { show: ["lives"], after: 2 } } });
+    const rom = await buildKitRom(g, SOUND_LIBRARY, builder);
+    if (!rom.ok) throw new Error(rom.failure);
+    const r = await runRomOnHost(host, rom.a78, rom.symbols, KIT_WATCH, [
+      { frames: 10 },
+      { expect: { state: 1 } },
+      { until: { state: 2 }, maxFrames: 200, steps: [{ frames: 1 }] },
+      { until: { state: 0 }, maxFrames: 200, steps: [{ frames: 1 }] },
+    ]);
+    expect(r.failure ?? null).toBeNull();
+  });
+
+  it("the title gives way to a demo with recorded input; a real press ends it", async () => {
+    const g = v2(["", "", "", "", "P"], [player()], [], { flow: { attract: { after: 3, input: [8, 30, 4, 30] } } });
+    const rom = await buildKitRom(g, SOUND_LIBRARY, builder);
+    if (!rom.ok) throw new Error(rom.failure);
+    const r = await runRomOnHost(host, rom.a78, rom.symbols, KIT_WATCH, [
+      { frames: 150 },
+      { expect: { state: 0 } },
+      { until: { state: 4 }, maxFrames: 100, steps: [{ frames: 1 }] },
+      { frames: 20 },
+      { expect: { heroX: { gt: 0 } } },
+      { hold: ["up"], frames: 2 },
+      { expect: { state: 0 } },
+    ]);
+    expect(r.failure ?? null).toBeNull();
   });
 });

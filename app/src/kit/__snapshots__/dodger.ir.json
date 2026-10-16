@@ -1,0 +1,1205 @@
+{
+ "title": "Rock Fall",
+ "types": [
+  {
+   "index": 0,
+   "id": "ship",
+   "label": "Ship",
+   "sym": "T_SHIP",
+   "name": "ship",
+   "sprite": "spr_ship",
+   "width": 16,
+   "height": 16,
+   "palette": 0,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "control": {
+    "joystick": 1,
+    "axes": "lr",
+    "mode": "direct",
+    "speed": {
+     "step": 4,
+     "max": 6
+    }
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": false
+   },
+   "own": [
+    0,
+    0
+   ],
+   "loop": [
+    0,
+    0
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "ship"
+   }
+  },
+  {
+   "index": 1,
+   "id": "rock",
+   "label": "Rock",
+   "sym": "T_ROCK",
+   "name": "rock",
+   "sprite": "spr_rock",
+   "width": 8,
+   "height": 8,
+   "palette": 1,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 16,
+    "wall": "through",
+    "edge": "pass",
+    "sliced": true
+   },
+   "own": [
+    1,
+    5
+   ],
+   "loop": [
+    1,
+    5
+   ],
+   "population": 5,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": true,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "rock"
+   }
+  },
+  {
+   "index": 2,
+   "id": "boulder",
+   "label": "Fast rock",
+   "sym": "T_BOULDER",
+   "name": "boulder",
+   "sprite": "spr_boulder",
+   "width": 8,
+   "height": 8,
+   "palette": 1,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 32,
+    "wall": "through",
+    "edge": "pass",
+    "sliced": true
+   },
+   "own": [
+    6,
+    7
+   ],
+   "loop": [
+    6,
+    7
+   ],
+   "population": 2,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": true,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "boulder"
+   }
+  },
+  {
+   "index": 3,
+   "id": "star",
+   "label": "Star",
+   "sym": "T_STAR",
+   "name": "star",
+   "sprite": "spr_star",
+   "width": 8,
+   "height": 8,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 8,
+    "wall": "through",
+    "edge": "pass",
+    "sliced": true
+   },
+   "own": [
+    8,
+    9
+   ],
+   "loop": [
+    8,
+    9
+   ],
+   "population": 2,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": true,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "star"
+   }
+  }
+ ],
+ "rooms": [
+  {
+   "index": 0,
+   "rows": [
+    " r    b   r     r   ",
+    "    s        b      ",
+    "r        r       s  ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "         P          "
+   ],
+   "tiles": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "spawns": [
+    {
+     "type": 1,
+     "x": 8,
+     "y": 16,
+     "slot": 1,
+     "place": 0
+    },
+    {
+     "type": 2,
+     "x": 48,
+     "y": 16,
+     "slot": 6,
+     "place": 1
+    },
+    {
+     "type": 1,
+     "x": 80,
+     "y": 16,
+     "slot": 2,
+     "place": 2
+    },
+    {
+     "type": 1,
+     "x": 128,
+     "y": 16,
+     "slot": 3,
+     "place": 3
+    },
+    {
+     "type": 3,
+     "x": 32,
+     "y": 32,
+     "slot": 8,
+     "place": 4
+    },
+    {
+     "type": 2,
+     "x": 104,
+     "y": 32,
+     "slot": 7,
+     "place": 5
+    },
+    {
+     "type": 1,
+     "x": 0,
+     "y": 48,
+     "slot": 4,
+     "place": 6
+    },
+    {
+     "type": 1,
+     "x": 72,
+     "y": 48,
+     "slot": 5,
+     "place": 7
+    },
+    {
+     "type": 3,
+     "x": 136,
+     "y": 48,
+     "slot": 9,
+     "place": 8
+    },
+    {
+     "type": 0,
+     "x": 72,
+     "y": 176,
+     "slot": 0,
+     "place": 9
+    }
+   ],
+   "exits": {},
+   "span": {
+    "kind": "room",
+    "id": "room-1"
+   }
+  }
+ ],
+ "counters": [
+  {
+   "id": "lives",
+   "label": "Lives",
+   "name": "lives",
+   "start": 3,
+   "keep": "game",
+   "span": {
+    "kind": "counter",
+    "id": "lives"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "n": 1,
+   "id": "r-1",
+   "label": "rule1",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 1
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-1-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-1-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-1-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-1-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-1-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-1-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-1-2",
+     "span": {
+      "kind": "action",
+      "id": "a-1-2"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "other",
+      "type": 1
+     }
+    },
+    {
+     "id": "a-1-3",
+     "span": {
+      "kind": "action",
+      "id": "a-1-3"
+     },
+     "k": "sound",
+     "label": "sfx_boom"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 1,
+   "span": {
+    "kind": "rule",
+    "id": "r-1"
+   }
+  },
+  {
+   "n": 2,
+   "id": "r-2",
+   "label": "rule2",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 2
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-2-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-2-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-2-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-2-2",
+     "span": {
+      "kind": "action",
+      "id": "a-2-2"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "other",
+      "type": 2
+     }
+    },
+    {
+     "id": "a-2-3",
+     "span": {
+      "kind": "action",
+      "id": "a-2-3"
+     },
+     "k": "sound",
+     "label": "sfx_boom"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 2,
+   "span": {
+    "kind": "rule",
+    "id": "r-2"
+   }
+  },
+  {
+   "n": 3,
+   "id": "r-3",
+   "label": "rule3",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 3
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-3-1",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 50
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-3-2",
+     "span": {
+      "kind": "action",
+      "id": "a-3-2"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "other",
+      "type": 3
+     }
+    },
+    {
+     "id": "a-3-3",
+     "span": {
+      "kind": "action",
+      "id": "a-3-3"
+     },
+     "k": "sound",
+     "label": "sfx_blip"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 3,
+   "span": {
+    "kind": "rule",
+    "id": "r-3"
+   }
+  },
+  {
+   "n": 4,
+   "id": "r-4",
+   "label": "rule4",
+   "trigger": {
+    "k": "after",
+    "n": 30
+   },
+   "fires": null,
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 0
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-4-1",
+     "span": {
+      "kind": "action",
+      "id": "a-4-1"
+     },
+     "k": "sound",
+     "label": "sfx_chime"
+    },
+    {
+     "id": "a-4-2",
+     "span": {
+      "kind": "action",
+      "id": "a-4-2"
+     },
+     "k": "gameOver",
+     "won": true
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-4"
+   }
+  },
+  {
+   "n": 5,
+   "id": "r-p-fall1",
+   "label": "rule5",
+   "trigger": {
+    "k": "leaves",
+    "type": 1
+   },
+   "fires": null,
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "r-p-fall1-1",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall1-1"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "x",
+     "who": {
+      "k": "it",
+      "type": 1
+     },
+     "value": {
+      "src": {
+       "k": "random",
+       "n": 19
+      },
+      "times": 8,
+      "signed": false
+     }
+    },
+    {
+     "id": "r-p-fall1-2",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall1-2"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "y",
+     "who": {
+      "k": "it",
+      "type": 1
+     },
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 16
+      },
+      "signed": false
+     }
+    }
+   ],
+   "event": false,
+   "its": [
+    1
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-fall1"
+   }
+  },
+  {
+   "n": 6,
+   "id": "r-p-fall2",
+   "label": "rule6",
+   "trigger": {
+    "k": "leaves",
+    "type": 2
+   },
+   "fires": null,
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "r-p-fall2-1",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall2-1"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "x",
+     "who": {
+      "k": "it",
+      "type": 2
+     },
+     "value": {
+      "src": {
+       "k": "random",
+       "n": 19
+      },
+      "times": 8,
+      "signed": false
+     }
+    },
+    {
+     "id": "r-p-fall2-2",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall2-2"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "y",
+     "who": {
+      "k": "it",
+      "type": 2
+     },
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 16
+      },
+      "signed": false
+     }
+    }
+   ],
+   "event": false,
+   "its": [
+    2
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-fall2"
+   }
+  },
+  {
+   "n": 7,
+   "id": "r-p-fall3",
+   "label": "rule7",
+   "trigger": {
+    "k": "leaves",
+    "type": 3
+   },
+   "fires": null,
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "r-p-fall3-1",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall3-1"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "x",
+     "who": {
+      "k": "it",
+      "type": 3
+     },
+     "value": {
+      "src": {
+       "k": "random",
+       "n": 19
+      },
+      "times": 8,
+      "signed": false
+     }
+    },
+    {
+     "id": "r-p-fall3-2",
+     "span": {
+      "kind": "action",
+      "id": "r-p-fall3-2"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "y",
+     "who": {
+      "k": "it",
+      "type": 3
+     },
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 16
+      },
+      "signed": false
+     }
+    }
+   ],
+   "event": false,
+   "its": [
+    3
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-fall3"
+   }
+  },
+  {
+   "n": 8,
+   "id": "r-p-lives",
+   "label": "rule8",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "lives"
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 1
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-p-lives",
+     "span": {
+      "kind": "action",
+      "id": "a-p-lives"
+     },
+     "k": "gameOver",
+     "won": false
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-lives"
+   }
+  }
+ ],
+ "hud": [
+  {
+   "show": "score",
+   "at": "left",
+   "name": "score"
+  },
+  {
+   "show": "lives",
+   "at": "right",
+   "name": "lives"
+  },
+  {
+   "show": "seconds",
+   "at": "middle",
+   "name": "seconds"
+  }
+ ],
+ "messages": [],
+ "palettes": [
+  {
+   "id": "ship",
+   "colors": [
+    "$3A",
+    "$02",
+    "$0F"
+   ]
+  },
+  {
+   "id": "rock",
+   "colors": [
+    "$F4",
+    "$F8",
+    "$02"
+   ]
+  },
+  {
+   "id": "star",
+   "colors": [
+    "$1E",
+    "$0F",
+    "$00"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  }
+ ],
+ "background": "$80",
+ "textPalette": 3,
+ "wallPalette": 3,
+ "text": {
+  "title": "Rock Fall",
+  "win": "You survived!",
+  "lose": "Game over"
+ },
+ "flow": {
+  "title": true,
+  "attract": null,
+  "end": {
+   "show": [
+    {
+     "label": "score",
+     "name": "score"
+    }
+   ],
+   "after": 0
+  },
+  "remember": false
+ },
+ "sounds": [
+  {
+   "label": "sfx_boom",
+   "id": "boom"
+  },
+  {
+   "label": "sfx_blip",
+   "id": "blip"
+  },
+  {
+   "label": "sfx_chime",
+   "id": "chime"
+  }
+ ],
+ "code": {
+  "init": "",
+  "startroom": "",
+  "frame": "",
+  "draw": "",
+  "routines": [],
+  "cost": 10
+ },
+ "features": {
+  "walls": false,
+  "tileMap": false,
+  "timers": false,
+  "protect": true,
+  "timedTurns": false,
+  "facing": false,
+  "contact": false,
+  "latchThings": false,
+  "globalLatches": 2,
+  "everyCounters": [],
+  "messages": false,
+  "rooms": 1,
+  "exits": false,
+  "remember": false,
+  "vars": false,
+  "place": false,
+  "joy2": false
+ }
+}
