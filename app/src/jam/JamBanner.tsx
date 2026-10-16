@@ -1,10 +1,11 @@
 // The jam a creator has joined, always in view: its theme and rules, the
 // organizer's page, and a way out.
 
+import { APP_VERSION } from "../version.ts";
 import { useJamStore } from "./store.ts";
 import "./jam.css";
 
-export function JamBanner({ onNewGame }: { onNewGame?: () => void }) {
+export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; onStarter: (name: string, cartridge: string) => void }) {
   const brief = useJamStore((s) => s.brief);
   if (!brief) return null;
   const leave = () => {
@@ -20,6 +21,22 @@ export function JamBanner({ onNewGame }: { onNewGame?: () => void }) {
         {brief.theme && (
           <p className="jam-banner-theme">
             Theme: <strong>{brief.theme}</strong>
+          </p>
+        )}
+        {brief.app && brief.app !== APP_VERSION && (
+          <p className="small">
+            This jam uses Cartridge Studio {brief.app}; this is {APP_VERSION}. Your entry will say so, and the organizer decides
+            whether that matters.
+          </p>
+        )}
+        {brief.starters.length > 0 && (
+          <p className="jam-starters">
+            <span className="muted">The jam's starting games:</span>{" "}
+            {brief.starters.map((s) => (
+              <button key={s.name} type="button" className="secondary" onClick={() => onStarter(s.name, s.cartridge)}>
+                Start from {s.name}
+              </button>
+            ))}
           </p>
         )}
         {brief.constraints.length > 0 && (
@@ -67,7 +84,7 @@ export function JamLinks({ onBrief }: { onBrief: (file: File) => void }) {
           }}
         />
       </label>{" "}
-      · Running one? <a href="?jam-guide">How to run a jam</a>
+      · Running one? <a href="organize.html">How to run a jam</a>
     </p>
   );
 }

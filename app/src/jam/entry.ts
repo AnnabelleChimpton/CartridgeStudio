@@ -1,166 +1,106 @@
-// Jam entries: one ZIP a creator sends the organizer. Everything in it is
-// static: a player page that runs offline, the game file, signed ROMs, an
-// optional clip and thumbnail, and entry.json, which the gallery builder reads.
+// Jam entries: the one package format (files/package.ts) with a `jam` block.
+// The creator's words, licence and compilation permission go in the
+// manifest, with the limits their game goes past and the build that made it.
 
-import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { z } from "zod";
-import { slugify } from "../files/exports.ts";
-import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
+import { packageZip, type LicenceId, type Manifest, type ReadPackage } from "../files/package.ts";
 import type { JamBrief } from "./brief.ts";
+import { cartridgeFacts, checkLimits, type GameFacts, type Limits } from "./limits.ts";
 import type { EntryWords } from "./store.ts";
-
-export const ENTRY_FORMAT = "cartridge-studio-jam-entry";
-export const ENTRY_VERSION = 1;
-
-const MTIME = new Date("2026-01-01T00:00:00Z");
-
-/** A file name inside the entry's folder: no folders, no tricks. */
-const fileName = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,120}$/, "Bad file name in entry.json");
-
-export const EntrySchema = z.object({
-  format: z.literal(ENTRY_FORMAT),
-  version: z.number().int().min(1),
-  jam: z.object({ name: z.string().max(80), theme: z.string().max(120).default("") }),
-  title: z.string().trim().min(1).max(80),
-  credits: z.string().trim().max(200).default(""),
-  description: z.string().trim().max(500).default(""),
-  controls: z.string().trim().max(200).default(""),
-  files: z.object({
-    player: fileName,
-    cartridge: fileName,
-    a78: fileName,
-    bin: fileName,
-    clip: fileName.optional(),
-    thumbnail: fileName.optional(),
-  }),
-  madeWith: z.string().max(80).default("Cartridge Studio"),
-});
-
-export type Entry = z.infer<typeof EntrySchema>;
-
-export const ENTRY_LIMITS = { title: 80, credits: 200, description: 500, controls: 200 } as const;
 
 export interface EntryInput {
   brief: JamBrief;
   words: EntryWords;
   /** The game's own title, used when the words leave it empty. */
   gameTitle: string;
-  /** From buildPlayerHtml. */
-  playerHtml: string;
-  /** The .cartridge game file; its thumbnail becomes the entry's. */
-  cartridge: Uint8Array;
+  /** What made it: app build, runtime and toolchain. */
+  build: { app: string; runtime: string; toolchain: string; builtAt?: string };
+  /** For checking the brief's limits; the ROM size is added here. */
+  facts: GameFacts;
+  /** The offline player page. */
+  player: string;
   /** Signed ROMs. */
   a78: Uint8Array;
   bin: Uint8Array;
+  /** The .cartridge game file, when the game has one; its thumbnail becomes the entry's. */
+  cartridge?: Uint8Array;
   clip?: Uint8Array | null;
 }
 
 export const entryTitle = (words: EntryWords, gameTitle: string) => words.title.trim() || gameTitle.trim() || "My game";
 
-export const entryFileName = (title: string) => `${slugify(title)}-jam-entry.zip`;
-
-function thumbnailOf(cartridge: Uint8Array): Uint8Array | undefined {
-  try {
-    return unzipSync(cartridge, { filter: (f) => f.name === "thumbnail.png" })["thumbnail.png"];
-  } catch {
-    return undefined;
-  }
+/** Why the entry can't be made yet, if it can't. */
+export function entryProblem(words: EntryWords): string | null {
+  if (!words.licence) return "Choose a licence for your game first.";
+  return null;
 }
 
-const cut = (s: string, n: number) => s.trim().slice(0, n);
-
-export function entryZip(i: EntryInput): Uint8Array {
-  const title = cut(entryTitle(i.words, i.gameTitle), ENTRY_LIMITS.title);
-  const slug = slugify(title);
-  const thumbnail = thumbnailOf(i.cartridge);
-  const entry: Entry = {
-    format: ENTRY_FORMAT,
-    version: ENTRY_VERSION,
-    jam: { name: i.brief.name, theme: i.brief.theme },
-    title,
-    credits: cut(i.words.credits, ENTRY_LIMITS.credits),
-    description: cut(i.words.description, ENTRY_LIMITS.description),
-    controls: cut(i.words.controls, ENTRY_LIMITS.controls),
-    files: {
-      player: "play.html",
-      cartridge: `${slug}${CARTRIDGE_EXTENSION}`,
-      a78: `${slug}.a78`,
-      bin: `${slug}.bin`,
-      ...(i.clip ? { clip: "clip.gif" } : {}),
-      ...(thumbnail ? { thumbnail: "thumbnail.png" } : {}),
-    },
-    madeWith: "Cartridge Studio",
-  };
-  const root = `${slug}-jam-entry`;
-  const files: Record<string, Uint8Array> = {
-    [`${root}/entry.json`]: strToU8(`${JSON.stringify(entry, null, 2)}\n`),
-    [`${root}/README.txt`]: strToU8(readme(entry)),
-    [`${root}/play.html`]: strToU8(i.playerHtml),
-    [`${root}/${entry.files.cartridge}`]: i.cartridge,
-    [`${root}/${entry.files.a78}`]: i.a78,
-    [`${root}/${entry.files.bin}`]: i.bin,
-  };
-  if (i.clip) files[`${root}/clip.gif`] = i.clip;
-  if (thumbnail) files[`${root}/thumbnail.png`] = thumbnail;
-  // Already-compressed files (GIF, PNG, the .cartridge ZIP) gain nothing from deflating.
-  return zipSync(files, { level: 6, mtime: MTIME });
+/** What the brief would flag about this game, before the entry is made. */
+export function entryFlags(brief: JamBrief, facts: GameFacts, app: string): string[] {
+  const flags = checkLimits(brief.limits, facts);
+  if (brief.app && brief.app !== app) flags.push(`Made with Cartridge Studio ${app}; the jam uses ${brief.app}.`);
+  return flags;
 }
 
-function readme(e: Entry): string {
-  return `${e.title} - entry for ${e.jam.name}
-${"=".repeat(e.title.length + e.jam.name.length + 13)}
-${e.credits ? `\nBy ${e.credits}\n` : ""}${e.description ? `\n${e.description}\n` : ""}${e.controls ? `\nControls: ${e.controls}\n` : ""}
-  play.html          open in any web browser to play, no internet needed
-  ${e.files.cartridge.padEnd(18)} the game file; open it in Cartridge Studio to see how it's made
-  ${e.files.a78.padEnd(18)} signed ROM for emulators and flash carts
-  ${e.files.bin.padEnd(18)} plain signed ROM for flash carts and real consoles
-${e.files.clip ? "  clip.gif           a few seconds of play\n" : ""}  entry.json         these details, for the jam's gallery builder
+function readme(m: Manifest, jam: JamBrief): string {
+  const heading = `${m.title} - entry for ${jam.name}`;
+  return `${heading}
+${"=".repeat(heading.length)}
+${m.credits ? `\nBy ${m.credits}\n` : ""}${m.description ? `\n${m.description}\n` : ""}${m.controls ? `\nControls: ${m.controls}\n` : ""}
+  play.html        open in any web browser to play, no internet needed
+  rom/             signed ROMs: .a78 for emulators and flash carts, .bin for flash carts
+  project/         the game file; open it in Cartridge Studio to see how it's made
+  media/           a screenshot, and a clip if there is one
+  manifest.json    these details, the licence and the build, for the jam's gallery builder
 
 Made with Cartridge Studio. Not affiliated with or endorsed by Atari.
 `;
 }
 
-export interface ReadEntry {
-  entry: Entry;
-  files: { player: Uint8Array; cartridge: Uint8Array; a78: Uint8Array; bin: Uint8Array; clip?: Uint8Array; thumbnail?: Uint8Array };
+export async function jamEntryZip(i: EntryInput): Promise<{ zip: Uint8Array; manifest: Manifest; name: string }> {
+  const problem = entryProblem(i.words);
+  if (problem) throw new Error(problem);
+  const title = entryTitle(i.words, i.gameTitle);
+  const flags = entryFlags(i.brief, { ...i.facts, romBytes: i.a78.length }, i.build.app);
+  const jam = {
+    name: i.brief.name,
+    theme: i.brief.theme,
+    ...(i.brief.app ? { pinnedApp: i.brief.app } : {}),
+    compilation: i.words.compilation,
+    flags,
+  };
+  // The README needs the manifest's tidied words, so write it in a second pass.
+  const base = {
+    kind: "jam-entry" as const,
+    title,
+    words: i.words,
+    licence: i.words.licence as LicenceId,
+    build: { ...i.build, builtAt: i.build.builtAt ?? new Date().toISOString() },
+    a78: i.a78,
+    bin: i.bin,
+    player: i.player,
+    cartridgeFile: i.cartridge,
+    clip: i.clip,
+    jam,
+  };
+  const first = await packageZip({ ...base, notes: { name: "README.txt", text: "" } });
+  return packageZip({ ...base, notes: { name: "README.txt", text: readme(first.manifest, i.brief) } });
 }
 
-export type ReadEntryResult = { ok: true; read: ReadEntry } | { ok: false; error: string };
-
-/** Reads an entry ZIP; entry.json may sit at the top or in one folder. */
-export function readEntryZip(bytes: Uint8Array): ReadEntryResult {
-  let zip: Record<string, Uint8Array>;
-  try {
-    zip = unzipSync(bytes);
-  } catch {
-    return { ok: false, error: "This isn't a ZIP file." };
-  }
-  const marker = Object.keys(zip)
-    .filter((n) => /(^|\/)entry\.json$/.test(n) && n.split("/").length <= 2)
-    .sort((a, b) => a.length - b.length)[0];
-  if (!marker) return { ok: false, error: "This ZIP isn't a jam entry: it has no entry.json." };
-  const dir = marker.slice(0, -"entry.json".length);
-  let json: unknown;
-  try {
-    json = JSON.parse(strFromU8(zip[marker]!));
-  } catch {
-    return { ok: false, error: "This entry's entry.json is damaged." };
-  }
-  if ((json as { format?: unknown } | null)?.format !== ENTRY_FORMAT) return { ok: false, error: "This ZIP isn't a Cartridge Studio jam entry." };
-  const v = (json as { version?: unknown }).version;
-  if (typeof v === "number" && v > ENTRY_VERSION) return { ok: false, error: "This entry was made by a newer version of Cartridge Studio." };
-  const parsed = EntrySchema.safeParse(json);
-  if (!parsed.success) return { ok: false, error: `This entry's entry.json is damaged (${parsed.error.issues[0]?.message ?? "unknown"}).` };
-  const entry = parsed.data;
-  const get = (name: string | undefined) => (name ? zip[dir + name] : undefined);
-  const need = { player: get(entry.files.player), cartridge: get(entry.files.cartridge), a78: get(entry.files.a78), bin: get(entry.files.bin) };
-  const missing = Object.entries(need).filter(([, d]) => !d).map(([k]) => k);
-  if (missing.length) return { ok: false, error: `This entry is missing files: ${missing.join(", ")}.` };
-  return {
-    ok: true,
-    read: {
-      entry,
-      files: { ...(need as ReadEntry["files"]), clip: get(entry.files.clip), thumbnail: get(entry.files.thumbnail) },
-    },
-  };
+/**
+ * The organizer's own checks of an entry, not trusting its manifest's flags:
+ * limits (from its game file), the pinned build, the licence and the jam.
+ */
+export function organizerFlags(read: ReadPackage, jam: { name?: string; app?: string; limits?: Limits }): string[] {
+  const m = read.manifest;
+  const flags: string[] = [];
+  if (jam.name && m.jam && m.jam.name !== jam.name) flags.push(`Made for another jam: ${m.jam.name}.`);
+  if (!m.jam) flags.push("Not made as a jam entry.");
+  if (!m.licence) flags.push("No licence chosen.");
+  if (jam.app && m.build.app !== jam.app) flags.push(`Made with Cartridge Studio ${m.build.app}; the jam uses ${jam.app}.`);
+  const limits = jam.limits ?? {};
+  const facts = read.files.cartridge ? cartridgeFacts(read.files.cartridge) : null;
+  const kitLimits = (["maxTypes", "maxRules", "maxCounters", "maxPalettes"] as const).some((k) => limits[k] !== undefined);
+  if (kitLimits && !facts) flags.push("No kit game file, so only the ROM size could be checked.");
+  flags.push(...checkLimits(limits, { ...facts, romBytes: read.files.a78.length }));
+  return flags;
 }

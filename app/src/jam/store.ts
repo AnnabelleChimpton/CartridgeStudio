@@ -1,6 +1,5 @@
-// The jam a creator has joined, their entry's words and their latest clip.
-// The brief and the words are kept in this browser (localStorage) because a
-// jam lasts days; the clip only lives until the page closes.
+// The jam a creator has joined and their entry's details. Both are kept in
+// this browser (localStorage) because a jam lasts days.
 
 import { create } from "zustand";
 import { parseBrief, type JamBrief } from "./brief.ts";
@@ -14,18 +13,20 @@ export interface EntryWords {
   credits: string;
   description: string;
   controls: string;
+  /** An SPDX id from LICENCES; empty until chosen. */
+  licence: string;
+  /** May the organizer put it on a compilation? */
+  compilation: boolean;
 }
 
-export const EMPTY_WORDS: EntryWords = { title: "", credits: "", description: "", controls: "" };
+export const EMPTY_WORDS: EntryWords = { title: "", credits: "", description: "", controls: "", licence: "", compilation: false };
 
 interface JamState {
   brief: JamBrief | null;
   words: EntryWords;
-  clip: Uint8Array | null;
   join: (b: JamBrief) => void;
   leave: () => void;
   setWords: (w: Partial<EntryWords>) => void;
-  setClip: (gif: Uint8Array | null) => void;
 }
 
 function read<T>(key: string): T | null {
@@ -56,13 +57,14 @@ function savedBrief(): JamBrief | null {
 export const useJamStore = create<JamState>((set, get) => ({
   brief: savedBrief(),
   words: { ...EMPTY_WORDS, ...read<Partial<EntryWords>>(ENTRY_KEY) },
-  clip: null,
   join: (brief) => {
     write(BRIEF_KEY, brief);
-    // A different jam starts with fresh words.
+    // A different jam starts with fresh words, keeping who you are and how you license your work.
     if (get().brief?.name !== brief.name) {
-      write(ENTRY_KEY, null);
-      set({ brief, words: { ...EMPTY_WORDS, credits: get().words.credits } });
+      const { credits, licence } = get().words;
+      const words = { ...EMPTY_WORDS, credits, licence };
+      write(ENTRY_KEY, words);
+      set({ brief, words });
     } else set({ brief });
   },
   leave: () => {
@@ -74,5 +76,4 @@ export const useJamStore = create<JamState>((set, get) => ({
     write(ENTRY_KEY, words);
     set({ words });
   },
-  setClip: (clip) => set({ clip }),
 }));

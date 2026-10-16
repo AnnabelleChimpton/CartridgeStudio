@@ -65,3 +65,20 @@
 .jam-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
 .jam-table th, .jam-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .jam-table thead th { color: var(--muted); font-weight: 600; font-size: 13px; }
+
+.jam-starters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.jam-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 8px 0; }
+.jam-check input { accent-color: var(--accent); margin-top: 2px; }
+.jam-flags { border-left: 3px solid var(--accent); padding: 2px 10px; margin: 10px 0; }
+.jam-flags p, .jam-flags ul { margin: 4px 0; }
+.jam-flags ul { padding-left: 18px; }
+.jam-field select { flex: none; width: 100%; font-size: 13px; }
+.jam-limits { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; border: 1px solid var(--line); border-radius: 6px; margin: 8px 0; padding: 8px 12px; }
+.jam-limits legend { font-size: 13px; padding: 0 4px; }
+.jam-limits p { grid-column: 1 / -1; margin: 0; }
+.jam-limits .jam-field input { width: 100%; }
+.jam-starter-list { list-style: none; padding: 0; margin: 4px 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.jam-tabs { display: flex; gap: 4px; margin: 16px 0 0; }
+.jam-table-wrap { overflow-x: auto; }
+.jam-notes { margin: 0; padding-left: 16px; font-size: 13px; }
+.jam-wrap { flex-wrap: wrap; align-items: center; }

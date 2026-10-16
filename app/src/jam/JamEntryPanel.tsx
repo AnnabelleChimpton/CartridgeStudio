@@ -1,25 +1,37 @@
-// The creator's side of a jam: a few words about the game, then one button
-// that packs everything the organizer needs into a ZIP.
+// The creator's side of a jam: a few words about the game, a licence, then one
+// button that packs everything the organizer needs into a ZIP.
 
 import { useId, useState } from "react";
+import { ENTRY_LIMITS, LICENCES } from "../files/package.ts";
+import { useRecentClip } from "../files/recent-clip.ts";
 import type { Preview } from "../ui/usePreview.ts";
 import { download } from "../ui/usePreview.ts";
-import { ENTRY_LIMITS, entryFileName, entryTitle, entryZip } from "./entry.ts";
+import { APP_VERSION } from "../version.ts";
+import { entryFlags, entryProblem, entryTitle, jamEntryZip } from "./entry.ts";
+import type { GameFacts } from "./limits.ts";
 import { useJamStore, type EntryWords } from "./store.ts";
 import "./jam.css";
 
 interface Props {
   preview: Preview;
   gameTitle: string;
-  /** The .cartridge game file, with its thumbnail. */
-  cartridgeFile: () => Promise<Uint8Array>;
+  /** The .cartridge game file, with its thumbnail; games without one leave it out. */
+  cartridgeFile?: () => Promise<Uint8Array>;
+  /** For the brief's limits. */
+  facts: GameFacts;
+  /** The runtime and toolchain that build this game, for the manifest. */
+  runtime: string;
+  toolchain: string;
 }
 
-export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
+type TextKey = "title" | "credits" | "description" | "controls";
+
+export function JamEntryPanel({ preview, gameTitle, cartridgeFile, facts, runtime, toolchain }: Props) {
   const brief = useJamStore((s) => s.brief);
   const words = useJamStore((s) => s.words);
-  const clip = useJamStore((s) => s.clip);
-  const { setWords, setClip } = useJamStore.getState();
+  const clip = useRecentClip((s) => s.gif);
+  const setClip = useRecentClip((s) => s.set);
+  const { setWords } = useJamStore.getState();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -27,6 +39,8 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
   if (!brief) return null;
   const ready = !!preview.lastGood;
   const title = entryTitle(words, gameTitle);
+  const problem = entryProblem(words);
+  const flags = entryFlags(brief, { ...facts, romBytes: preview.lastGood?.a78.length }, APP_VERSION);
 
   const make = async () => {
     setBusy(true);
@@ -34,11 +48,21 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
     setDone(null);
     try {
       const rom = await preview.buildSigned();
-      const [{ buildPlayerHtml }, cartridge] = await Promise.all([import("../player/player.ts"), cartridgeFile()]);
-      const playerHtml = await buildPlayerHtml(title, rom.a78);
-      const name = entryFileName(title);
-      download(entryZip({ brief, words, gameTitle, playerHtml, cartridge, a78: rom.a78, bin: rom.bin, clip }), name);
-      setDone(name);
+      const [{ buildPlayerHtml }, cartridge] = await Promise.all([import("../player/player.ts"), cartridgeFile?.()]);
+      const entry = await jamEntryZip({
+        brief,
+        words,
+        gameTitle,
+        build: { app: APP_VERSION, runtime, toolchain },
+        facts,
+        player: await buildPlayerHtml(title, rom.a78),
+        a78: rom.a78,
+        bin: rom.bin,
+        cartridge,
+        clip,
+      });
+      download(entry.zip, entry.name);
+      setDone(entry.name);
     } catch (e) {
       setError(`We couldn't make the entry: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -46,14 +70,14 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
     }
   };
 
-  const field = (key: keyof EntryWords, label: string, opts: { area?: boolean; placeholder?: string; hint?: string } = {}) => {
+  const field = (key: TextKey, label: string, opts: { area?: boolean; placeholder?: string; hint?: string } = {}) => {
     const props = {
       id: `${id}-${key}`,
       value: words[key],
       maxLength: ENTRY_LIMITS[key],
       placeholder: opts.placeholder,
       "aria-describedby": opts.hint ? `${id}-${key}-hint` : undefined,
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWords({ [key]: e.target.value }),
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setWords({ [key]: e.target.value } as Partial<EntryWords>),
     };
     return (
       <div className="jam-field">
@@ -84,6 +108,31 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
       {field("credits", "Credits", { placeholder: "Who made it, e.g. Sam and Robin" })}
       {field("description", "Short description", { area: true, placeholder: "One or two sentences for the gallery." })}
       {field("controls", "Controls", { placeholder: "e.g. Arrows move, fire button jumps" })}
+
+      <div className="jam-field">
+        <label htmlFor={`${id}-licence`}>Licence (required)</label>
+        <select
+          id={`${id}-licence`}
+          required
+          aria-describedby={`${id}-licence-hint`}
+          value={words.licence}
+          onChange={(e) => setWords({ licence: e.target.value })}
+        >
+          <option value="">Choose how others may use your game…</option>
+          {LICENCES.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+        <span id={`${id}-licence-hint`} className="muted small">
+          Everyone can play your entry in the gallery whatever you choose. The licence says what else people may do with it.
+        </span>
+      </div>
+      <label className="jam-check">
+        <input type="checkbox" checked={words.compilation} onChange={(e) => setWords({ compilation: e.target.checked })} /> The organizer may put my game on
+        a compilation, such as a multi-game cartridge or a collection, with credit.
+      </label>
 
       <div className="jam-clip">
         <span>
@@ -117,13 +166,32 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
         )}
       </div>
 
+      {flags.length > 0 && (
+        <div className="jam-flags">
+          <p className="small">
+            <strong>Worth knowing:</strong> the organizer will see these notes. You can still send your entry.
+          </p>
+          <ul className="small">
+            {flags.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="toolbar">
-        <button type="button" disabled={!ready || busy} onClick={() => void make()}>
+        <button type="button" disabled={!ready || busy || !!problem} aria-describedby={problem ? `${id}-problem` : undefined} onClick={() => void make()}>
           {busy ? "Making the entry…" : "Make my jam entry"}
         </button>
       </div>
+      {problem && (
+        <p id={`${id}-problem`} className="muted small">
+          {problem}
+        </p>
+      )}
       <p className="muted small">
-        One ZIP with a page that plays the game offline, the game file, signed ROMs{clip ? ", your clip" : ""} and these details.
+        One ZIP with a page that plays the game offline, {cartridgeFile ? "the game file, " : ""}signed ROMs{clip ? ", your clip" : ""} and these
+        details.
       </p>
       <div aria-live="polite">
         {done && (
@@ -132,7 +200,11 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile }: Props) {
             {brief.link ? (
               <>
                 {" "}
-                as <a href={brief.link} target="_blank" rel="noreferrer">the jam page<span className="visually-hidden"> (opens in a new tab)</span></a> says
+                as{" "}
+                <a href={brief.link} target="_blank" rel="noreferrer">
+                  the jam page<span className="visually-hidden"> (opens in a new tab)</span>
+                </a>{" "}
+                says
               </>
             ) : null}
             .

@@ -8,7 +8,7 @@ import { useEffect, useId, useState } from "react";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
-import { CLASSIC_PRESET, JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
+import { JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
 import { JamBanner, JamLinks } from "./jam/JamBanner.tsx";
 import { JamEntryPanel } from "./jam/JamEntryPanel.tsx";
 import { useJamStore } from "./jam/store.ts";
@@ -29,7 +29,7 @@ import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
-const STARTER_IDS = [...KIT_PRESETS.map((p) => p.id), CLASSIC_PRESET];
+const PRESET_IDS = KIT_PRESETS.map((p) => p.id);
 
 const TEMPLATE_TABS = [
   { id: "graphics", label: "Graphics" },
@@ -45,7 +45,7 @@ export function App() {
   const [choosing, setChoosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
   const jam = useJamStore((s) => s.brief);
-  const only = jam ? offeredPresets(jam, STARTER_IDS) : undefined;
+  const only = jam ? offeredPresets(jam, PRESET_IDS) : undefined;
 
   // A jam link (?jam=…) joins that jam, then tidies the address bar.
   useEffect(() => {
@@ -121,6 +121,25 @@ export function App() {
 
   const onNew = () => setChoosing(true);
 
+  /** One of the jam's own starting games (a .cartridge in the brief). */
+  const openStarter = (name: string, base64: string) => {
+    let r;
+    try {
+      r = readCartridgeFile(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)), TEMPLATES).result;
+    } catch {
+      r = null;
+    }
+    if (!r?.ok || !("kit" in r)) {
+      setOpenError(`The jam's starting game "${name}" couldn't be opened. Ask the organizer for a new link.`);
+      return;
+    }
+    if (mode !== null && !confirm(`Start from "${name}"? The game you're editing will be replaced; save it first to keep it.`)) return;
+    setOpenError(null);
+    setChoosing(false);
+    useKitStore.getState().load(r.kit);
+    switchTo("kit");
+  };
+
   if (mode === "loading") return <div className="page loading">Loading…</div>;
   const error = openError && (
     <p className="error banner" role="alert">
@@ -135,7 +154,7 @@ export function App() {
     return (
       <>
         {error}
-        <JamBanner />
+        <JamBanner onStarter={openStarter} />
         <StartChooser onChoose={choose} only={only} />
         <JamLinks onBrief={(f) => void openBrief(f)} />
       </>
@@ -145,7 +164,7 @@ export function App() {
   return (
     <>
       {error}
-      <JamBanner onNewGame={onNew} />
+      <JamBanner onNewGame={onNew} onStarter={openStarter} />
       {mode === "kit" ? (
         <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
       ) : (
@@ -262,7 +281,14 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
             }
           />
           <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
-          <JamEntryPanel preview={preview} gameTitle={project.title} cartridgeFile={cartridgeFile} />
+          <JamEntryPanel
+            preview={preview}
+            gameTitle={project.title}
+            cartridgeFile={cartridgeFile}
+            facts={{}}
+            runtime={`${template.manifest.id} template ${template.manifest.version}`}
+            toolchain={template.manifest.toolchain}
+          />
         </div>
       </main>
     </div>

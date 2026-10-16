@@ -15,6 +15,8 @@ const brief = newBrief({
   dates: "Fri 31 Oct to Sun 2 Nov",
   constraints: ["One room", "Two colours"],
   presets: ["maze", "ghost-panic"],
+  criteria: ["Fun", "Theme"],
+  limits: { maxRules: 4 },
   link: "https://example.org/spooky-jam",
 });
 
@@ -48,8 +50,14 @@ async function joinAndStart(page: Page) {
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 }
 
-async function makeEntry(page: Page, words: { title: string; credits: string; description: string; controls: string }) {
+async function makeEntry(page: Page, words: { title: string; credits: string; description: string; controls: string; compilation?: boolean }) {
   const form = entryForm(page);
+  // A licence is required.
+  if ((await form.getByLabel("Licence (required)").inputValue()) === "") {
+    await expect(form.getByRole("button", { name: "Make my jam entry" })).toBeDisabled();
+  }
+  await form.getByLabel("Licence (required)").selectOption("CC-BY-4.0");
+  await form.getByRole("checkbox", { name: /compilation/ }).setChecked(!!words.compilation);
   await form.getByLabel("Title").fill(words.title);
   await form.getByLabel("Credits").fill(words.credits);
   await form.getByLabel("Short description").fill(words.description);
@@ -72,19 +80,27 @@ test("a jam link shows the brief, and the brief survives a reload", async ({ pag
 });
 
 test("the organizer guide makes a working jam link and passes axe", async ({ page }) => {
-  await page.goto("/?jam-guide");
+  await page.goto("/organize.html");
   await expect(page.getByRole("heading", { level: 1, name: "How to run a jam" })).toBeVisible();
-  for (const h of ["1. Make the brief", "2. Share the link", "3. Collect entries", "4. Build the gallery", "Suggested themes"]) {
+  for (const h of ["1. Make the brief", "2. Share the link", "3. Collect entries", "4. Build the gallery", "5. Judge", "Suggested themes"]) {
     await expect(page.getByRole("heading", { level: 2, name: h })).toBeVisible();
   }
   await page.getByLabel("Jam name").fill("Guide Jam");
   await page.getByRole("textbox", { name: "Theme" }).fill("Small world");
   await page.getByRole("checkbox", { name: "Maze" }).check();
+  await page.getByRole("spinbutton", { name: "Rules", exact: true }).fill("6");
   const link = await page.getByLabel("The jam link").inputValue();
   expect(await axe(page)).toEqual([]);
   const file = await downloadOf(page, () => page.getByRole("button", { name: /Download the brief/ }).click());
   expect(file.name).toBe("guide-jam.jam.json");
-  expect(JSON.parse(file.bytes.toString("utf8"))).toMatchObject({ format: "cartridge-studio-jam", name: "Guide Jam", presets: ["maze"] });
+  expect(JSON.parse(file.bytes.toString("utf8"))).toMatchObject({
+    format: "cartridge-studio-jam",
+    name: "Guide Jam",
+    presets: ["maze"],
+    criteria: ["Fun", "Theme", "Look and sound"],
+    limits: { maxRules: 6 },
+    app: expect.any(String),
+  });
 
   await page.goto(link);
   await expect(banner(page)).toContainText("Small world");
@@ -104,28 +120,41 @@ test("two entries become a gallery that plays with the network off", async ({ pa
   await downloadOf(page, () => showIt.getByRole("button", { name: /^Recording/ }).click());
   await expect(entryForm(page)).toContainText("Clip: ready");
 
-  const first = await makeEntry(page, { title: "Haunt One", credits: "Sam", description: "Run from the ghosts.", controls: "Arrows move" });
+  // Ghost Panic has more rules than the jam allows: noted, not refused.
+  await expect(entryForm(page)).toContainText("over the limit of 4");
+  const first = await makeEntry(page, { title: "Haunt One", credits: "Sam", description: "Run from the ghosts.", controls: "Arrows move", compilation: true });
   expect(first.name).toBe("haunt-one-jam-entry.zip");
   const files = unzipSync(first.bytes);
   expect(Object.keys(files).sort()).toEqual(
-    ["README.txt", "clip.gif", "entry.json", "haunt-one.a78", "haunt-one.bin", "haunt-one.cartridge", "play.html", "thumbnail.png"].map(
-      (f) => `haunt-one-jam-entry/${f}`,
-    ),
+    [
+      "README.txt",
+      "manifest.json",
+      "media/clip.gif",
+      "media/thumbnail.png",
+      "play.html",
+      "project/haunt-one.cartridge",
+      "rom/haunt-one.a78",
+      "rom/haunt-one.bin",
+    ].map((f) => `haunt-one-jam-entry/${f}`),
   );
-  expect(JSON.parse(Buffer.from(files["haunt-one-jam-entry/entry.json"]!).toString())).toMatchObject({
-    jam: { name: "Spooky Cartridge Jam" },
+  expect(JSON.parse(Buffer.from(files["haunt-one-jam-entry/manifest.json"]!).toString())).toMatchObject({
+    format: "cartridge-studio-package",
     title: "Haunt One",
     credits: "Sam",
+    licence: "CC-BY-4.0",
+    build: { runtime: expect.stringMatching(/^kit runtime/), romSha256: expect.stringMatching(/^[0-9a-f]{64}$/) },
+    jam: { name: "Spooky Cartridge Jam", compilation: true, flags: [expect.stringMatching(/^Rules: \d+, over the limit of 4\.$/)] },
   });
-  expect(Buffer.from(files["haunt-one-jam-entry/haunt-one.a78"]!.subarray(1, 10)).toString("latin1")).toBe("ATARI7800");
+  expect(Buffer.from(files["haunt-one-jam-entry/rom/haunt-one.a78"]!.subarray(1, 10)).toString("latin1")).toBe("ATARI7800");
   expect(Buffer.from(files["haunt-one-jam-entry/play.html"]!).toString()).toContain("GNU GENERAL PUBLIC LICENSE");
 
   await entryForm(page).getByRole("button", { name: "Remove clip" }).click();
   const second = await makeEntry(page, { title: "Haunt Two", credits: "Robin", description: "The sequel.", controls: "Arrows move" });
-  expect(Object.keys(unzipSync(second.bytes))).not.toContain("haunt-two-jam-entry/clip.gif");
+  expect(Object.keys(unzipSync(second.bytes))).not.toContain("haunt-two-jam-entry/media/clip.gif");
 
-  // The organizer's side.
-  await page.goto("/?jam-gallery");
+  // The organizer's side, on its own page; the brief joined above is picked up.
+  await page.goto("/organize.html#gallery");
+  await expect(page.getByText("Checking entries against the brief for Spooky Cartridge Jam")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Build the jam gallery" })).toBeVisible();
   await page.getByLabel("Choose entry ZIPs").setInputFiles([
     { name: first.name, mimeType: "application/zip", buffer: first.bytes },
@@ -134,8 +163,20 @@ test("two entries become a gallery that plays with the network off", async ({ pa
   ]);
   await expect(page.getByRole("alert")).toContainText("notes.zip: This isn't a ZIP file.");
   await expect(page.getByRole("rowheader")).toHaveText(["Haunt One", "Haunt Two"]);
+  await expect(page.getByRole("row", { name: /Haunt One/ })).toContainText("over the limit of 4");
   await expect(page.getByLabel("Jam name")).toHaveValue("Spooky Cartridge Jam");
   expect(await axe(page)).toEqual([]);
+
+  // Judging: a sheet out, a filled-in sheet back, results in the gallery.
+  const sheet = await downloadOf(page, () => page.getByRole("button", { name: /judges' sheet/ }).click());
+  expect(sheet.name).toBe("spooky-cartridge-jam-judges.csv");
+  const csv = sheet.bytes.toString("utf8");
+  expect(csv.split("\r\n")[0]).toBe("id,title,credits,play,licence,compilation,flags,app,rom_sha256,Fun,Theme,notes");
+  expect(csv).toContain("haunt-one,Haunt One,Sam,entries/haunt-one/play.html,CC BY 4.0,yes,");
+  const scored = "id,Fun,Theme\r\nhaunt-one,3,4\r\nhaunt-two,5,4\r\n";
+  await page.getByLabel("Add filled-in sheets").setInputFiles({ name: "judge-1.csv", mimeType: "text/csv", buffer: Buffer.from(scored) });
+  await expect(page.getByText("In the lead:")).toContainText("Haunt Two");
+
   const gallery = await downloadOf(page, () => page.getByRole("button", { name: "Build the gallery" }).click());
   expect(gallery.name).toBe("spooky-cartridge-jam-gallery.zip");
 
@@ -173,5 +214,8 @@ test("two entries become a gallery that plays with the network off", async ({ pa
   await expect.poll(() => site.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0), { timeout: 15_000 }).toBeGreaterThan(60);
   await site.getByRole("link", { name: /All entries/ }).click();
   await expect(site.getByRole("heading", { level: 1, name: "Spooky Cartridge Jam" })).toBeVisible();
+  await site.getByRole("link", { name: "Results" }).click();
+  await expect(site.getByRole("row").nth(1)).toContainText("Haunt Two");
+  expect(await axe(site)).toEqual([]);
   expect(requests).toEqual([]);
 });

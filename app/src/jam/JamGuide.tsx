@@ -1,36 +1,38 @@
-// "How to run a jam" (?jam-guide): make the brief, share the link, collect
-// entries, build the gallery. No server and no accounts at any step.
+// "How to run a jam" (organize.html): make the brief, share the link, collect
+// entries, build the gallery, judge. No server and no accounts at any step.
 
 import { useId, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { KIT_PRESETS } from "../kit/presets.ts";
 import { download } from "../ui/usePreview.ts";
-import { CLASSIC_PRESET, JAM_EXTENSION, briefFileText, briefLink, newBrief, type JamBrief } from "./brief.ts";
+import { APP_VERSION } from "../version.ts";
+import { JAM_EXTENSION, LONG_LINK, MAX_STARTERS, MAX_STARTER_BYTES, briefFileText, briefLink, newBrief, type JamBrief } from "./brief.ts";
+import { LIMIT_LABELS, cartridgeFacts, type Limits } from "./limits.ts";
 import "./jam.css";
 
-const appBase = () => `${location.origin}${location.pathname}`;
+/** The creator app, next to this page. */
+const appBase = () => new URL("./", location.href).toString();
 
-export function JamPageShell({ title, children }: { title: string; children: ReactNode }) {
+export function JamPageShell({ title, current, children }: { title: string; current: "guide" | "gallery"; children: ReactNode }) {
   return (
     <div className="page jam-page">
       <nav className="jam-nav" aria-label="Jam pages">
-        <a href={import.meta.env.BASE_URL}>Cartridge Studio</a>
-        <a href="?jam-guide">How to run a jam</a>
-        <a href="?jam-gallery">Gallery builder</a>
+        <a href="./">Cartridge Studio</a>
+        <a href="#" aria-current={current === "guide" ? "page" : undefined}>
+          How to run a jam
+        </a>
+        <a href="#gallery" aria-current={current === "gallery" ? "page" : undefined}>
+          Gallery builder
+        </a>
       </nav>
       <main>
         <h1>{title}</h1>
         {children}
       </main>
-      <footer className="muted small jam-footer">Made with Cartridge Studio. Not affiliated with or endorsed by Atari.</footer>
+      <footer className="muted small jam-footer">Made with Cartridge Studio {APP_VERSION}. Not affiliated with or endorsed by Atari.</footer>
     </div>
   );
 }
-
-export const STARTERS: { id: string; name: string }[] = [
-  ...KIT_PRESETS.map((p) => ({ id: p.id, name: p.name })),
-  { id: CLASSIC_PRESET, name: "Classic shooter" },
-];
 
 export const SUGGESTED_THEMES = [
   "One more life",
@@ -46,12 +48,30 @@ export const SUGGESTED_THEMES = [
 ];
 
 const SUGGESTED_RULES = ["One room", "Two colours", "No shooting", "Under 3 minutes to finish", "Only one kind of enemy"];
+const SUGGESTED_CRITERIA = ["Fun", "Theme", "Look and sound"];
+
+function base64(bytes: Uint8Array): string {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+const lines = (s: string, max: number) =>
+  s
+    .split("\n")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, max);
 
 function BriefMaker() {
   const id = useId();
-  const [f, setF] = useState({ name: "", theme: "", dates: "", constraints: "", link: "" });
+  const [f, setF] = useState({ name: "", theme: "", dates: "", constraints: "", criteria: SUGGESTED_CRITERIA.join("\n"), link: "" });
   const [presets, setPresets] = useState<string[]>([]);
+  const [limits, setLimits] = useState<Limits>({});
+  const [starters, setStarters] = useState<JamBrief["starters"]>([]);
+  const [pin, setPin] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [starterError, setStarterError] = useState<string | null>(null);
 
   let brief: JamBrief | null = null;
   let problem: string | null = null;
@@ -64,8 +84,12 @@ function BriefMaker() {
           name: f.name,
           theme: f.theme,
           dates: f.dates,
-          constraints: f.constraints.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 8),
+          constraints: lines(f.constraints, 8),
+          criteria: lines(f.criteria, 8),
           presets,
+          starters,
+          limits,
+          ...(pin ? { app: APP_VERSION } : {}),
           ...(link ? { link } : {}),
         });
       } catch {
@@ -74,6 +98,7 @@ function BriefMaker() {
     }
   }
   const url = brief ? briefLink(brief, appBase()) : "";
+  const touched = () => setCopied(false);
 
   const field = (key: keyof typeof f, label: string, opts: { area?: boolean; hint?: string; placeholder?: string } = {}) => {
     const p = {
@@ -82,7 +107,7 @@ function BriefMaker() {
       placeholder: opts.placeholder,
       "aria-describedby": opts.hint ? `${id}-${key}-hint` : undefined,
       onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setCopied(false);
+        touched();
         setF({ ...f, [key]: e.target.value });
       },
     };
@@ -99,6 +124,15 @@ function BriefMaker() {
     );
   };
 
+  const addStarter = async (file: File) => {
+    setStarterError(null);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.length > MAX_STARTER_BYTES) return setStarterError(`${file.name} is too big to put in a brief.`);
+    if (!cartridgeFacts(bytes)) return setStarterError(`${file.name} isn't a game kit .cartridge file.`);
+    touched();
+    setStarters([...starters, { name: file.name.replace(/\.cartridge$/i, "").slice(0, 40) || "Starter", cartridge: base64(bytes) }]);
+  };
+
   return (
     <div className="jam-maker">
       <div className="jam-form">
@@ -106,17 +140,44 @@ function BriefMaker() {
         {field("theme", "Theme", { placeholder: SUGGESTED_THEMES[0] })}
         {field("dates", "Dates", { placeholder: "e.g. Fri 31 Oct to Sun 2 Nov" })}
         {field("constraints", "Rules, one per line (optional)", { area: true, hint: `Ideas: ${SUGGESTED_RULES.join(", ")}.` })}
+        {field("criteria", "What judges score, one per line", { area: true, hint: "Each becomes a column in the judges' sheet. Up to 8." })}
         {field("link", "Jam page (optional)", { placeholder: "https://itch.io/jam/…", hint: "Where creators read the rules and send their entries." })}
+
+        <fieldset className="jam-limits">
+          <legend>Limits the app checks (optional)</legend>
+          <p className="muted small">Entries that go past a limit are flagged for you and the judges, not refused.</p>
+          {(Object.keys(LIMIT_LABELS) as (keyof Limits)[]).map((k) => (
+            <div className="jam-field" key={k}>
+              <label htmlFor={`${id}-limit-${k}`}>{LIMIT_LABELS[k]}</label>
+              <input
+                id={`${id}-limit-${k}`}
+                type="number"
+                min={1}
+                max={k === "maxRomKB" ? 1024 : 64}
+                value={limits[k] ?? ""}
+                onChange={(e) => {
+                  touched();
+                  const v = Math.round(Number(e.target.value));
+                  const next = { ...limits };
+                  if (e.target.value === "" || !(v >= 1)) delete next[k];
+                  else next[k] = Math.min(v, k === "maxRomKB" ? 1024 : 64);
+                  setLimits(next);
+                }}
+              />
+            </div>
+          ))}
+        </fieldset>
+
         <fieldset className="jam-presets">
-          <legend>Starting games to offer</legend>
+          <legend>Built-in starting games to offer</legend>
           <p className="muted small">Tick none to offer all of them.</p>
-          {STARTERS.map((s) => (
+          {KIT_PRESETS.map((s) => (
             <label key={s.id}>
               <input
                 type="checkbox"
                 checked={presets.includes(s.id)}
                 onChange={(e) => {
-                  setCopied(false);
+                  touched();
                   setPresets(e.target.checked ? [...presets, s.id] : presets.filter((p) => p !== s.id));
                 }}
               />{" "}
@@ -124,6 +185,63 @@ function BriefMaker() {
             </label>
           ))}
         </fieldset>
+
+        <fieldset className="jam-presets">
+          <legend>The jam's own starting games (optional)</legend>
+          <p className="muted small">Game kit .cartridge files, up to {MAX_STARTERS}. They travel inside the brief.</p>
+          {starters.length > 0 && (
+            <ul className="jam-starter-list">
+              {starters.map((s, i) => (
+                <li key={`${s.name}-${i}`}>
+                  {s.name}{" "}
+                  <button
+                    type="button"
+                    className="link"
+                    onClick={() => {
+                      touched();
+                      setStarters(starters.filter((_, j) => j !== i));
+                    }}
+                  >
+                    Remove<span className="visually-hidden"> {s.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {starters.length < MAX_STARTERS && (
+            <label className="jam-file-link">
+              Add a starting game (.cartridge)
+              <input
+                type="file"
+                accept=".cartridge"
+                className="visually-hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void addStarter(file);
+                }}
+              />
+            </label>
+          )}
+          {starterError && (
+            <p className="error" role="alert">
+              {starterError}
+            </p>
+          )}
+        </fieldset>
+
+        <label className="jam-check">
+          <input
+            type="checkbox"
+            checked={pin}
+            onChange={(e) => {
+              touched();
+              setPin(e.target.checked);
+            }}
+          />{" "}
+          Pin the jam to this version of Cartridge Studio ({APP_VERSION}). Entries made with another version are flagged, so every game is
+          judged on the same footing.
+        </label>
       </div>
       <div className="jam-output">
         {problem && <p className="error">{problem}</p>}
@@ -131,12 +249,15 @@ function BriefMaker() {
         {brief && (
           <>
             <label htmlFor={`${id}-url`}>The jam link</label>
-            <textarea id={`${id}-url`} className="jam-url" readOnly rows={3} value={url} onFocus={(e) => e.currentTarget.select()} />
+            <textarea id={`${id}-url`} className="jam-url" readOnly rows={4} value={url} onFocus={(e) => e.currentTarget.select()} />
             <div className="toolbar">
               <button
                 type="button"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(url).then(() => setCopied(true), () => setCopied(false));
+                  void navigator.clipboard?.writeText(url).then(
+                    () => setCopied(true),
+                    () => setCopied(false),
+                  );
                 }}
               >
                 Copy link
@@ -155,6 +276,12 @@ function BriefMaker() {
             <p className="muted small" aria-live="polite">
               {copied ? "Copied." : `${url.length} characters.`}
             </p>
+            {url.length > LONG_LINK && (
+              <p className="small">
+                This link is long{starters.length ? " because of the starting games" : ""}: some chat apps and forums cut long links. Share the{" "}
+                {JAM_EXTENSION} file as well.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -165,7 +292,7 @@ function BriefMaker() {
 export function JamGuide() {
   const id = useId();
   return (
-    <JamPageShell title="How to run a jam">
+    <JamPageShell title="How to run a jam" current="guide">
       <p className="jam-lede">
         A jam on Cartridge Studio needs no server and no sign-ups. You make a brief, share one link, collect ZIP files, and build a
         gallery you can post anywhere. Every game is a real 7800 cartridge program that also plays in any web browser.
@@ -174,8 +301,8 @@ export function JamGuide() {
       <section aria-labelledby={`${id}-1`}>
         <h2 id={`${id}-1`}>1. Make the brief</h2>
         <p>
-          The brief is the jam's name, theme, dates and any extra rules. You can also narrow the starting games, for example only
-          the maze for a maze jam. Everything stays in the link: nothing is uploaded.
+          The brief is the jam's name, theme, dates and any extra rules, what judges will score, and limits the app can check. You can
+          narrow the built-in starting games or add your own. Everything stays in the link: nothing is uploaded.
         </p>
         <BriefMaker />
       </section>
@@ -185,32 +312,33 @@ export function JamGuide() {
         <p>
           Post the jam link on your jam page (itch.io jams work well), a forum thread or a chat. Opening it shows a jam banner with the
           theme and rules, and the entry form. If a link is too long for where you post, share the <code>{JAM_EXTENSION}</code> file
-          instead: creators open it from the start screen.
+          instead: creators open it from the start screen or with Open.
         </p>
         <p className="muted small">
-          Creators' games stay in their own browser. Remind them to save their game file now and then, and to make their entry before
-          the deadline.
+          A pinned jam names the version of Cartridge Studio it was made with ({APP_VERSION} here). Creators on another version can still
+          enter; their entry says which version they used.
         </p>
       </section>
 
       <section aria-labelledby={`${id}-3`}>
         <h2 id={`${id}-3`}>3. Collect entries</h2>
         <p>
-          In the editor, creators fill in a title, credits, a short description and the controls, and press <em>Make my jam entry</em>.
-          That saves one ZIP holding a page that plays the game offline, the game file, signed ROMs, a clip if they made one, and an{" "}
-          <code>entry.json</code>.
+          In the editor, creators fill in a title, credits, a short description and the controls, choose a licence, say whether you may
+          put their game on a compilation, and press <em>Make my jam entry</em>. That saves one ZIP holding the signed ROMs, the game file,
+          a clip if they made one, and a <code>manifest.json</code> with the build, the licence and the ROM's fingerprint (SHA-256).
         </p>
         <p>
-          Ask for that ZIP, unchanged, through your jam page's submission form, by email, or in a forum post. Because the game file is
-          included, anyone can open an entry and see how it was made.
+          Ask for that ZIP, unchanged, through your jam page's submission form, by email, or in a forum post. The ROM is what gets judged:
+          if it's changed after the entry was made, the gallery builder notices.
         </p>
       </section>
 
       <section aria-labelledby={`${id}-4`}>
         <h2 id={`${id}-4`}>4. Build the gallery</h2>
         <p>
-          Open the <a href="?jam-gallery">gallery builder</a>, drop in every entry ZIP and press <em>Build the gallery</em>. You get
-          one ZIP with an <code>index.html</code> showing every game, and each game's player page.
+          Open the <a href="#gallery">gallery builder</a>, drop in every entry ZIP and press <em>Build the gallery</em>. It checks each
+          entry against the brief and makes every game's player page afresh from its ROM, so nothing an entrant sent runs as code on your
+          site. You get one ZIP with an <code>index.html</code> showing every game.
         </p>
         <ul>
           <li>
@@ -223,14 +351,25 @@ export function JamGuide() {
             <strong>A stream or a party:</strong> unzip it anywhere and open <code>index.html</code>. No internet needed.
           </li>
         </ul>
-        <p className="muted small">
-          Each game's ROM is in the gallery too, so people can play it in a 7800 emulator or, with a flash cartridge, on a real 7800+,
-          2600+ or 7800.
-        </p>
       </section>
 
       <section aria-labelledby={`${id}-5`}>
-        <h2 id={`${id}-5`}>Suggested themes</h2>
+        <h2 id={`${id}-5`}>5. Judge</h2>
+        <ol>
+          <li>
+            In the gallery builder, tick <em>Anonymous</em> to leave out credits while judging, build the gallery for the judges, and
+            download the judges' sheet (a CSV file with a column for each thing they score).
+          </li>
+          <li>Each judge plays every game and fills in their copy of the sheet in any spreadsheet app, for example scores from 1 to 5.</li>
+          <li>
+            Add the filled-in sheets back in the gallery builder. It averages them into a results page, then build the final gallery with
+            credits on.
+          </li>
+        </ol>
+      </section>
+
+      <section aria-labelledby={`${id}-6`}>
+        <h2 id={`${id}-6`}>Suggested themes</h2>
         <p>Short themes that suit one-screen games and can be read more than one way:</p>
         <ul className="jam-themes">
           {SUGGESTED_THEMES.map((t) => (

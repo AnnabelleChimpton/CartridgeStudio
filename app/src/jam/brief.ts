@@ -4,6 +4,7 @@
 
 import { strFromU8, strToU8 } from "fflate";
 import { z } from "zod";
+import { LimitsSchema } from "./limits.ts";
 
 export const JAM_FORMAT = "cartridge-studio-jam";
 export const JAM_VERSION = 1;
@@ -11,8 +12,11 @@ export const JAM_EXTENSION = ".jam.json";
 /** The URL parameter a jam link carries. */
 export const JAM_PARAM = "jam";
 
-/** Every starting game a brief can offer: the kit presets and the classic shooter template. */
-export const CLASSIC_PRESET = "fixed-shooter";
+/** Starter games a brief can carry: .cartridge files, base64. */
+export const MAX_STARTERS = 4;
+export const MAX_STARTER_BYTES = 256 * 1024;
+/** Past this, a link is too long for most chat apps and forums: share the file instead. */
+export const LONG_LINK = 4000;
 
 const text = (max: number) => z.string().trim().max(max);
 
@@ -38,8 +42,25 @@ export const JamBriefSchema = z.object({
   dates: text(120).default(""),
   /** Short rules in plain words, e.g. "One room", "Two colours". */
   constraints: z.array(text(120).min(1)).max(8).default([]),
-  /** Starting games to offer; empty means all of them. */
+  /** Built-in starting games (kit preset ids) to offer; empty means all of them. */
   presets: z.array(z.string().max(40)).max(20).default([]),
+  /** The jam's own starting games. */
+  starters: z
+    .array(
+      z.object({
+        name: text(40).min(1),
+        /** A .cartridge file, base64. */
+        cartridge: z.string().max(Math.ceil(MAX_STARTER_BYTES / 3) * 4).regex(/^[A-Za-z0-9+/]*={0,2}$/),
+      }),
+    )
+    .max(MAX_STARTERS)
+    .default([]),
+  /** What judges score, e.g. "Fun", "Theme", "Look and sound". */
+  criteria: z.array(text(40).min(1)).max(8).default([]),
+  /** Limits the app can check; going past one is flagged, not refused. */
+  limits: LimitsSchema.default({}),
+  /** The Cartridge Studio build the jam is pinned to (APP_VERSION): entries from other builds are flagged. */
+  app: z.string().max(60).optional(),
   /** Where the jam lives: rules, submissions, chat. */
   link: webLink.optional(),
 });
@@ -83,6 +104,10 @@ function compact(b: JamBrief): Record<string, unknown> {
   if (b.dates) out.dates = b.dates;
   if (b.constraints.length) out.constraints = b.constraints;
   if (b.presets.length) out.presets = b.presets;
+  if (b.starters.length) out.starters = b.starters;
+  if (b.criteria.length) out.criteria = b.criteria;
+  if (Object.keys(b.limits).length) out.limits = b.limits;
+  if (b.app) out.app = b.app;
   if (b.link) out.link = b.link;
   return out;
 }

@@ -5,9 +5,10 @@
 import { useEffect, useId, useState } from "react";
 import { writeCartridgeFile } from "../files/cartridge-file.ts";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
-import { folderZip, kitSourceFiles, slugify } from "../files/exports.ts";
+import { KIT_TOOLCHAIN, folderZip, kitSourceFiles, slugify } from "../files/exports.ts";
 import { encodeRgbaPng } from "../files/png.ts";
 import { JamEntryPanel } from "../jam/JamEntryPanel.tsx";
+import { kitFacts } from "../jam/limits.ts";
 import { saveKitGame } from "../project/persist.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
@@ -16,6 +17,7 @@ import { ShowItPanel } from "../ui/ShowItPanel.tsx";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
+import { KIT_RUNTIME_VERSION } from "./generate.ts";
 import { KitPrint } from "./KitPrint.tsx";
 import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
@@ -119,7 +121,14 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             title={game.title}
             print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} />}
           />
-          <JamEntryPanel preview={preview} gameTitle={game.title} cartridgeFile={cartridgeFile} />
+          <JamEntryPanel
+            preview={preview}
+            gameTitle={game.title}
+            cartridgeFile={cartridgeFile}
+            facts={kitFacts(game)}
+            runtime={`kit runtime ${KIT_RUNTIME_VERSION}`}
+            toolchain={KIT_TOOLCHAIN}
+          />
         </div>
       </main>
     </div>
