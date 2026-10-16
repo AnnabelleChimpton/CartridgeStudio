@@ -1,8 +1,7 @@
 // Exports that bundle several files (SPEC.md, "Exports"):
 // - source: game.bas and its graphics, so a coder can carry on in 7800basic
 //   ("Escape hatch")
-// - submission package: everything a creator sends by hand: signed ROMs,
-//   print PDF, project file, source and a checklist
+// - the checklist for the submission package (files/package.ts)
 
 import { strToU8, zipSync } from "fflate";
 import { generate } from "../codegen/generate.ts";
@@ -91,11 +90,14 @@ function checklistText(title: string, credits: string): string {
 ${"=".repeat(title.length + 23)}
 
 What's in this package
+  play.html                  plays the game in any web browser, with no internet
   rom/${slug}.bin            signed ROM for flash carts and real consoles
   rom/${slug}.a78            ROM with an A78 header, for emulators and flash carts
   print/${slug}-print.pdf    box front and back, cartridge labels, manual
   project/${slug}.cartridge  your game file; open it in Cartridge Studio to keep editing
   source/                    game.bas and graphics, for 7800basic users
+  media/                     a screenshot, and your latest clip if you made one
+  manifest.json              what's here, which build made it and the ROM's SHA-256
 
 Before you send it
   [ ] Play it start to finish in the Cartridge Studio preview.
@@ -116,49 +118,4 @@ Credits and licences
   The game is yours to license as you wish. ${credits}
   Made with Cartridge Studio. Not affiliated with or endorsed by Atari.
 `;
-}
-
-export interface SubmissionInput {
-  project: Project;
-  template: Template;
-  /** Signed ROMs. */
-  a78: Uint8Array;
-  bin: Uint8Array;
-  pdf: Uint8Array;
-  cartridgeFile: Uint8Array;
-}
-
-export function submissionZip(i: SubmissionInput): Uint8Array {
-  return packageZip({
-    title: i.project.title,
-    checklist: checklist(i.project, i.template),
-    source: sourceFiles(i.project, i.template),
-    ...i,
-  });
-}
-
-export interface PackageInput {
-  title: string;
-  checklist: string;
-  source: Record<string, Uint8Array>;
-  /** Signed ROMs. */
-  a78: Uint8Array;
-  bin: Uint8Array;
-  pdf: Uint8Array;
-  cartridgeFile: Uint8Array;
-}
-
-/** Everything a creator sends by hand: checklist, signed ROMs, print PDF, game file and source. */
-export function packageZip(i: PackageInput): Uint8Array {
-  const slug = slugify(i.title);
-  const root = `${slug}-submission`;
-  const files: Record<string, Uint8Array> = {
-    [`${root}/CHECKLIST.txt`]: strToU8(i.checklist),
-    [`${root}/rom/${slug}.bin`]: i.bin,
-    [`${root}/rom/${slug}.a78`]: i.a78,
-    [`${root}/print/${slug}-print.pdf`]: i.pdf,
-    [`${root}/project/${slug}.cartridge`]: i.cartridgeFile,
-  };
-  for (const [name, data] of Object.entries(i.source)) files[`${root}/source/${name}`] = data;
-  return zipSync(files, { level: 6, mtime: MTIME });
 }

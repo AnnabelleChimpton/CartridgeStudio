@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
+import { useRecentClip } from "../files/recent-clip.ts";
 import { Dialog } from "./Dialog.tsx";
 import { download, type Preview } from "./usePreview.ts";
 
@@ -161,7 +162,10 @@ function ClipRecorder({
       const { frames, palette } = await emu.stopClip();
       if (frames.length < 2) throw new Error("The clip was empty. Press Make a clip, play for a few seconds, then click it again to save.");
       const { encodeClip } = await import("../files/clip.ts");
-      download(encodeClip(frames, { palette, delayMs: (1000 / 60) * CLIP_EVERY }), `${slug}-clip.gif`);
+      const gif = encodeClip(frames, { palette, delayMs: (1000 / 60) * CLIP_EVERY });
+      // Packages and jam entries pick up the latest clip.
+      useRecentClip.getState().set(gif);
+      download(gif, `${slug}-clip.gif`);
       onSaved(`Saved “${slug}-clip.gif”. Post it or send it anywhere pictures go.`);
     } catch (e) {
       onError(`We couldn't save the clip (${e instanceof Error ? e.message : String(e)}). Try again.`);

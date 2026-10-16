@@ -59,7 +59,7 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
       <input
         ref={fileInput}
         type="file"
-        accept={CARTRIDGE_EXTENSION}
+        accept={`${CARTRIDGE_EXTENSION},.json`}
         hidden
         aria-label="Open game file"
         onChange={(e) => {

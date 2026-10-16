@@ -7,7 +7,10 @@ import { useProjectStore } from "../project/store.ts";
 import { draftManual } from "../print/manual.ts";
 import type { Paper, PrintFonts, PrintSubject, Screenshot } from "../print/pdf.ts";
 import { templatePrintSubject } from "../print/subject.ts";
-import { slugify, submissionZip } from "../files/exports.ts";
+import { checklist, slugify, sourceFiles } from "../files/exports.ts";
+import { packageZip } from "../files/package.ts";
+import { useRecentClip } from "../files/recent-clip.ts";
+import { APP_VERSION } from "../version.ts";
 
 const PAPER_KEY = "cartridge-studio:paper";
 
@@ -157,8 +160,20 @@ export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, o
         onReset={() => edit((d) => void (d.cartridge.manualText = null))}
         makePdf={(paper) => printPdf(templatePrintSubject(project, template), paper, screenshot)}
         makePackage={async (pdf) => {
-          const [rom, file] = await Promise.all([buildSigned(), cartridgeFile()]);
-          return submissionZip({ project, template, ...rom, pdf, cartridgeFile: file });
+          const [rom, file, { buildPlayerHtml }] = await Promise.all([buildSigned(), cartridgeFile(), import("../player/player.ts")]);
+          const pkg = await packageZip({
+            kind: "submission",
+            title: project.title,
+            notes: { name: "CHECKLIST.txt", text: checklist(project, template) },
+            build: { app: APP_VERSION, runtime: `${template.manifest.id} template ${template.manifest.version}`, toolchain: template.manifest.toolchain },
+            source: sourceFiles(project, template),
+            ...rom,
+            pdf,
+            cartridgeFile: file,
+            player: await buildPlayerHtml(project.title, rom.a78),
+            clip: useRecentClip.getState().gif,
+          });
+          return pkg.zip;
         }}
         onDownload={onDownload}
       />

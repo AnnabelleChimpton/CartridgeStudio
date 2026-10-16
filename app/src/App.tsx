@@ -9,6 +9,10 @@ import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./fi
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
 import { useGuide } from "./kit/guide.ts";
+import { JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
+import { JamBanner, JamLinks } from "./jam/JamBanner.tsx";
+import { JamEntryPanel } from "./jam/JamEntryPanel.tsx";
+import { useJamStore } from "./jam/store.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
@@ -27,6 +31,7 @@ import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
+const PRESET_IDS = KIT_PRESETS.map((p) => p.id);
 
 const TEMPLATE_TABS = [
   { id: "graphics", label: "Graphics" },
@@ -43,6 +48,21 @@ export function App() {
   const [openError, setOpenError] = useState<string | null>(null);
   /** An "are you sure?" waiting for an answer. */
   const [ask, setAsk] = useState<{ title: string; message: string; yes: string; onYes: () => void } | null>(null);
+  const jam = useJamStore((s) => s.brief);
+  const only = jam ? offeredPresets(jam, PRESET_IDS) : undefined;
+
+  // A jam link (?jam=…) joins that jam, then tidies the address bar.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get(JAM_PARAM);
+    if (raw === null) return;
+    const r = decodeBriefParam(raw);
+    if (r.ok) useJamStore.getState().join(r.brief);
+    else setOpenError(r.errors.join(" "));
+    params.delete(JAM_PARAM);
+    const rest = params.toString();
+    history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash}`);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +96,18 @@ export function App() {
     }
   };
 
+  const openBrief = async (file: File) => {
+    const r = readBriefText(await file.text());
+    if (!r.ok) {
+      setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")}`);
+      return;
+    }
+    setOpenError(null);
+    useJamStore.getState().join(r.brief);
+  };
+
   const open = async (file: File) => {
+    if (file.name.endsWith(JAM_EXTENSION)) return openBrief(file);
     const opened = readCartridgeFile(new Uint8Array(await file.arrayBuffer()), TEMPLATES);
     const r = opened.result;
     if (!r.ok) {
@@ -104,6 +135,25 @@ export function App() {
 
   const onNew = () => setChoosing(true);
 
+  /** One of the jam's own starting games (a .cartridge in the brief). */
+  const openStarter = (name: string, base64: string) => {
+    let r;
+    try {
+      r = readCartridgeFile(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)), TEMPLATES).result;
+    } catch {
+      r = null;
+    }
+    if (!r?.ok || !("kit" in r)) {
+      setOpenError(`The jam's starting game "${name}" couldn't be opened. Ask the organizer for a new link.`);
+      return;
+    }
+    if (mode !== null && !confirm(`Start from "${name}"? The game you're editing will be replaced; save it first to keep it.`)) return;
+    setOpenError(null);
+    setChoosing(false);
+    useKitStore.getState().load(r.kit);
+    switchTo("kit");
+  };
+
   if (mode === "loading") return <div className="page loading">Loading…</div>;
   const banner = openError && (
     <p className="error banner" role="alert">
@@ -113,11 +163,14 @@ export function App() {
       </button>
     </p>
   );
+
   if (mode === null) {
     return (
       <>
         {banner}
-        <StartChooser onChoose={choose} />
+        <JamBanner onStarter={openStarter} />
+        <StartChooser onChoose={choose} only={only} />
+        <JamLinks onBrief={(f) => void openBrief(f)} />
       </>
     );
   }
@@ -125,6 +178,7 @@ export function App() {
   return (
     <>
       {banner}
+      <JamBanner onNewGame={onNew} onStarter={openStarter} />
       {mode === "kit" ? (
         <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
       ) : (
@@ -142,6 +196,7 @@ export function App() {
             });
           }}
           onCancel={() => setChoosing(false)}
+          only={only}
         />
       )}
       {ask && <ConfirmDialog title={ask.title} message={ask.message} yes={ask.yes} onYes={ask.onYes} onClose={() => setAsk(null)} />}
@@ -247,6 +302,14 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
             }
           />
           <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
+          <JamEntryPanel
+            preview={preview}
+            gameTitle={project.title}
+            cartridgeFile={cartridgeFile}
+            facts={{}}
+            runtime={`${template.manifest.id} template ${template.manifest.version}`}
+            toolchain={template.manifest.toolchain}
+          />
         </div>
       </main>
     </div>

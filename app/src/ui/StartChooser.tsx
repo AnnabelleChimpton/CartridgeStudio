@@ -25,10 +25,11 @@ function Cast({ game }: { game: KitGame }) {
 const INTRO =
   "Pick a starting game. You can change everything in it: the art, how things move, the room and the rules. Three short steps will show you how.";
 
-function Choices({ onChoose }: { onChoose: (c: StartChoice) => void }) {
+function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
+  const offered = (id: string) => !only || only.includes(id);
   return (
     <div className="chooser-grid">
-      {KIT_PRESETS.map((p) => (
+      {KIT_PRESETS.filter((p) => offered(p.id)).map((p) => (
         <button key={p.id} type="button" className="chooser-card" onClick={() => onChoose({ kind: "kit", preset: p.id })}>
           <Cast game={p.game} />
           <strong>{p.name}</strong>
@@ -36,22 +37,27 @@ function Choices({ onChoose }: { onChoose: (c: StartChoice) => void }) {
           <span className="muted small">{p.description}</span>
         </button>
       ))}
-      <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "template", template: "fixed-shooter" })}>
-        <strong>Classic shooter</strong>
-        <span className="chooser-kind small">A shooter, in the older editor</span>
-        <span className="muted small">Change the art, sounds and speeds of one ready-made game. Fewer things to change.</span>
-      </button>
+      {offered("fixed-shooter") && (
+        <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "template", template: "fixed-shooter" })}>
+          <strong>Classic shooter</strong>
+          <span className="chooser-kind small">A shooter, in the older editor</span>
+          <span className="muted small">Change the art, sounds and speeds of one ready-made game. Fewer things to change.</span>
+        </button>
+      )}
     </div>
   );
 }
 
-/** A first visit gets the chooser as the page; New game shows it in a dialog. */
-export function StartChooser({ onChoose, onCancel }: { onChoose: (c: StartChoice) => void; onCancel?: () => void }) {
+/**
+ * A first visit gets the chooser as the page; New game shows it in a dialog.
+ * `only` limits the starting games to these ids (kit presets and "fixed-shooter"), e.g. for a jam.
+ */
+export function StartChooser({ onChoose, onCancel, only }: { onChoose: (c: StartChoice) => void; onCancel?: () => void; only?: readonly string[] }) {
   if (onCancel) {
     return (
       <Dialog title="What do you want to make?" wide onClose={onCancel}>
         <p className="muted">{INTRO}</p>
-        <Choices onChoose={onChoose} />
+        <Choices onChoose={onChoose} only={only} />
         <div className="toolbar">
           <span className="spacer" />
           <button type="button" className="secondary" onClick={onCancel}>
@@ -66,7 +72,7 @@ export function StartChooser({ onChoose, onCancel }: { onChoose: (c: StartChoice
       <div className="chooser">
         <h2>What do you want to make?</h2>
         <p className="muted">{INTRO}</p>
-        <Choices onChoose={onChoose} />
+        <Choices onChoose={onChoose} only={only} />
       </div>
     </main>
   );

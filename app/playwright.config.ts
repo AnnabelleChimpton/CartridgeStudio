@@ -1,11 +1,14 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Its own port (strict), so test runs in other worktrees can't answer for this one.
+const PORT = Number(process.env.E2E_PORT ?? 5217);
+
 export default defineConfig({
   testDir: "e2e",
   timeout: 120_000,
   reporter: [["list"]],
   use: {
-    baseURL: "http://localhost:5179",
+    baseURL: `http://localhost:${PORT}`,
   },
   projects: [
     {
@@ -18,8 +21,8 @@ export default defineConfig({
   ],
   webServer: {
     // Test the production build, not the dev server.
-    command: "npm run build && npx vite preview --port 5179",
-    url: "http://localhost:5179",
+    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 120_000,
   },
