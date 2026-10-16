@@ -6,6 +6,10 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GraphicThumbs } from "../code/BasicEditor.tsx";
 import { CodeTier, type CodeJump } from "../code/CodeTier.tsx";
+import { testsBytes } from "../code/creator-tests.ts";
+import { DebuggerDrawer } from "../code/DebuggerDrawer.tsx";
+import { TestsPanel } from "../code/TestsPanel.tsx";
+import { useCreatorTests } from "../code/useCreatorTests.ts";
 import { ejectKit } from "../code/eject.ts";
 import { useGeneratedDiff } from "../code/useGeneratedDiff.ts";
 import { writeCartridgeFile } from "../files/cartridge-file.ts";
@@ -23,11 +27,11 @@ import { useTier } from "../ui/prefs.ts";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
-import { isPlayer, type Brush } from "./edit.ts";
+import { isPlayer, placements, type Brush } from "./edit.ts";
 import { GUIDE_STEPS, useCurrentGuide, useGuide, type GuideStep } from "./guide.ts";
 import { explainError } from "./help.ts";
 import { GUIDE_TAB, KitGuide, guideAnnouncement } from "./KitGuide.tsx";
-import { KIT_RUNTIME_VERSION } from "./generate.ts";
+import { CPU_BUDGET, KIT_RUNTIME_VERSION, cpuCost } from "./generate.ts";
 import { KitPrint } from "./KitPrint.tsx";
 import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
@@ -37,6 +41,7 @@ import { ruleSentence } from "./sentence.ts";
 import { ThingsPanel } from "./ThingsPanel.tsx";
 import type { KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
+import { KIT_WATCH } from "./tests.ts";
 
 /** The editor's tabs: the ones a guide step or idea can open, plus the code they become. */
 type Tab = KitTab | "code";
@@ -181,14 +186,16 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
 
   // Autosave, into My games.
   useAutosave(gameId, { kind: "kit", game }, preview);
+  const tests = useCreatorTests(gameId, preview);
 
   const cartridgeFile = async () => {
     const shot = await preview.screenshot().catch(() => undefined);
-    return writeCartridgeFile(game, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
+    return writeCartridgeFile(game, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba), tests.file);
   };
   const exportSource = async () => {
     const files = kitSourceFiles(game, SOUND_LIBRARY, {
       symbols: preview.lastGood?.symbols,
+      tests: testsBytes(tests.file),
       cartridge: { name: `${slugify(game.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
     });
     download(folderZip(game.title, "source", files), `${slugify(game.title)}-source.zip`);
@@ -293,6 +300,18 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
                 graphics={thumbs}
                 onExportSource={() => void exportSource()}
                 onEject={() => onEditAsCode?.()}
+                tools={
+                  <>
+                    <DebuggerDrawer
+                      preview={preview}
+                      title={game.title}
+                      known={KIT_WATCH}
+                      typeNames={game.types.map((t) => t.label)}
+                      estimate={`The kit's estimate: ${Math.round((cpuCost(game, placements(game)) / CPU_BUDGET) * 100)}% of a frame busy.`}
+                    />
+                    <TestsPanel preview={preview} tests={tests} known={KIT_WATCH} />
+                  </>
+                }
               />
             )}
           </div>
@@ -313,6 +332,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
             preview={preview}
             gameTitle={game.title}
             cartridgeFile={cartridgeFile}
+            tests={() => testsBytes(tests.file)}
             facts={kitFacts(game)}
             runtime={`kit runtime ${KIT_RUNTIME_VERSION}`}
             toolchain={KIT_TOOLCHAIN}

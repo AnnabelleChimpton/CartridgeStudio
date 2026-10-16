@@ -80,6 +80,8 @@ export const ManifestSchema = z.object({
     thumbnail: PathSchema.optional(),
     source: PathSchema.optional(),
     readme: PathSchema.optional(),
+    /** The creator's tests (tests.json): joystick input from power-on and what should be true after it. */
+    tests: PathSchema.optional(),
   }),
   jam: JamBlockSchema.optional(),
 });
@@ -110,6 +112,8 @@ export interface PackageInput {
   clip?: Uint8Array | null;
   thumbnail?: Uint8Array;
   source?: Record<string, Uint8Array>;
+  /** tests.json, when the game has creator tests. */
+  tests?: Uint8Array;
   jam?: JamBlock;
 }
 
@@ -145,6 +149,7 @@ export async function packageZip(i: PackageInput): Promise<{ zip: Uint8Array; ma
   put("pdf", `print/${slug}-print.pdf`, i.pdf);
   put("clip", "media/clip.gif", i.clip);
   put("thumbnail", "media/thumbnail.png", thumbnail);
+  put("tests", "tests.json", i.tests);
   if (i.source && Object.keys(i.source).length) {
     f.source = "source";
     for (const [name, data] of Object.entries(i.source)) files[`source/${name}`] = data;

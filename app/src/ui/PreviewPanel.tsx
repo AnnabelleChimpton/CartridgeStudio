@@ -21,8 +21,7 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error } = preview;
-  const [paused, setPaused] = useState(false);
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error, paused, setPaused } = preview;
   const [muted, setMuted] = useState(false);
 
   return (
@@ -41,10 +40,7 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
         <button
           type="button"
           className="secondary"
-          onClick={() => {
-            emulator.current?.pause(!paused);
-            setPaused(!paused);
-          }}
+          onClick={() => setPaused(!paused)}
         >
           <Icon name={paused ? "play" : "pause"} />
           {paused ? "Resume" : "Pause"}

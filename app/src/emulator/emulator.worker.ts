@@ -4,8 +4,9 @@
 // AudioWorklet. It runs in real time, and `step` advances exact frames for
 // tests (lockstep).
 
-import { CoreHost, HEIGHT, WIDTH, type Js7800Core } from "./core-host.ts";
-import type { EmuRequest, EmuResponse } from "./protocol.ts";
+import { CoreHost, HEIGHT, WIDTH, type JoystickInput, type Js7800Core } from "./core-host.ts";
+import type { EmuRequest, EmuResponse, Peek, Recording } from "./protocol.ts";
+import { newRecording, noteFrames } from "./recording.ts";
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -18,6 +19,11 @@ let running = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let nextAt = 0;
 let clip: { every: number; max: number; frames: Uint8Array[] } | null = null;
+/** The ROM last loaded, so a recording can start from power-on. */
+let rom: Uint8Array | null = null;
+/** The controls held now, and the recording they go into, if one is running. */
+let held: JoystickInput = { up: false, down: false, left: false, right: false, fire: false };
+let recording: Recording | null = null;
 
 const post = (msg: EmuResponse, transfer: Transferable[] = []) => self.postMessage(msg, transfer);
 const reply = (id: number, value?: unknown, transfer: Transferable[] = []) => post({ type: "reply", id, value }, transfer);
@@ -34,6 +40,13 @@ function flushAudio() {
   if (audioPort && samples.length) audioPort.postMessage(samples, [samples.buffer]);
 }
 
+/** Runs `n` frames; while recording, notes the controls held for each one. */
+function advance(n: number) {
+  if (!host) return;
+  if (recording) noteFrames(recording, held, n);
+  host.step(n);
+}
+
 /** Real-time loop, paced by setTimeout with drift correction. */
 function tick() {
   timer = null;
@@ -41,7 +54,7 @@ function tick() {
   const frameMs = 1000 / host.frequency;
   const now = performance.now();
   if (now - nextAt > 250) nextAt = now; // we fell far behind (tab hidden?): don't fast-forward
-  host.step(1);
+  advance(1);
   flushAudio();
   render();
   keepClipFrame();
@@ -96,6 +109,9 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
       case "load":
         stopLoop();
         await host!.load(msg.rom);
+        rom = msg.rom;
+        // A recording belongs to one ROM; a new build ends it.
+        recording = null;
         running = true;
         render();
         startLoop();
@@ -103,6 +119,8 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
         return;
       case "reset":
         await host?.reset();
+        // Restart is power-on, so a recording starts again from here.
+        if (recording) recording = newRecording();
         return;
       case "pause":
         paused = msg.paused;
@@ -110,10 +128,11 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
         else startLoop();
         return;
       case "input":
+        held = { ...msg.state };
         host?.setInput(msg.state);
         return;
       case "step":
-        host!.step(msg.frames);
+        advance(msg.frames);
         flushAudio();
         render();
         post({ type: "frame", frame: host!.frame });
@@ -134,6 +153,28 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
         const frames = clip?.frames ?? [];
         clip = null;
         reply(msg.id, { frames, palette: [...(host?.paletteRgb ?? [])] }, frames.map((f) => f.buffer));
+        return;
+      }
+      case "peek": {
+        const peek: Peek = { frame: host!.frame, bytes: msg.ranges.map(([address, length]) => host!.readMemory(address, length)) };
+        reply(msg.id, peek, peek.bytes.map((b) => b.buffer));
+        return;
+      }
+      case "record-start":
+        if (!rom) throw new Error("No game is loaded");
+        stopLoop();
+        await host!.load(rom);
+        host!.setInput(held);
+        recording = newRecording();
+        render();
+        post({ type: "frame", frame: host!.frame });
+        startLoop();
+        reply(msg.id);
+        return;
+      case "record-stop": {
+        const r = recording;
+        recording = null;
+        reply(msg.id, r);
         return;
       }
       case "pixels": {

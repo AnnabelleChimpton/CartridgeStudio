@@ -57,6 +57,8 @@ export function usePreview(source: GameSource) {
   const [lastGood, setLastGood] = useState<Built | null>(null);
   const [record, setRecord] = useState<BuildRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Paused by the Play panel or the debugger; one state, so both show the same. */
+  const [paused, setPausedState] = useState(false);
   const service = useRef<BuildService | null>(null);
   const emulator = useRef<WorkerEmulator | null>(null);
   const emuContainer = useRef<HTMLDivElement>(null);
@@ -163,6 +165,20 @@ export function usePreview(source: GameSource) {
     }
   };
 
+  /** dasm's listing of the current game, from a build of its own (the preview keeps running). */
+  const buildListing = async (): Promise<string> => {
+    const lister = new WorkerBuildService({ timeoutMs: 30_000 });
+    try {
+      const r = await lister.build(sourceRef.current, { sign: false, listing: true });
+      if (r.kind === "built" && r.listing !== undefined) return r.listing;
+      if (r.kind === "invalid") throw new Error(r.errors.join(" "));
+      if (r.kind === "failed") throw new Error(`The game doesn't build (${r.stage}: ${r.message}), so there's no listing.`);
+      throw new Error("The listing build was cancelled. Try again.");
+    } finally {
+      lister.dispose();
+    }
+  };
+
   const screenshot = async (): Promise<Screenshot | undefined> => {
     const emu = emulator.current;
     if (!emu || !lastGood) return undefined;
@@ -189,6 +205,11 @@ export function usePreview(source: GameSource) {
       (ready ? ` · ${ready.toolchainVersion}` : "")
     : "";
 
+  const setPaused = (p: boolean) => {
+    emulator.current?.pause(p);
+    setPausedState(p);
+  };
+
   /** TV mode: the game full screen with its title and a controller prompt, ready to play. */
   const enterTv = () => {
     const el = stage.current;
@@ -197,7 +218,7 @@ export function usePreview(source: GameSource) {
     el.querySelector("canvas")?.focus();
   };
 
-  return { emuContainer, stage, enterTv, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
+  return { emuContainer, stage, enterTv, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, buildListing, screenshot, paused, setPaused };
 }
 
 export type Preview = ReturnType<typeof usePreview>;

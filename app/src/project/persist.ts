@@ -16,6 +16,7 @@
 
 import { createStore, del, get, keys, set } from "idb-keyval";
 import { ejectTemplate } from "../code/eject.ts";
+import { readTests, type TestsFile } from "../code/creator-tests.ts";
 import { CodeProjectSchema, type CodeProject } from "../code/schema.ts";
 import { loadKit } from "../kit/migrations.ts";
 import type { KitGame } from "../kit/schema.ts";
@@ -79,6 +80,8 @@ const OLD_MODE = "mode";
 const metaKey = (id: string) => `meta:${id}`;
 const gameKey = (id: string) => `game:${id}`;
 const thumbKey = (id: string) => `thumb:${id}`;
+/** The game's creator tests (tests.json), kept beside it rather than in it. */
+const testsKey = (id: string) => `tests:${id}`;
 
 const newId = () => (typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
 
@@ -340,17 +343,29 @@ export function setOpen(id: string | null, data?: GameData) {
 }
 
 /** Adds a game to the library and returns its id. */
-export async function addGame(data: GameData, thumbnail?: Uint8Array): Promise<string> {
+export async function addGame(data: GameData, thumbnail?: Uint8Array, tests?: TestsFile): Promise<string> {
   const id = newId();
   const now = Date.now();
   await put(gameKey(id), data.game);
   await put(metaKey(id), metaOf(id, data, now));
   createdAt.set(id, now);
   if (thumbnail) await put(thumbKey(id), thumbnail);
+  if (tests?.tests.length) await put(testsKey(id), tests);
   return id;
 }
 
 export const saveThumbnail = (id: string, png: Uint8Array) => put(thumbKey(id), png);
+
+export const saveTests = (id: string, tests: TestsFile) => put(testsKey(id), tests);
+
+/** A game's creator tests; null if it has none (or they can't be read, which leaves them where they are). */
+export async function loadTests(id: string): Promise<TestsFile | null> {
+  try {
+    return readTests(await storage().get(testsKey(id)));
+  } catch {
+    return null;
+  }
+}
 
 /** Every game, most recently changed first. */
 export async function listGames(store: KeyValue = storage()): Promise<GameEntry[]> {
@@ -405,7 +420,7 @@ export async function duplicateGame(id: string): Promise<string | null> {
   } catch {
     thumb = undefined;
   }
-  return addGame(renamed(data, `${data.game.title || "Untitled"} (copy)`), thumb instanceof Uint8Array ? thumb : undefined);
+  return addGame(renamed(data, `${data.game.title || "Untitled"} (copy)`), thumb instanceof Uint8Array ? thumb : undefined, (await loadTests(id)) ?? undefined);
 }
 
 export async function deleteGame(id: string) {
@@ -413,7 +428,7 @@ export async function deleteGame(id: string) {
   opened.delete(id);
   const store = storage();
   try {
-    await Promise.all([store.del(metaKey(id)), store.del(gameKey(id)), store.del(thumbKey(id))]);
+    await Promise.all([store.del(metaKey(id)), store.del(gameKey(id)), store.del(thumbKey(id)), store.del(testsKey(id))]);
   } catch {
     // Nothing more to do; it stays on the list.
   }

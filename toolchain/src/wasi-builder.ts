@@ -159,6 +159,7 @@ export class WasiBuilder implements Builder {
         "-p20",
         `-s${SOURCE}.symbol.txt`,
         `-o${SOURCE}.bin`,
+        ...(input.listing ? [`-l${SOURCE}.list.txt`] : []),
       ]);
       const filtered = await run("7800filter", [], dasm.stdout);
       log += decoder.decode(filtered.stdout);
@@ -182,6 +183,7 @@ export class WasiBuilder implements Builder {
         signed,
         a78: readFile(`${SOURCE}.a78`, "7800header"),
         symbols: decoder.decode(readFile(`${SOURCE}.symbol.txt`, "dasm")),
+        ...(input.listing ? { listing: decoder.decode(readFile(`${SOURCE}.list.txt`, "dasm")) } : {}),
         log,
         timings,
         totalMs: performance.now() - started,

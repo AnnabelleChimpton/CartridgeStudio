@@ -20,6 +20,11 @@ import { parseBuildLog, type BuildProblem } from "./build-log.ts";
 import { CartridgeSpace } from "./CartridgeSpace.tsx";
 import { RomDownloads } from "./RomDownloads.tsx";
 import { CodePrint } from "./CodePrint.tsx";
+import { testsBytes } from "./creator-tests.ts";
+import { DebuggerDrawer } from "./DebuggerDrawer.tsx";
+import { TestsPanel } from "./TestsPanel.tsx";
+import { useCreatorTests } from "./useCreatorTests.ts";
+import { KIT_WATCH } from "../kit/tests.ts";
 import { LazyBasicEditor } from "./LazyBasicEditor.tsx";
 import { ReferencePanel } from "./ReferencePanel.tsx";
 import { insertAfterCursor } from "./source-edit.ts";
@@ -29,6 +34,7 @@ import "./code.css";
 const TABS = [
   { id: "code", label: "Code" },
   { id: "assets", label: "Graphics" },
+  { id: "tests", label: "Tests" },
   { id: "reference", label: "Reference" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
@@ -58,6 +64,8 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
 
   // Autosave, into My games.
   useAutosave(gameId, { kind: "code", game: project }, preview);
+  const tests = useCreatorTests(gameId, preview);
+  const testsFailing = tests.run.status === "done" ? tests.run.results.filter((r) => !r.passed).length : 0;
 
   const result = preview.result;
   const problems = useMemo<BuildProblem[]>(() => {
@@ -88,12 +96,13 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
 
   const cartridgeFile = async () => {
     const shot = await preview.screenshot().catch(() => undefined);
-    return writeCartridgeFile(project, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
+    return writeCartridgeFile(project, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba), tests.file);
   };
 
   const exportSource = async () => {
     const files = codeSourceFiles(project, {
       symbols: preview.lastGood?.symbols,
+      tests: testsBytes(tests.file),
       cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
     });
     download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
@@ -151,6 +160,7 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
                 onClick={() => setTab(t.id)}
               >
                 {t.label}
+                {t.id === "tests" && testsFailing > 0 && <span className="tab-badge"> ({testsFailing} failing)</span>}
               </button>
             ))}
           </div>
@@ -200,6 +210,8 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
                 {announcement}
               </p>
             </section>
+            {/* Ejected kit games keep the kit's variable names, so the same ones are watched; other programs start empty. */}
+            <DebuggerDrawer preview={preview} title={project.title} known={KIT_WATCH} />
             <h3 className="section-h">Cartridge</h3>
             <CartridgeSpace stats={preview.lastGood?.stats} source={preview.lastGood?.source} />
             <div className="toolbar">
@@ -221,6 +233,10 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
               <AssetsPanel onShowLine={goToLine} />
             </div>
           )}
+          {/* Kept mounted, so a recording carries on while you look at another tab. */}
+          <div className="workspace-panel" role="tabpanel" id={`${ids}-tests-panel`} aria-labelledby={`${ids}-tests`} hidden={tab !== "tests"}>
+            <TestsPanel preview={preview} tests={tests} known={KIT_WATCH} />
+          </div>
           {tab === "reference" && (
             <div className="workspace-panel" role="tabpanel" id={`${ids}-reference-panel`} aria-labelledby={`${ids}-reference`}>
               <ReferencePanel onInsert={insertSnippet} />
