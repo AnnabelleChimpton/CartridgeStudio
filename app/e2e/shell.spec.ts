@@ -18,38 +18,37 @@ async function start(page: Page, preset: RegExp) {
 test.describe("a first visit", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("starts in Starter mode, which hides rules and developer tools until asked", async ({ page }) => {
+  test("starts in Starter mode, which keeps counters and code out of the way until asked", async ({ page }) => {
     await start(page, /^Ghost Panic/);
     const mode = page.getByRole("radiogroup", { name: "Mode" });
     await expect(mode.getByRole("radio", { name: "Starter" })).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Game"]);
-    await expect(page.getByText("For developers")).toBeHidden();
+    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await page.getByRole("tab", { name: "Game" }).click();
     await expect(page.getByRole("button", { name: "Add counter" })).toBeHidden();
     expect(await axe(page)).toEqual([]);
 
-    // Maker shows the rules; arrows move through the switch.
+    // Maker shows counters; arrows move through the switch.
     await mode.getByRole("radio", { name: "Starter" }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(mode.getByRole("radio", { name: "Maker" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await expect(page.getByRole("button", { name: "Add counter" })).toBeVisible();
 
-    // Coder opens the developer drawer; the choice is remembered.
+    // Coder adds the Code tab; the choice is remembered.
     await mode.getByRole("radio", { name: "Coder" }).click();
-    await expect(page.getByText("View code")).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game", "Code"]);
     await page.reload();
     await expect(page.getByRole("radio", { name: "Coder" })).toHaveAttribute("aria-checked", "true");
 
-    // Back to Starter while on Rules: the editor falls back to Things.
-    await page.getByRole("tab", { name: "Rules" }).click();
+    // Back to Starter while on Code: the editor falls back to Things.
+    await page.getByRole("tab", { name: "Code" }).click();
     await page.getByRole("radio", { name: "Starter" }).click();
     await expect(page.getByRole("tab", { name: "Things" })).toHaveAttribute("aria-selected", "true");
   });
 });
 
 test("the Game menu opens with a click, closes with Escape and starts a new game", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   const menuButton = page.getByRole("button", { name: "Game", exact: true });
   await expect(page.getByRole("button", { name: "New game" })).toBeHidden();
   await menuButton.click();
@@ -67,7 +66,7 @@ test("the Game menu opens with a click, closes with Escape and starts a new game
 });
 
 test("saving says so in a toast", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save game file" }).click()]);
   await expect(page.getByRole("status").filter({ hasText: "rock-fall.cartridge" })).toContainText("Saved rock-fall.cartridge to your downloads");
 });
@@ -88,7 +87,7 @@ test("every tab, Show it and a dialog pass axe; Show it leads with making it rea
 });
 
 test("the colour picker names colours", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   await page.getByRole("tab", { name: "Game" }).click();
   const swatch = page.getByRole("button", { name: /^Background/ }).first();
   await expect(swatch).toHaveAccessibleName(/^Background.*: \$[0-9A-F]{2}, [a-z ]+$/);
@@ -99,7 +98,7 @@ test("the colour picker names colours", async ({ page }) => {
 });
 
 test("an error takes the context strip under the top bar", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   await page.getByLabel("Open game file").setInputFiles({ name: "notes.cartridge", mimeType: "text/plain", buffer: Buffer.from("hi") });
   const alert = page.locator(".topbar").getByRole("alert");
   await expect(alert).toContainText("Couldn't open notes.cartridge");

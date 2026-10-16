@@ -82,6 +82,7 @@ test("a hidden guide stays hidden for that game, comes back from Guide, and a ne
   }
 
   await guide(page).getByRole("button", { name: "Hide guide" }).click();
+  await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Yarn Hunt/ }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();

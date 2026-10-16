@@ -15,6 +15,8 @@ const PRECACHE = /* __CS_PRECACHE__ */ [];
 const LAZY = new Set(/* __CS_LAZY__ */ [].map((path) => new URL(path, self.location.href).href));
 const CACHE = `cartridge-studio-${VERSION}`;
 const INDEX = new URL("./", self.location.href).href;
+/** The app's own pages (index.html, organize.html…), each served as itself. */
+const PAGES = new Set(PRECACHE.filter((path) => path.endsWith(".html")).map((path) => new URL(path, self.location.href).href));
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -49,8 +51,9 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // Every page of the app is the same single-page shell.
-  const key = req.mode === "navigate" ? INDEX : url.origin + url.pathname;
+  // A page of the app is served as itself; any other address is the editor's shell.
+  const path = url.origin + url.pathname;
+  const key = req.mode === "navigate" ? (PAGES.has(path) ? path : INDEX) : path;
   event.respondWith(
     (async () => {
       const cache = await caches.open(CACHE);

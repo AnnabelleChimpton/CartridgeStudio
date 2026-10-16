@@ -104,8 +104,8 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await page.getByRole("button", { name: /Back to the kit game/ }).click();
   await expect(page.getByText("Game kit", { exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Rules" })).toBeVisible();
-  page.once("dialog", (d) => void d.accept());
   await page.getByLabel("Open game file").setInputFiles({ name: "ghost-panic.cartridge", mimeType: "application/zip", buffer: Buffer.concat(chunks) });
+  await page.getByRole("dialog").getByRole("button", { name: /^Open “/ }).click();
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
   expect(await source(page)).toBe(saved);
   await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
@@ -222,7 +222,7 @@ test("an ejected game still boxes up: print PDF, submission package and source f
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(new TextDecoder().decode(pdf.bytes.subarray(0, 5))).toBe("%PDF-");
-  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download submission package" }).click());
+  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download everything" }).click());
   const names = Object.keys(unzipSync(pkg.bytes)).map((n) => n.replace("ghost-panic-submission/", ""));
   expect(names).toEqual(
     expect.arrayContaining([

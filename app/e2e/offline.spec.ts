@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 /** Opens the start screen and waits for the service worker to take over. */
 async function firstVisit(page: Page) {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: /^Maze/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
   await expect(page.getByTestId("offline-status")).toHaveText("Works offline", { timeout: 30_000 });
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
@@ -41,7 +41,7 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
   await page.reload();
   await expect(page.getByTestId("offline-status")).toHaveText("Offline: everything still works");
 
-  await page.getByRole("button", { name: /^Maze/ }).click();
+  await page.getByRole("button", { name: /^Yarn Hunt/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
   const build = await page.evaluate(() => {
     const b = window.__cs!.last!;
@@ -54,12 +54,18 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
     .poll(() => page.evaluate(() => window.__cs!.emulator?.framebufferHash() ?? null), { timeout: 15_000 })
     .not.toBeNull();
 
-  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Download .a78" }).click()]);
+  // The signed ROM, from Show it's console guide.
+  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Put it on a console/ }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("dialog", { name: "Put it on a console" }).getByRole("button", { name: /\.a78/ }).click(),
+  ]);
   expect(download.suggestedFilename()).toMatch(/\.a78$/);
   const chunks: Buffer[] = [];
   for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
   expect(Buffer.concat(chunks).subarray(1, 10).toString("latin1")).toBe("ATARI7800");
+
+  await page.keyboard.press("Escape");
 
   // The game autosaved to IndexedDB and comes back on an offline reload.
   await page.getByLabel("Game title").fill("Offline Hunt");

@@ -43,7 +43,7 @@ async function joinAndStart(page: Page) {
   await expect(page).not.toHaveURL(/jam=/);
   // Only the jam's starting games.
   await expect(page.locator(".chooser-card")).toHaveCount(2);
-  await expect(page.getByRole("button", { name: /^Maze/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Classic shooter/ })).toHaveCount(0);
   expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
@@ -87,7 +87,7 @@ test("the organizer guide makes a working jam link and passes axe", async ({ pag
   }
   await page.getByLabel("Jam name").fill("Guide Jam");
   await page.getByRole("textbox", { name: "Theme" }).fill("Small world");
-  await page.getByRole("checkbox", { name: "Maze" }).check();
+  await page.getByRole("checkbox", { name: "Yarn Hunt" }).check();
   await page.getByRole("spinbutton", { name: "Rules", exact: true }).fill("6");
   const link = await page.getByLabel("The jam link").inputValue();
   expect(await axe(page)).toEqual([]);

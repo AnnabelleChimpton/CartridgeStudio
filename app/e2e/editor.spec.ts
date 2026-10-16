@@ -489,7 +489,7 @@ test("exports the source and the submission package", async ({ page }) => {
   await open(page);
   const { unzipSync } = await import("fflate");
 
-  const source = await downloadBytes(page, "Download the code");
+  const source = await downloadBytes(page, "Export source");
   expect(source.name).toBe("cat-vs-vacuums-source.zip");
   expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
 

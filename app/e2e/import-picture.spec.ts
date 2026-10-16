@@ -9,7 +9,7 @@ const PICTURE = new URL("./fixtures/drawing.png", import.meta.url).pathname;
 
 async function start(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: /^Dodger/ }).click();
+  await page.getByRole("button", { name: /^Rock Fall/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 }
 
@@ -36,7 +36,7 @@ test("a picture becomes the player's sprite, and one Undo puts it back", async (
   await start(page);
   const before = await hero(page);
   // The player is picked to start with, and its size is out in the open.
-  await expect(page.getByLabel("Thing name")).toHaveValue("Ship");
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Ship");
   await expect(page.getByLabel("Width", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Import a picture" }).click();
