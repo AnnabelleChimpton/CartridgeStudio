@@ -17,4 +17,11 @@ describe("colorName", () => {
     const names = Array.from({ length: 256 }, (_, i) => colorName(toColor(i)));
     expect(names.every((n) => /^[a-z ]+$/.test(n))).toBe(true);
   });
+
+  it("names 16 different hue families, from very dark to pale", () => {
+    const families = new Set(Array.from({ length: 16 }, (_, h) => colorName(toColor(h * 16 + 8))));
+    expect(families.size).toBe(16);
+    const shades = Array.from({ length: 16 }, (_, l) => colorName(toColor(0x30 + l)).replace("orange", "").trim());
+    expect([...new Set(shades)]).toEqual(["very dark", "dark", "", "light", "pale"]);
+  });
 });

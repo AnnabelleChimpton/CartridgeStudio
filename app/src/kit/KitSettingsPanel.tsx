@@ -4,6 +4,9 @@
 import { Fragment, useState } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
+import { EASIER_EXTRA_LIVES, easierOn, setEasier } from "./assist.ts";
+import { gameContrast, thingContrast } from "./contrast.ts";
+import { ContrastNotes } from "./ContrastNotes.tsx";
 import { addCounter, removeCounter, showCounter } from "./edit.ts";
 import { kitText } from "./generate.ts";
 import { MAX_COUNTERS, type KitGame } from "./schema.ts";
@@ -38,6 +41,7 @@ export function KitSettingsPanel() {
   const wall = game.palettes.find((p) => p.id === game.wallPalette);
   const text = game.palettes.find((p) => p.id === game.textPalette);
   const shooter = game.types.some((t) => t.shoots);
+  const dimThings = game.types.filter((t) => thingContrast(game, t));
 
   return (
     <section className="panel" aria-labelledby="kit-settings-h">
@@ -70,6 +74,11 @@ export function KitSettingsPanel() {
                   label="Wall shade"
                   onChange={(c) => edit((d) => void (d.palettes.find((p) => p.id === d.wallPalette)!.colors[1] = c))}
                 />
+                <ColorPicker
+                  value={wall.colors[2]}
+                  label="Spike color"
+                  onChange={(c) => edit((d) => void (d.palettes.find((p) => p.id === d.wallPalette)!.colors[2] = c))}
+                />
               </>
             )}
             {text && (
@@ -80,6 +89,23 @@ export function KitSettingsPanel() {
               />
             )}
           </span>
+          <ContrastNotes warnings={gameContrast(game)} id="game-contrast" />
+          {dimThings.length > 0 && (
+            <p className="muted small" data-testid="things-contrast-summary">
+              On this background, {dimThings.map((t) => t.label).join(", ")} may be hard to see. The Things tab suggests clearer colors.
+            </p>
+          )}
+        </div>
+        <div className="field" role="group" aria-labelledby="difficulty-h">
+          <span id="difficulty-h">Difficulty</span>
+          <label className="check">
+            <input type="checkbox" checked={easierOn(game)} onChange={(e) => edit((d) => setEasier(d, e.target.checked))} aria-describedby="easier-hint" />{" "}
+            Easier for younger players
+          </label>
+          <p className="muted small" id="easier-hint">
+            With this on, the console's left difficulty switch picks how hard the game is. At B, the usual setting, everything but the player moves at half speed
+            and you start with {EASIER_EXTRA_LIVES} extra lives. Flip it to A to play the game as you made it.
+          </p>
         </div>
         {TEXTS.map(({ key, label }) => (
           <Fragment key={key}>

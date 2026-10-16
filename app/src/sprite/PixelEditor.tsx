@@ -4,7 +4,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { arrowKeys, drawCursor, radioProps, tabProps, useGridKeyboard } from "../ui/a11y.ts";
-import { ntscCss } from "../ui/ntsc.ts";
+import { colorName as paletteName, ntscCss } from "../ui/ntsc.ts";
 import { ImportPicture } from "./ImportPicture.tsx";
 import {
   clearFrame,
@@ -62,7 +62,13 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
   const update = (next: (f: Frame) => Frame, key?: string) => onFrame(current, next, key);
   const ids = useId();
 
-  const colorName = (v: PixelValue) => (v === 0 ? "Transparent" : `Color ${v}`);
+  /** A pixel value in words: its color's name ("dark orange"), plus its number when another color has the same name. */
+  const colorName = (v: PixelValue) => {
+    const c = colors[v - 1];
+    if (v === 0 || !c) return v === 0 ? "Transparent" : `Color ${v}`;
+    const name = paletteName(c);
+    return colors.some((o, i) => i !== v - 1 && paletteName(o) === name) ? `${name}, color ${v}` : name;
+  };
   const grid = useGridKeyboard({
     cols: width,
     rows: height,
@@ -159,8 +165,8 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
               key={v}
               type="button"
               {...radioProps(color === v)}
-              aria-label={colorName(v)}
-              title={v === 0 ? "Transparent (or right-click)" : `Color ${v}`}
+              aria-label={v === 0 || !colors[v - 1] ? colorName(v) : `Color ${v}: ${paletteName(colors[v - 1]!)}`}
+              title={v === 0 ? "Transparent (or right-click)" : colors[v - 1] ? `Color ${v}: ${paletteName(colors[v - 1]!)}` : `Color ${v}`}
               className={`se-color ${v === 0 ? "transparent" : ""} ${color === v ? "selected" : ""}`}
               style={{ background: swatch(v) }}
               onClick={() => setColor(v)}
