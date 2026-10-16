@@ -1,7 +1,6 @@
-import type { Project } from "../project/schema.ts";
-import type { BuildOptions, ProjectBuildResult } from "./project-build.ts";
+import type { BuildOptions, GameSource, ProjectBuildResult } from "./project-build.ts";
 
-export type WorkerRequest = { type: "init"; packUrl: string } | { type: "build"; id: number; project: Project; options: BuildOptions };
+export type WorkerRequest = { type: "init"; packUrl: string } | { type: "build"; id: number; project: GameSource; options: BuildOptions };
 
 export type WorkerResponse =
   | { type: "ready"; toolchainVersion: string; fetchMs: number; compileMs: number }

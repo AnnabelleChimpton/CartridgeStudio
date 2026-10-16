@@ -14,7 +14,12 @@ interface BuildRecord {
 
 async function open(page: Page, url = "/") {
   await page.goto(url);
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  // A first visit starts at the chooser; these tests are about the classic template editor.
+  const classic = page.getByRole("button", { name: /Classic shooter/ });
+  const status = page.getByTestId("build-status");
+  await expect(classic.or(status)).toBeVisible({ timeout: 30_000 });
+  if (await classic.isVisible()) await classic.click();
+  await expect(status).toContainText("Up to date", { timeout: 30_000 });
 }
 
 const buildCount = (page: Page) => page.evaluate(() => window.__cs!.builds.length);

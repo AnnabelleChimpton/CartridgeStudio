@@ -4,8 +4,14 @@
 
 import type { Builder } from "@cartridge-studio/toolchain";
 import { generate } from "../codegen/generate.ts";
-import { getTemplate } from "../project/templates.ts";
+import { generateKit } from "../kit/generate.ts";
+import type { KitGame } from "../kit/schema.ts";
+import { SOUND_LIBRARY, getTemplate } from "../project/templates.ts";
 import type { Project } from "../project/schema.ts";
+
+/** Anything the app can build: a template project or a kit game. */
+export type GameSource = Project | KitGame;
+export const isKitGame = (g: GameSource): g is KitGame => "kit" in g;
 import { cacheKey, type RomCache } from "./rom-cache.ts";
 
 interface Timings {
@@ -39,12 +45,12 @@ export interface BuildOptions {
 
 export async function buildProject(
   builder: Builder,
-  project: Project,
+  project: GameSource,
   cache?: RomCache,
   { sign = true }: BuildOptions = {},
 ): Promise<ProjectBuildResult> {
   const t0 = performance.now();
-  const gen = generate(project, getTemplate(project.template.id));
+  const gen = isKitGame(project) ? generateKit(project, SOUND_LIBRARY) : generate(project, getTemplate(project.template.id));
   const generateMs = performance.now() - t0;
   const timings = (buildMs: number) => ({ generateMs, buildMs, totalMs: performance.now() - t0 });
   if (!gen.ok) return { kind: "invalid", errors: gen.errors, ...timings(0) };

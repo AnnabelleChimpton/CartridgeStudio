@@ -43,7 +43,7 @@ describe(".cartridge files", () => {
     old.template.version = "0.1.0";
     old.sprites.find((s) => s.role === "enemy")!.frames.splice(1);
     const opened = readCartridgeFile(writeCartridgeFile(old), TEMPLATES);
-    expect(opened.result.ok && opened.result.project.template.version).toBe(template.manifest.version);
+    expect(opened.result.ok && "project" in opened.result && opened.result.project.template.version).toBe(template.manifest.version);
   });
 
   it("refuses files that aren't game files", () => {

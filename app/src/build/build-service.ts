@@ -4,8 +4,7 @@
 // timeout, so a compiler that hangs can't wedge the preview.
 
 import { TOOLCHAIN_PACK_FILE, WasiBuilder, readPack } from "@cartridge-studio/toolchain";
-import type { Project } from "../project/schema.ts";
-import { buildProject, type BuildOptions, type ProjectBuildResult } from "./project-build.ts";
+import { buildProject, type BuildOptions, type GameSource, type ProjectBuildResult } from "./project-build.ts";
 import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
 import { idbRomCache } from "./rom-cache.ts";
 
@@ -21,7 +20,7 @@ export interface BuildService {
   /** Resolves when the first toolchain instance is ready. */
   readonly ready: Promise<ReadyInfo>;
   /** Builds `project`. A newer call cancels this one, which then resolves as `cancelled`. */
-  build(project: Project, options?: BuildOptions): Promise<ProjectBuildResult>;
+  build(project: GameSource, options?: BuildOptions): Promise<ProjectBuildResult>;
   dispose(): void;
 }
 
@@ -79,7 +78,7 @@ export class WorkerBuildService implements BuildService {
     this.spawn();
   }
 
-  async build(project: Project, options: BuildOptions = {}): Promise<ProjectBuildResult> {
+  async build(project: GameSource, options: BuildOptions = {}): Promise<ProjectBuildResult> {
     if (this.inFlight) {
       this.finish(cancelled());
       this.restart();
@@ -144,7 +143,7 @@ export class InlineBuildService implements BuildService {
     });
   }
 
-  async build(project: Project, options: BuildOptions = {}): Promise<ProjectBuildResult> {
+  async build(project: GameSource, options: BuildOptions = {}): Promise<ProjectBuildResult> {
     const id = ++this.latest;
     const result = await buildProject(await this.builder, project, this.cache, options);
     return id === this.latest ? result : cancelled();
