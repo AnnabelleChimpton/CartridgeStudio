@@ -125,3 +125,12 @@ select {
 
 /* Sounds */
 .sound-row { display: grid; grid-template-columns: 1fr 150px; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; }
+
+/* Make cartridge */
+.print-row { display: flex; align-items: baseline; justify-content: space-between; font-size: 13px; margin-top: 8px; }
+.manual-text {
+  width: 100%; resize: vertical; margin-top: 4px; background: #0f1115; color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: 13px/1.5 system-ui, sans-serif;
+}
+.print-paper { display: flex; align-items: center; gap: 6px; }
+.print-paper select { flex: none; }

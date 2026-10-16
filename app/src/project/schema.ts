@@ -81,6 +81,16 @@ export const ManifestSchema = z.object({
   actions: z.array(z.object({ id: z.string(), label: z.string() })),
   /** Named moments the engine plays a sound at; the project picks a library sound (or "none") for each. */
   sounds: z.array(z.object({ slot: z.string(), label: z.string(), default: z.string() })).default([]),
+  /** Manual sentences; `{paramId}` is replaced with the param's value. */
+  manual: z
+    .object({
+      intro: z.string(),
+      controls: z.array(z.string()),
+      /** A fact with `if` is only included when that param isn't 0. */
+      facts: z.array(z.union([z.string(), z.object({ text: z.string(), if: z.string() })])),
+      gameOver: z.string(),
+    })
+    .optional(),
   /**
    * Game variables that behaviour tests may read, by name, mapped to engine
    * symbols. gamestate etc. are engine details; tests only use these names.

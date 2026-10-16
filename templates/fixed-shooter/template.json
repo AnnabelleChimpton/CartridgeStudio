@@ -39,6 +39,21 @@
     { "slot": "lose", "label": "Losing a life", "default": "down" },
     { "slot": "wave", "label": "New wave", "default": "up" }
   ],
+  "manual": {
+    "intro": "A formation of enemies is marching down the screen. Move along the bottom and shoot them all before they reach you.",
+    "controls": [
+      "Press the button to start.",
+      "Push the joystick left and right to move.",
+      "Press the button to fire. One shot can be on screen at a time."
+    ],
+    "facts": [
+      "You start with {lives} lives.",
+      "Each enemy you hit is worth {pointsPerEnemy} points.",
+      { "text": "Every new wave is a little faster than the last.", "if": "waveSpeedup" },
+      { "text": "Watch out for falling bombs!", "if": "bombRate" }
+    ],
+    "gameOver": "When your last life is gone, the game ends. Press the button to play again."
+  },
   "watch": {
     "score": { "symbol": "score0", "bytes": 3, "bcd": true },
     "lives": { "symbol": "lives" },

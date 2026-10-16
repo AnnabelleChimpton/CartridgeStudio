@@ -375,3 +375,34 @@ test("the game keeps running while the main thread is busy", async ({ page }) =>
   // ~0.65 s at 60 fps; frames emulated during the block arrive afterwards.
   expect(advanced).toBeGreaterThan(25);
 });
+
+test("makes the print PDF with an edited manual", async ({ page }) => {
+  await open(page);
+  const manual = page.getByLabel("Manual text");
+  await expect(manual).toHaveValue(/You start with 3 lives\./);
+
+  // The draft follows the settings until the creator edits it.
+  await page.getByLabel("Lives").fill("5");
+  await expect(manual).toHaveValue(/You start with 5 lives\./);
+  await manual.fill("# Story\nThe vacuums are back, and only one cat can stop them.");
+  await expect(page.getByRole("button", { name: "Reset to draft" })).toBeVisible();
+
+  await page.getByLabel("Paper size").selectOption("a4");
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 60_000 }),
+    page.getByRole("button", { name: "Download print PDF" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe("cat-vs-vacuums-print.pdf");
+  const chunks: Buffer[] = [];
+  for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
+  const pdf = Buffer.concat(chunks);
+  expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+
+  const { PDFDocument } = await import("pdf-lib");
+  const doc = await PDFDocument.load(pdf);
+  expect(doc.getPageCount()).toBeGreaterThanOrEqual(4);
+  expect(Math.round(doc.getPage(0).getWidth())).toBe(595); // A4
+
+  await page.getByRole("button", { name: "Reset to draft" }).click();
+  await expect(manual).toHaveValue(/You start with 5 lives\./);
+});

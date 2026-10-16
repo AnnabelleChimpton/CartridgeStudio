@@ -10,6 +10,7 @@ import { useProjectStore } from "./project/store.ts";
 import { TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
+import { PrintPanel } from "./ui/PrintPanel.tsx";
 
 const BUILD_DEBOUNCE_MS = 300;
 const SAVE_DEBOUNCE_MS = 500;
@@ -337,6 +338,15 @@ function Editor() {
               {exporting && <span className="muted small">Preparing download…</span>}
             </div>
           </section>
+          <PrintPanel
+            template={template}
+            screenshot={async () => {
+              const emu = emulator.current;
+              if (!emu || !lastGood) return undefined;
+              return { width: 320, height: 240, rgba: await emu.readPixels(0, 0, 320, 240) };
+            }}
+            onDownload={download}
+          />
           <details className="panel code">
             <summary>View code</summary>
             <pre data-testid="game-bas">{lastGood?.source ?? ""}</pre>
