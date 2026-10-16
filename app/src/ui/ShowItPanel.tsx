@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { Dialog } from "./Dialog.tsx";
+import { Icon, type IconName } from "./Icon.tsx";
 import { download, type Preview } from "./usePreview.ts";
 
 /** Clips: 20 frames a second (every 3rd frame), up to 10 seconds. */
@@ -53,16 +54,18 @@ export function ShowItPanel({ preview, title, print }: Props) {
     <section className="panel show-it" aria-labelledby="show-it-h">
       <h2 id="show-it-h">Show it</h2>
       <div className="show-grid">
-        <ShowButton title="Play on a TV" detail="Big screen, ready for a gamepad" disabled={!ready} onClick={preview.enterTv} />
+        <ShowButton icon="tv" title="Play on a TV" detail="Big screen, ready for a gamepad" disabled={!ready} onClick={preview.enterTv} />
         <ShowButton
+          icon="send"
           title={busy === "player" ? "Making the file…" : "Send to family"}
           detail="One file that plays in any web browser"
           disabled={!ready || busy !== null}
           onClick={() => void sendToFamily()}
         />
         <ClipRecorder preview={preview} slug={slug} disabled={!ready || busy === "player"} onBusy={(b) => setBusy(b ? "clip" : null)} onError={setError} />
-        <ShowButton title="Put it on a console" detail="For a 7800+, 2600+ or 7800" disabled={!ready} onClick={openFrom("console")} />
+        <ShowButton icon="cartridge" title="Put it on a console" detail="For a 7800+, 2600+ or 7800" disabled={!ready} onClick={openFrom("console")} />
         <ShowButton
+          icon="print"
           title="Print the box"
           detail="Box, cartridge labels and manual"
           disabled={!ready}
@@ -101,11 +104,13 @@ export function ShowItPanel({ preview, title, print }: Props) {
 }
 
 function ShowButton({
+  icon,
   title,
   detail,
   disabled,
   onClick,
 }: {
+  icon?: IconName;
   title: string;
   detail: string;
   disabled?: boolean;
@@ -113,7 +118,10 @@ function ShowButton({
 }) {
   return (
     <button type="button" className="show-button" disabled={disabled} onClick={onClick}>
-      <strong>{title}</strong>
+      <strong>
+        {icon && <Icon name={icon} />}
+        {title}
+      </strong>
       <span>{detail}</span>
     </button>
   );
@@ -185,6 +193,7 @@ function ClipRecorder({
   }
   return (
     <ShowButton
+      icon="clip"
       title={state === "saving" ? "Saving the clip…" : "Make a clip"}
       detail={`Up to ${CLIP_SECONDS} seconds, as a GIF to post`}
       disabled={disabled || state === "saving"}

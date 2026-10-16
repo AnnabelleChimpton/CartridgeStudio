@@ -30,6 +30,7 @@ test("the start screen and both editors pass axe", async ({ page }) => {
     expect(await axe(page), name).toEqual([]);
   }
   // Ghost Panic's rules use every kind of rule word, and its Game tab lists counters.
+  await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   page.once("dialog", (d) => void d.accept());
   await page.getByRole("dialog").getByRole("button", { name: /^Ghost Panic/ }).click();
@@ -42,6 +43,7 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
   expect(await axe(page)).toEqual([]);
 
+  await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   page.once("dialog", (d) => void d.accept());
   await page.getByRole("button", { name: "Classic shooter" }).click();

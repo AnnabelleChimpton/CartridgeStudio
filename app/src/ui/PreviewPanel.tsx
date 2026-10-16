@@ -3,6 +3,8 @@
 
 import { useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
+import { Icon } from "./Icon.tsx";
+import { useTier } from "./prefs.ts";
 import { download, type Preview } from "./usePreview.ts";
 
 interface Props {
@@ -18,6 +20,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const tier = useTier();
 
   // Downloads are always signed, so they boot on a real console.
   const exportRom = async (format: "a78" | "bin") => {
@@ -53,9 +56,11 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
             setPaused(!paused);
           }}
         >
+          <Icon name={paused ? "play" : "pause"} />
           {paused ? "Resume" : "Pause"}
         </button>
         <button type="button" className="secondary" onClick={() => emulator.current?.reset()}>
+          <Icon name="restart" />
           Restart
         </button>
         <button
@@ -67,9 +72,11 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
             setMuted(!muted);
           }}
         >
+          <Icon name={muted ? "mute" : "sound"} />
           {muted ? "Sound off" : "Sound on"}
         </button>
         <button type="button" className="secondary" onClick={enterTv}>
+          <Icon name="expand" />
           Full screen
         </button>
         <span className="hint" id="emu-hint">
@@ -94,7 +101,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
       )}
       {error && <p className="error">{error}</p>}
       {meter}
-      <details className="dev">
+      <details className="dev" open={tier === "coder"}>
         <summary>For developers</summary>
         <p className="muted small" data-testid="build-timing">
           {timing}

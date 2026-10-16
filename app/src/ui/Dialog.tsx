@@ -2,6 +2,7 @@
 // there, Escape closes it, and focus returns to what opened it.
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { Icon } from "./Icon.tsx";
 
 interface Props {
   title: string;
@@ -39,7 +40,7 @@ export function Dialog({ title, onClose, children, wide, returnTo }: Props) {
       <div className="dialog-head">
         <h2 id={id}>{title}</h2>
         <button type="button" className="icon" aria-label="Close" onClick={onClose}>
-          ×
+          <Icon name="close" />
         </button>
       </div>
       <div className="dialog-body">{children}</div>

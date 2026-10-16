@@ -12,6 +12,7 @@ import { SOUND_LIBRARY } from "../project/templates.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
 import { PreviewPanel } from "../ui/PreviewPanel.tsx";
 import { ShowItPanel } from "../ui/ShowItPanel.tsx";
+import { useTier } from "../ui/prefs.ts";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
@@ -39,8 +40,12 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   const { edit, undo, redo } = useKitStore.getState();
   const preview = usePreview(game);
   const [selected, setSelected] = useState<string | null>(() => game.types[0]?.id ?? null);
-  const [tab, setTab] = useState<Tab>("things");
+  const [chosenTab, setTab] = useState<Tab>("things");
   const ids = useId();
+  // Starter hides the rule editor (design/DIRECTION.md, Three tiers).
+  const tier = useTier();
+  const tabs = TABS.filter((t) => tier !== "starter" || t.id !== "rules");
+  const tab = tabs.some((t) => t.id === chosenTab) ? chosenTab : "things";
 
   useEffect(() => {
     window.__cs!.kitStore = useKitStore;
@@ -75,12 +80,13 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
       <main className="workspace-layout">
         <div className="workspace">
           <div className="workspace-tabs" role="tablist" aria-label="Edit" onKeyDown={arrowKeys("tab")}>
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 {...tabProps(tab === t.id)}
                 id={`${ids}-${t.id}`}
+                data-tab={t.id}
                 aria-controls={`${ids}-panel`}
                 className={tab === t.id ? "active" : undefined}
                 onClick={() => setTab(t.id)}

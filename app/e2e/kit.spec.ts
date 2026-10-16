@@ -148,6 +148,7 @@ test("a kit game survives a reload and round-trips through a game file", async (
 
   // Switch to another game, then open the file again.
   page.on("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Dodger/ }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Rock Fall");

@@ -1,6 +1,7 @@
 // The preview loop both editors share: one build service and one emulator per
 // editor; every change to the game rebuilds 300 ms later and reloads the ROM.
 
+import { toast } from "./Toaster.tsx";
 import { useEffect, useRef, useState } from "react";
 import { InlineBuildService, WorkerBuildService, type BuildService, type ReadyInfo } from "../build/build-service.ts";
 import type { GameSource, ProjectBuildResult } from "../build/project-build.ts";
@@ -45,6 +46,7 @@ export function download(data: Uint8Array, name: string) {
   const a = Object.assign(document.createElement("a"), { href: url, download: name });
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast(`Saved ${name} to your downloads`);
 }
 
 export function usePreview(source: GameSource) {

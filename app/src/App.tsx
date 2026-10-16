@@ -21,6 +21,7 @@ import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
 import { ShowItPanel } from "./ui/ShowItPanel.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
+import { toast } from "./ui/Toaster.tsx";
 import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
@@ -79,6 +80,7 @@ export function App() {
     const title = "kit" in r ? r.kit.title : r.project.title;
     if (!confirm(`Open "${title}"? The game you're editing will be replaced.`)) return;
     setOpenError(null);
+    toast(`Opened “${title}”`);
     if ("kit" in r) {
       useKitStore.getState().load(r.kit);
       switchTo("kit");

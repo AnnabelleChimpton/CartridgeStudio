@@ -1,7 +1,13 @@
-// The editor's top bar: title, undo/redo, game files and starting a new game.
+// The editor's top bar: the brand, the game's title, undo/redo, the Mode
+// (tier) switch, saving, and a Game menu for starting or opening a game.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
+import { arrowKeys } from "./a11y.ts";
+import { BrandMark } from "./BrandMark.tsx";
+import { Icon, type IconName } from "./Icon.tsx";
+import { TIERS, setTheme, setTier, useTheme, useTier, type Theme } from "./prefs.ts";
+import { Toaster } from "./Toaster.tsx";
 
 function isTextField(t: EventTarget | null) {
   return t instanceof HTMLTextAreaElement || (t instanceof HTMLInputElement && t.type !== "range" && t.type !== "checkbox");
@@ -37,22 +43,21 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
 
   return (
     <header className="topbar">
-      <h1>Cartridge Studio</h1>
-      <input
-        className="title-input"
-        aria-label="Game title"
-        value={title}
-        maxLength={60}
-        onChange={(e) => onTitle(e.target.value)}
-      />
-      <span className="muted small">{kind}</span>
+      <Brand />
+      <div className="title-group">
+        <input className="title-input" aria-label="Game title" value={title} maxLength={60} onChange={(e) => onTitle(e.target.value)} />
+        <span className="badge kind">{kind}</span>
+      </div>
+      <div className="topbar-group history">
+        <button type="button" className="icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (⌘Z)">
+          <Icon name="undo" />
+        </button>
+        <button type="button" className="icon" onClick={redo} disabled={!canRedo} aria-label="Redo" title="Redo (⇧⌘Z)">
+          <Icon name="redo" />
+        </button>
+      </div>
       <span className="spacer" />
-      <button type="button" className="secondary" onClick={undo} disabled={!canUndo} title="Undo (⌘Z)">
-        Undo
-      </button>
-      <button type="button" className="secondary" onClick={redo} disabled={!canRedo} title="Redo (⇧⌘Z)">
-        Redo
-      </button>
+      <ModeSwitch />
       <input
         ref={fileInput}
         type="file"
@@ -65,15 +70,136 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
           if (file) onOpen(file);
         }}
       />
-      <button type="button" className="secondary" onClick={() => fileInput.current?.click()}>
-        Open…
-      </button>
-      <button type="button" className="secondary" onClick={onSave}>
-        Save game file
-      </button>
-      <button type="button" className="secondary" onClick={onNew}>
-        New game
-      </button>
+      <div className="topbar-group">
+        <button type="button" className="secondary" onClick={onSave} title="Download this game as one file you can open again or share">
+          <Icon name="save" />
+          Save game file
+        </button>
+        <GameMenu
+          items={[
+            { label: "New game", icon: "plus", onClick: onNew },
+            { label: "Open…", icon: "open", onClick: () => fileInput.current?.click() },
+          ]}
+        />
+        <ThemeButton />
+      </div>
+      <Toaster />
     </header>
+  );
+}
+
+export function Brand() {
+  return (
+    <span className="brand">
+      <BrandMark />
+      <span className="brand-name">Cartridge Studio</span>
+    </span>
+  );
+}
+
+/** Starter · Maker · Coder: what the editor shows by default. */
+export function ModeSwitch() {
+  const tier = useTier();
+  return (
+    <div className="segmented mode-switch" role="radiogroup" aria-label="Mode" onKeyDown={arrowKeys("radio")}>
+      {TIERS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="radio"
+          aria-checked={tier === t.id}
+          tabIndex={tier === t.id ? 0 : -1}
+          title={t.detail}
+          onClick={() => setTier(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const THEMES: { id: Theme; label: string; icon: IconName }[] = [
+  { id: "system", label: "System", icon: "system" },
+  { id: "light", label: "Light", icon: "sun" },
+  { id: "dark", label: "Dark", icon: "moon" },
+];
+
+/** Cycles System → Light → Dark. */
+export function ThemeButton() {
+  const theme = useTheme();
+  const i = THEMES.findIndex((t) => t.id === theme);
+  const now = THEMES[i]!;
+  const next = THEMES[(i + 1) % THEMES.length]!;
+  return (
+    <button
+      type="button"
+      className="icon"
+      aria-label={`Theme: ${now.label}`}
+      title={`Theme: ${now.label}. Click for ${next.label}.`}
+      onClick={() => setTheme(next.id)}
+    >
+      <Icon name={now.icon} />
+    </button>
+  );
+}
+
+/** A disclosure menu of plain buttons: Escape or clicking away closes it. */
+function GameMenu({ items }: { items: { label: string; icon: IconName; onClick: () => void }[] }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const wrap = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    wrap.current?.querySelector<HTMLElement>(".menu button")?.focus();
+    const away = (e: PointerEvent) => !wrap.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, [open]);
+
+  return (
+    <div
+      className="menu-wrap"
+      ref={wrap}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          setOpen(false);
+          trigger.current?.focus();
+        }
+      }}
+      // Tabbing away closes it. (Safari moves focus to nothing when a button is clicked: that isn't leaving.)
+      onBlur={(e) => e.relatedTarget && !wrap.current?.contains(e.relatedTarget as Node) && setOpen(false)}
+    >
+      <button
+        ref={trigger}
+        type="button"
+        className="secondary"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen(!open)}
+      >
+        Game
+        <Icon name="chevron" size={16} />
+      </button>
+      <div className="menu" id={id} hidden={!open}>
+        {items.map((item) => (
+          <button
+            key={item.label}
+            type="button"
+            className="quiet"
+            onClick={() => {
+              setOpen(false);
+              item.onClick();
+            }}
+          >
+            <Icon name={item.icon} />
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -6,6 +6,8 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: "http://localhost:5179",
+    // Tests drive the full editor: Maker mode. First visits get Starter; shell.spec.ts covers it.
+    storageState: { cookies: [], origins: [{ origin: "http://localhost:5179", localStorage: [{ name: "cs-tier", value: "maker" }] }] },
   },
   projects: [
     {
