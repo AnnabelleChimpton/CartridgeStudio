@@ -29,6 +29,7 @@ export class WorkerEmulator implements Emulator {
   private nextId = 1;
   private readonly replies = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   private readonly frameListeners = new Set<(frame: number) => void>();
+  private readonly clipFullListeners = new Set<() => void>();
   private keyboard: JoystickState = { ...IDLE };
   private external: JoystickState = { ...IDLE };
   private gamepad: JoystickState = { ...IDLE };
@@ -47,6 +48,7 @@ export class WorkerEmulator implements Emulator {
         if (msg.type === "ready") resolve();
         else if (msg.type === "init-error") reject(new Error(msg.message));
         else if (msg.type === "frame") for (const cb of this.frameListeners) cb(msg.frame);
+        else if (msg.type === "clip-full") for (const cb of this.clipFullListeners) cb();
         else if (msg.type === "reply") {
           const r = this.replies.get(msg.id);
           this.replies.delete(msg.id);
@@ -116,6 +118,20 @@ export class WorkerEmulator implements Emulator {
   /** RGBA pixels of a region of the 320×240 picture. */
   readPixels(x: number, y: number, width: number, height: number): Promise<Uint8ClampedArray> {
     return this.request({ type: "pixels", id: this.nextId++, x, y, width, height });
+  }
+
+  /** Starts recording a clip: every `every`th frame, at most `max` frames. `onFull` runs when it's long enough. */
+  startClip(every: number, max: number, onFull: () => void): () => void {
+    this.clipFullListeners.clear();
+    this.clipFullListeners.add(onFull);
+    this.post({ type: "clip-start", every, max });
+    return () => this.clipFullListeners.delete(onFull);
+  }
+
+  /** Stops recording; the frames are 320×240 palette indices. */
+  stopClip(): Promise<{ frames: Uint8Array[]; palette: number[] }> {
+    this.clipFullListeners.clear();
+    return this.request({ type: "clip-stop", id: this.nextId++ });
   }
 
   setMuted(muted: boolean) {

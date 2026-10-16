@@ -5,7 +5,8 @@ import { useState } from "react";
 import type { Template } from "../project/schema.ts";
 import { useProjectStore } from "../project/store.ts";
 import { draftManual } from "../print/manual.ts";
-import type { Paper, PrintFonts, Screenshot } from "../print/pdf.ts";
+import type { Paper, PrintFonts, PrintSubject, Screenshot } from "../print/pdf.ts";
+import { templatePrintSubject } from "../print/subject.ts";
 import { slugify, submissionZip } from "../files/exports.ts";
 
 const PAPER_KEY = "cartridge-studio:paper";
@@ -36,26 +37,23 @@ function loadFonts(): Promise<PrintFonts> {
   return fontsPromise;
 }
 
-interface Props {
-  template: Template;
-  /** The preview's current picture, for the box back. */
-  screenshot: () => Promise<Screenshot | undefined>;
-  /** A signed build of the current project. */
-  buildSigned: () => Promise<{ a78: Uint8Array; bin: Uint8Array }>;
-  /** The current project as a .cartridge file. */
-  cartridgeFile: () => Promise<Uint8Array>;
+interface ControlsProps {
+  title: string;
+  /** The manual as it will print: the creator's edit, or the draft. */
+  text: string;
+  edited: boolean;
+  onText: (text: string) => void;
+  onReset: () => void;
+  makePdf: (paper: Paper) => Promise<Uint8Array>;
+  makePackage: (pdf: Uint8Array) => Promise<Uint8Array>;
   onDownload: (bytes: Uint8Array, name: string) => void;
 }
 
-export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, onDownload }: Props) {
-  const project = useProjectStore((s) => s.project);
-  const edit = useProjectStore((s) => s.edit);
+/** The manual editor, paper choice and the PDF and package downloads, for any kind of game. */
+export function PrintControls({ title, text, edited, onText, onReset, makePdf, makePackage, onDownload }: ControlsProps) {
   const [paper, setPaper] = useState<Paper>(defaultPaper);
   const [busy, setBusy] = useState<null | "pdf" | "package">(null);
   const [error, setError] = useState<string | null>(null);
-
-  const edited = project.cartridge.manualText !== null;
-  const text = project.cartridge.manualText ?? draftManual(project, template);
 
   const choosePaper = (p: Paper) => {
     setPaper(p);
@@ -66,22 +64,14 @@ export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, o
     }
   };
 
-  const makePdf = async () => {
-    const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
-    return buildPrintPdf({ project, template, paper, fonts, screenshot: shot });
-  };
-
   const run = async (what: "pdf" | "package") => {
     setBusy(what);
     setError(null);
-    const slug = slugify(project.title);
+    const slug = slugify(title);
     try {
-      if (what === "pdf") {
-        onDownload(await makePdf(), `${slug}-print.pdf`);
-      } else {
-        const [pdf, rom, file] = await Promise.all([makePdf(), buildSigned(), cartridgeFile()]);
-        onDownload(submissionZip({ project, template, ...rom, pdf, cartridgeFile: file }), `${slug}-submission.zip`);
-      }
+      const pdf = await makePdf(paper);
+      if (what === "pdf") onDownload(pdf, `${slug}-print.pdf`);
+      else onDownload(await makePackage(pdf), `${slug}-submission.zip`);
     } catch (e) {
       setError(`We couldn't make the ${what === "pdf" ? "PDF" : "package"}: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -90,8 +80,7 @@ export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, o
   };
 
   return (
-    <section className="panel print" aria-labelledby="print-h">
-      <h2 id="print-h">Make cartridge</h2>
+    <>
       <p className="muted small">
         A printable box front and back, two cartridge labels and a manual. The box art uses your sprites, and the back
         shows what's in the preview right now.
@@ -100,24 +89,12 @@ export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, o
       <div className="print-row">
         <span>Manual</span>
         {edited && (
-          <button
-            type="button"
-            className="link"
-            onClick={() => edit((d) => void (d.cartridge.manualText = null))}
-            title="Go back to the text written from your rules and settings"
-          >
+          <button type="button" className="link" onClick={onReset} title="Go back to the text written from your rules and settings">
             Reset to draft
           </button>
         )}
       </div>
-      <textarea
-        className="manual-text"
-        aria-label="Manual text"
-        spellCheck
-        value={text}
-        rows={12}
-        onChange={(e) => edit((d) => void (d.cartridge.manualText = e.target.value), "manual")}
-      />
+      <textarea className="manual-text" aria-label="Manual text" spellCheck value={text} rows={12} onChange={(e) => onText(e.target.value)} />
       <p className="muted small">
         {edited
           ? "Edited: the manual no longer follows changes to your rules and settings."
@@ -144,6 +121,47 @@ export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, o
         <span className="muted small">Signed ROMs, this PDF, your game file, source and a checklist, in one ZIP.</span>
       </div>
       {error && <p className="error">{error}</p>}
+    </>
+  );
+}
+
+/** Builds the PDF for a subject, loading pdf-lib and the fonts on first use. */
+export async function printPdf(subject: PrintSubject, paper: Paper, screenshot: () => Promise<Screenshot | undefined>) {
+  const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
+  return buildPrintPdf({ subject, paper, fonts, screenshot: shot });
+}
+
+interface Props {
+  template: Template;
+  /** The preview's current picture, for the box back. */
+  screenshot: () => Promise<Screenshot | undefined>;
+  /** A signed build of the current project. */
+  buildSigned: () => Promise<{ a78: Uint8Array; bin: Uint8Array }>;
+  /** The current project as a .cartridge file. */
+  cartridgeFile: () => Promise<Uint8Array>;
+  onDownload: (bytes: Uint8Array, name: string) => void;
+}
+
+/** The template editor's Print tab. */
+export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, onDownload }: Props) {
+  const project = useProjectStore((s) => s.project);
+  const edit = useProjectStore((s) => s.edit);
+  return (
+    <section className="panel print" aria-labelledby="print-h">
+      <h2 id="print-h">Make cartridge</h2>
+      <PrintControls
+        title={project.title}
+        text={project.cartridge.manualText ?? draftManual(project, template)}
+        edited={project.cartridge.manualText !== null}
+        onText={(t) => edit((d) => void (d.cartridge.manualText = t), "manual")}
+        onReset={() => edit((d) => void (d.cartridge.manualText = null))}
+        makePdf={(paper) => printPdf(templatePrintSubject(project, template), paper, screenshot)}
+        makePackage={async (pdf) => {
+          const [rom, file] = await Promise.all([buildSigned(), cartridgeFile()]);
+          return submissionZip({ project, template, ...rom, pdf, cartridgeFile: file });
+        }}
+        onDownload={onDownload}
+      />
     </section>
   );
 }

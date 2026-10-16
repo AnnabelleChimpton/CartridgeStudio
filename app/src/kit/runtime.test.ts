@@ -44,6 +44,7 @@ function game(room: string[], types: KitType[], rules: KitRule[] = []): KitGame 
     rules,
     text: { title: "T", win: "W", lose: "L" },
     sounds: {},
+    cartridge: { manualText: null },
   };
 }
 

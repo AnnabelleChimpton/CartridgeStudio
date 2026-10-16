@@ -201,8 +201,12 @@ strong.ok, strong.near, strong.over { background: none; }
 /* Editor layout: one job at a time beside the running game. */
 .workspace-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); gap: 16px; align-items: start; }
 @media (max-width: 1000px) { .workspace-layout { grid-template-columns: minmax(0, 1fr); } .play-column { grid-row: 1; } }
-.play-column { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
-@media (max-width: 1000px) { .play-column { position: static; } }
+/* Sticky beside long tabs, but never taller than the window, so its bottom stays reachable. */
+.play-column {
+  position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px;
+  max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: 3px; margin: -3px;
+}
+@media (max-width: 1000px) { .play-column { position: static; max-height: none; overflow: visible; } }
 .workspace { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
 .workspace-tabs { display: flex; gap: 4px; padding: 8px 8px 0; border-bottom: 1px solid var(--line); }
 .workspace-tabs button {
@@ -254,3 +258,41 @@ select.fit option { color: var(--text); background: #0f1115; font-weight: 400; }
 button.link.danger { color: var(--error); }
 
 details.dev { margin-top: 10px; }
+
+/* Show it */
+.show-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.show-button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; min-height: 56px;
+  background: #262a33; color: var(--text); border: 1px solid var(--line); padding: 10px 12px; font-weight: 400;
+}
+.show-button strong { font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.show-button span { font-size: 12px; color: var(--muted); }
+.show-button:hover:not(:disabled) { border-color: var(--accent); }
+.show-button.recording { border-color: var(--error); }
+.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--error); animation: rec 1s infinite; }
+@keyframes rec { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+
+/* Dialogs */
+.dialog {
+  background: var(--bg); color: var(--text); border: 1px solid var(--field-line); border-radius: 10px;
+  padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px);
+}
+.dialog.wide { width: min(760px, calc(100vw - 32px)); }
+.dialog::backdrop { background: #000a; }
+.dialog-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 0; }
+.dialog-head h2 { font-size: 18px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; }
+.dialog-body { padding: 8px 16px 16px; font-size: 14px; line-height: 1.5; }
+.guide ol { padding-left: 20px; }
+.guide li { margin-bottom: 8px; }
+
+/* TV mode: the game as big as the screen allows, with its title and a prompt. */
+.tv-title, .tv-hint { display: none; }
+.tv-stage:fullscreen {
+  background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: none;
+}
+.tv-stage:fullscreen .tv-title { display: block; margin: 0; color: #fff; font-size: 4vh; font-weight: 700; letter-spacing: 0.05em; }
+.tv-stage:fullscreen .tv-hint { display: block; margin: 0; color: #9aa1ad; font-size: 2.2vh; }
+.tv-stage:fullscreen .emu { width: min(100vw, calc(84vh * 4 / 3)); border-radius: 0; }
+.tv-stage:fullscreen .emu:focus-within { box-shadow: none; }
+.tv-stage:fullscreen .emu::after { font-size: 2.4vh; }

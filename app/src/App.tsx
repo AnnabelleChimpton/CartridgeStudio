@@ -19,6 +19,7 @@ import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
 import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
+import { ShowItPanel } from "./ui/ShowItPanel.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
 import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
@@ -216,6 +217,7 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
               </button>
             }
           />
+          <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
         </div>
       </main>
     </div>

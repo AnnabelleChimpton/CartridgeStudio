@@ -45,6 +45,7 @@ function base(fillers: number, movers = 8, mover: Behaviour = "bounce"): KitGame
     rules: [],
     text: { title: "M", win: "W", lose: "L" },
     sounds: {},
+    cartridge: { manualText: null },
   };
 }
 

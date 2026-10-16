@@ -17,6 +17,7 @@ let paused = false;
 let running = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let nextAt = 0;
+let clip: { every: number; max: number; frames: Uint8Array[] } | null = null;
 
 const post = (msg: EmuResponse, transfer: Transferable[] = []) => self.postMessage(msg, transfer);
 const reply = (id: number, value?: unknown, transfer: Transferable[] = []) => post({ type: "reply", id, value }, transfer);
@@ -43,9 +44,16 @@ function tick() {
   host.step(1);
   flushAudio();
   render();
+  keepClipFrame();
   post({ type: "frame", frame: host.frame });
   nextAt += frameMs;
   timer = setTimeout(tick, Math.max(0, nextAt - performance.now()));
+}
+
+function keepClipFrame() {
+  if (!clip || !host || host.frame % clip.every !== 0 || clip.frames.length >= clip.max) return;
+  clip.frames.push(host.indices());
+  if (clip.frames.length === clip.max) post({ type: "clip-full" });
 }
 
 function startLoop() {
@@ -117,6 +125,15 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
       case "memory": {
         const bytes = host!.readMemory(msg.address, msg.length);
         reply(msg.id, bytes, [bytes.buffer]);
+        return;
+      }
+      case "clip-start":
+        clip = { every: msg.every, max: msg.max, frames: [] };
+        return;
+      case "clip-stop": {
+        const frames = clip?.frames ?? [];
+        clip = null;
+        reply(msg.id, { frames, palette: [...(host?.paletteRgb ?? [])] }, frames.map((f) => f.buffer));
         return;
       }
       case "pixels": {

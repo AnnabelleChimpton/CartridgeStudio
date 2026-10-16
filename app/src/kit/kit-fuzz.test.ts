@@ -158,6 +158,7 @@ export function randomKitGame(seed: number, density: number): KitGame {
     rules,
     text: { title: "Fuzz", win: "Win", lose: "Lose" },
     sounds: {},
+    cartridge: { manualText: null },
   };
 }
 

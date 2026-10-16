@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
-  const { emuContainer, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -35,7 +35,15 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
   return (
     <section className="panel preview" aria-labelledby="preview-h">
       <h2 id="preview-h">Play</h2>
-      <div ref={emuContainer} className="emu" />
+      <div ref={stage} className="tv-stage">
+        <p className="tv-title" aria-hidden="true">
+          {title}
+        </p>
+        <div ref={emuContainer} className="emu" />
+        <p className="tv-hint" aria-hidden="true">
+          Joystick or arrow keys to move · Fire button or Space · Esc to leave
+        </p>
+      </div>
       <div className="emu-controls">
         <button
           type="button"
@@ -61,12 +69,8 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
         >
           {muted ? "Sound off" : "Sound on"}
         </button>
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => void emuContainer.current?.querySelector("canvas")?.requestFullscreen()}
-        >
-          Fullscreen
+        <button type="button" className="secondary" onClick={enterTv}>
+          Full screen
         </button>
         <span className="hint" id="emu-hint">
           Arrows move, Space fires, Tab leaves. Gamepads work too.

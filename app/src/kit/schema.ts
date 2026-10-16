@@ -135,5 +135,7 @@ export const KitGameSchema = z.object({
   rules: z.array(KitRuleSchema).max(16),
   text: z.object({ title: z.string(), win: z.string(), lose: z.string() }),
   sounds: z.object({ shoot: z.string().optional() }).default({}),
+  /** The print kit's manual: the creator's own text, or null to follow the draft. */
+  cartridge: z.object({ manualText: z.string().nullable() }).default({ manualText: null }),
 });
 export type KitGame = z.infer<typeof KitGameSchema>;

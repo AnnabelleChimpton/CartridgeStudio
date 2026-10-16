@@ -57,6 +57,8 @@ export function usePreview(source: GameSource) {
   const service = useRef<BuildService | null>(null);
   const emulator = useRef<WorkerEmulator | null>(null);
   const emuContainer = useRef<HTMLDivElement>(null);
+  /** The game and its TV-mode title and hint; this is what goes full screen. */
+  const stage = useRef<HTMLDivElement>(null);
   const counter = useRef(0);
   const sourceRef = useRef(source);
   sourceRef.current = source;
@@ -178,7 +180,15 @@ export function usePreview(source: GameSource) {
       (ready ? ` · ${ready.toolchainVersion}` : "")
     : "";
 
-  return { emuContainer, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
+  /** TV mode: the game full screen with its title and a controller prompt, ready to play. */
+  const enterTv = () => {
+    const el = stage.current;
+    if (!el) return;
+    void el.requestFullscreen?.().catch(() => {});
+    el.querySelector("canvas")?.focus();
+  };
+
+  return { emuContainer, stage, enterTv, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
 }
 
 export type Preview = ReturnType<typeof usePreview>;

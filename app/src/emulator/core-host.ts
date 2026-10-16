@@ -89,6 +89,11 @@ export class CoreHost {
     return this.frames;
   }
 
+  /** The palette in use, as RGB triples by palette index. */
+  get paletteRgb(): readonly number[] {
+    return this.palette;
+  }
+
   get frequency(): number {
     return this.core.ProSystem.GetFrequency();
   }

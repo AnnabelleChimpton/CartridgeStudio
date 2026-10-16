@@ -1,13 +1,13 @@
 // Print PDF (SPEC.md, "Print PDF"): box front and back, cartridge labels and a
-// manual, all generated from the project. Pixel art is drawn as vector
-// rectangles (no smoothing at any size); fonts are OFL and embedded as subsets.
-// Pure: fonts and the optional screenshot are passed in, so it runs in tests.
+// manual, all generated from a game (a template project or a kit game, through
+// print/subject.ts). Pixel art is drawn as vector rectangles (no smoothing at
+// any size); fonts are OFL and embedded as subsets. Pure: fonts and the
+// optional screenshot are passed in, so it runs in tests.
 
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
-import type { Project, Template } from "../project/schema.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
-import { manualFacts, manualText, parseManual } from "./manual.ts";
+import { parseManual } from "./manual.ts";
 
 export type Paper = "letter" | "a4";
 export const PAPER_SIZES: Record<Paper, [number, number]> = { letter: [612, 792], a4: [595.28, 841.89] };
@@ -25,9 +25,35 @@ export interface Screenshot {
   rgba: Uint8Array | Uint8ClampedArray;
 }
 
+/** A sprite as the PDF draws it: frames of `0`-`3` rows and its three palette colors (`$XX`). */
+export interface PrintSprite {
+  width: number;
+  height: number;
+  frames: string[][];
+  colors: readonly string[];
+}
+
+/** Everything the print kit shows, whatever kind of game it comes from. */
+export interface PrintSubject {
+  title: string;
+  /** The star: big on the box front and on the labels; its first color is the accent. */
+  hero?: PrintSprite;
+  /** Shown as a group above the hero on the box front. */
+  crowd?: PrintSprite;
+  /** A small thing between them (a shot, a coin). */
+  extra?: PrintSprite;
+  /** The manual's header row. */
+  cast: PrintSprite[];
+  /** The box back's paragraph. */
+  intro: string;
+  /** The box back's bullets. */
+  facts: string[];
+  /** The manual, in the light markup of manual.ts. */
+  manual: string;
+}
+
 export interface PrintOptions {
-  project: Project;
-  template: Template;
+  subject: PrintSubject;
   paper: Paper;
   fonts: PrintFonts;
   screenshot?: Screenshot;
@@ -164,7 +190,7 @@ function caption(page: PDFPage, fonts: Fonts, text: string, y: number) {
   page.drawText(text, { x: (page.getWidth() - w) / 2, y, size, font: fonts.body, color: MUTED });
 }
 
-export async function buildPrintPdf({ project, template, paper, fonts: fontBytes, screenshot }: PrintOptions): Promise<Uint8Array> {
+export async function buildPrintPdf({ subject, paper, fonts: fontBytes, screenshot }: PrintOptions): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const fonts: Fonts = {
@@ -173,18 +199,13 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
     bold: await doc.embedFont(fontBytes.bold, { subset: true }),
   };
   const [pw, ph] = PAPER_SIZES[paper];
-  const title = printable(project.title.trim() || "Untitled");
+  const title = printable(subject.title.trim() || "Untitled");
   doc.setTitle(`${title} - print kit`);
   doc.setCreator("Cartridge Studio");
 
-  const sprite = (role: string) => project.sprites.find((s) => s.role === role);
-  const colorsOf = (role: string) => {
-    const s = sprite(role);
-    const p = project.palettes.find((x) => x.id === s?.palette);
-    return (p?.colors ?? ["$0F", "$0F", "$0F"]).map(toRgb);
-  };
+  const colorsOf = (s: PrintSprite | undefined) => (s?.colors ?? ["$0F", "$0F", "$0F"]).map(toRgb);
   const background = rgb(0.06, 0.07, 0.1);
-  const accent = colorsOf("player")[0]!;
+  const accent = colorsOf(subject.hero)[0]!;
 
   // ---- Page 1: box front ----
   {
@@ -201,8 +222,8 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
     const textH = fit.lines.length * fit.size * 1.35;
     centeredLines(page, fit.lines, fonts.title, fit.size, x + BOX.w / 2, y + BOX.h - (band - textH) / 2 + fit.size * 0.2, onColor(accent));
 
-    // Scene: the formation above, the ship below, a shot between.
-    const enemy = sprite("enemy");
+    // Scene: the crowd above, the hero below, the extra between.
+    const enemy = subject.crowd;
     if (enemy) {
       const unit = 3;
       const ew = enemy.width * unit * 2;
@@ -211,16 +232,16 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
       for (let r = 0; r < 3; r++) {
         for (let c = 0; c < cols; c++) {
           const frame = enemy.frames[(r + c) % enemy.frames.length]!;
-          drawSprite(page, frame, colorsOf("enemy"), x + 20 + c * (ew + gapX), y + BOX.h - band - 30 - r * (enemy.height * unit + 18), unit);
+          drawSprite(page, frame, colorsOf(enemy), x + 20 + c * (ew + gapX), y + BOX.h - band - 30 - r * (enemy.height * unit + 18), unit);
         }
       }
     }
-    const shot = sprite("shot");
-    if (shot) drawSprite(page, shot.frames[0]!, colorsOf("shot"), x + BOX.w / 2 - shot.width * 4, y + 230, 4);
-    const player = sprite("player");
+    const shot = subject.extra;
+    if (shot) drawSprite(page, shot.frames[0]!, colorsOf(shot), x + BOX.w / 2 - shot.width * 4, y + 230, 4);
+    const player = subject.hero;
     if (player) {
       const unit = 7;
-      drawSprite(page, player.frames[0]!, colorsOf("player"), x + BOX.w / 2 - player.width * unit, y + 60 + player.height * unit, unit);
+      drawSprite(page, player.frames[0]!, colorsOf(player), x + BOX.w / 2 - player.width * unit, y + 60 + player.height * unit, unit);
     }
 
     // Bottom strip.
@@ -273,13 +294,12 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
       cursor -= shotH + 16;
     }
 
-    const intro = template.manifest.manual?.intro ?? template.manifest.description;
-    for (const line of wrap(intro, fonts.body, 10.5, BOX.w - 2 * pad)) {
+    for (const line of wrap(subject.intro, fonts.body, 10.5, BOX.w - 2 * pad)) {
       page.drawText(line, { x: x + pad, y: cursor - 10.5, size: 10.5, font: fonts.body, color: PAPER_WHITE });
       cursor -= 14.5;
     }
     cursor -= 6;
-    for (const fact of manualFacts(project, template)) {
+    for (const fact of subject.facts) {
       const lines = wrap(fact, fonts.body, 10, BOX.w - 2 * pad - 14);
       page.drawRectangle({ x: x + pad, y: cursor - 8.5, width: 5, height: 5, color: accent });
       for (const line of lines) {
@@ -303,7 +323,7 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
   {
     const page = doc.addPage([pw, ph]);
     caption(page, fonts, "Cartridge labels - one spare. Cut along the marks.", ph - 60);
-    const player = sprite("player");
+    const player = subject.hero;
     for (let i = 0; i < 2; i++) {
       const x = (pw - LABEL.w) / 2;
       const y = ph - 120 - LABEL.h - i * (LABEL.h + 60);
@@ -315,7 +335,7 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
       page.drawRectangle({ x: x + art, y, width: 5, height: LABEL.h, color: accent });
       if (player) {
         const unit = Math.min((art - 16) / (player.width * 2), (LABEL.h - 24) / player.height);
-        drawSprite(page, player.frames[0]!, colorsOf("player"), x + (art - player.width * unit * 2) / 2, y + (LABEL.h + player.height * unit) / 2, unit);
+        drawSprite(page, player.frames[0]!, colorsOf(player), x + (art - player.width * unit * 2) / 2, y + (LABEL.h + player.height * unit) / 2, unit);
       }
       const textW = LABEL.w - art - 5 - 16;
       const fit = fitText(title.toUpperCase(), fonts.title, textW, 4, 13, 5);
@@ -342,20 +362,20 @@ export async function buildPrintPdf({ project, template, paper, fonts: fontBytes
     // Header: title and the cast.
     const fit = fitText(title.toUpperCase(), fonts.title, width, 2, 22, 10);
     cursor = centeredLines(page, fit.lines, fonts.title, fit.size, pw / 2, cursor, INK) - 8;
-    const cast = ["player", "enemy", "shot", "bomb"].map(sprite).filter((s) => !!s);
+    const cast = subject.cast;
     const unit = 3;
     const castW = cast.reduce((n, s) => n + s.width * unit * 2, 0) + (cast.length - 1) * 20;
     let cx = (pw - castW) / 2;
-    const castH = Math.max(...cast.map((s) => s.height * unit));
+    const castH = Math.max(0, ...cast.map((s) => s.height * unit));
     for (const s of cast) {
-      drawSprite(page, s.frames[0]!, colorsOf(s.role), cx, cursor - (castH - s.height * unit) / 2, unit);
+      drawSprite(page, s.frames[0]!, colorsOf(s), cx, cursor - (castH - s.height * unit) / 2, unit);
       cx += s.width * unit * 2 + 20;
     }
     cursor -= castH + 20;
     page.drawLine({ start: { x: margin, y: cursor }, end: { x: pw - margin, y: cursor }, thickness: 1, color: accent });
     cursor -= 18;
 
-    for (const block of parseManual(manualText(project, template))) {
+    for (const block of parseManual(subject.manual)) {
       if (block.kind === "heading") {
         need(40);
         cursor -= 8;
