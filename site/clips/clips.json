@@ -1,0 +1,54 @@
+[
+  {
+    "id": "dodger",
+    "title": "Rock Fall",
+    "gif": "dodger.gif",
+    "still": "dodger.png",
+    "width": 320,
+    "height": 240,
+    "seconds": 7,
+    "score": [
+      0,
+      100
+    ]
+  },
+  {
+    "id": "ghost-panic",
+    "title": "Ghost Panic",
+    "gif": "ghost-panic.gif",
+    "still": "ghost-panic.png",
+    "width": 320,
+    "height": 240,
+    "seconds": 7,
+    "score": [
+      0,
+      740
+    ]
+  },
+  {
+    "id": "maze",
+    "title": "Yarn Hunt",
+    "gif": "maze.gif",
+    "still": "maze.png",
+    "width": 320,
+    "height": 240,
+    "seconds": 7,
+    "score": [
+      0,
+      70
+    ]
+  },
+  {
+    "id": "shooter",
+    "title": "Cat vs. Vacuums",
+    "gif": "shooter.gif",
+    "still": "shooter.png",
+    "width": 320,
+    "height": 240,
+    "seconds": 7,
+    "score": [
+      50,
+      120
+    ]
+  }
+]

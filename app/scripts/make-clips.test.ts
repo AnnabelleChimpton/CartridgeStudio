@@ -3,9 +3,14 @@
 // that reads the object tables from RAM, and keeps the best seven seconds of a
 // few tries as an animated GIF, plus a still PNG for reduced-motion viewers.
 //
+// The clips are meant for reuse (the starter chooser's cards, a jam gallery):
+// each preset gets <id>.gif and <id>.png, and clips.json lists them with the
+// game's title and size, so anything that renders a game grid can read it.
+//
 // Not part of the test suite. Run from app/:
-//   npx vitest run --dir scripts --config scripts/clips.config.ts
-// or set CLIPS=<name,name> to make only some.
+//   npx vitest run --config scripts/clips.config.ts
+// CLIPS=<id,id> makes only some, CLIPS_OUT=<dir> writes somewhere other than
+// site/clips, and CLIPS_TRACE=1 prints each try's score by the second.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -20,7 +25,7 @@ import { SOUND_LIBRARY } from "../src/project/templates.ts";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const gamesDir = path.join(root, "templates/kit/games");
-const outDir = path.join(root, "site/clips");
+const outDir = path.resolve(root, process.env.CLIPS_OUT ?? "site/clips");
 
 /** Frames played per try; the clip is the best window inside them. */
 const PLAY_FRAMES = 60 * 16;
@@ -297,6 +302,19 @@ async function play(host: CoreHost, a78: Uint8Array, symbolTable: string, name: 
   return take;
 }
 
+/** One line of clips.json. Paths are relative to the manifest. */
+interface ClipEntry {
+  id: string;
+  title: string;
+  gif: string;
+  still: string;
+  width: number;
+  height: number;
+  seconds: number;
+  /** Score at the clip's first and last frame. */
+  score: [number, number];
+}
+
 /** The best clip-length window: most score, no lives lost, still playing at the end. */
 function bestWindow(t: Take): { start: number; value: number } {
   let best = { start: 0, value: -Infinity };
@@ -325,6 +343,11 @@ it(
     const builder = await nodeBuilder();
     const host = await nodeHost();
     fs.mkdirSync(outDir, { recursive: true });
+    // Kept across partial runs (CLIPS=…): entries for games not remade stay as they were.
+    const manifestPath = path.join(outDir, "clips.json");
+    const manifest: Record<string, ClipEntry> = fs.existsSync(manifestPath)
+      ? Object.fromEntries((JSON.parse(fs.readFileSync(manifestPath, "utf8")) as ClipEntry[]).map((e) => [e.id, e]))
+      : {};
     for (const name of names) {
       const game = KitGameSchema.parse(JSON.parse(fs.readFileSync(path.join(gamesDir, `${name}.json`), "utf8")));
       const rom = await buildKitRom(game, SOUND_LIBRARY, builder);
@@ -333,7 +356,7 @@ it(
       for (let seed = 1; seed <= TRIES; seed++) {
         const take = await play(host, rom.a78, rom.symbols, name, game, seed);
         const w = bestWindow(take);
-          if (process.env.CLIPS_TRACE)
+        if (process.env.CLIPS_TRACE)
           process.stdout.write(`  ${name} try ${seed}: ${take.score.filter((_, i) => i % 60 === 0).join(" ")} | lives ${take.lives.filter((_, i) => i % 60 === 0).join("")} | best ${w.value.toFixed(0)}@${w.start}\n`);
         if (!pick || w.value > pick.value) pick = { take, ...w, seed };
       }
@@ -350,11 +373,23 @@ it(
       for (let i = 0; i < still.length; i++) rgba.set([p[still[i]! * 3]!, p[still[i]! * 3 + 1]!, p[still[i]! * 3 + 2]!, 255], i * 4);
       fs.writeFileSync(path.join(outDir, `${name}.png`), encodeRgbaPng(CLIP_WIDTH, CLIP_HEIGHT, rgba));
 
+      manifest[name] = {
+        id: name,
+        title: game.title,
+        gif: `${name}.gif`,
+        still: `${name}.png`,
+        width: CLIP_WIDTH,
+        height: CLIP_HEIGHT,
+        seconds: CLIP_FRAMES / 60,
+        score: [take.score[start]!, take.score[end]!],
+      };
       process.stdout.write(
         `${name}: seed ${seed}, frames ${start}-${end}, score ${take.score[start]}→${take.score[end]}, ` +
           `lives ${take.lives[start]}→${take.lives[end]}, state ${take.state[end]}, ${(gif.length / 1024).toFixed(0)} KB\n`,
       );
     }
+    const entries = Object.values(manifest).sort((a, b) => a.id.localeCompare(b.id));
+    fs.writeFileSync(manifestPath, JSON.stringify(entries, null, 2) + "\n");
   },
   20 * 60_000,
 );

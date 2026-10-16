@@ -53,6 +53,7 @@
             <li><strong>1 file</strong> <span>an offline player you can send to anyone</span></li>
           </ul>
         </div>
+        <!-- When the uncut hardware video exists (browser, flash cart, console, printed box), it replaces this clip as the hero. -->
         <figure class="tv hero-tv">
           <div class="screen">
             <picture>
@@ -74,6 +75,7 @@
           <p>Each clip is the actual cartridge ROM, built by Cartridge Studio and recorded frame by frame in the emulator while a little autopilot plays. Nothing is mocked up. Each one is a starter you can open and change.</p>
           <button class="toggle" type="button" id="motion-toggle" aria-pressed="false" hidden>Pause the clips</button>
         </div>
+        <!-- Game grid: one <li><figure> per game, listed in clips/clips.json. Kept plain so the jam gallery's renderer can replace it. -->
         <ul class="clip-grid">
           <li>
             <figure class="tv">
@@ -218,14 +220,14 @@
           </ol>
         </div>
         <aside class="compat" aria-labelledby="compat-title">
-          <h3 id="compat-title">Compatibility</h3>
-          <p>Games are standard 7800 ROMs, made for:</p>
+          <h3 id="compat-title">Compatible with</h3>
+          <p>Games are standard 7800 ROMs. They're compatible with:</p>
           <ul>
-            <li>An original Atari 7800, with a 7800 flash cartridge</li>
-            <li>Atari 7800+ and 2600+ consoles, whose firmware decides which cartridges they accept</li>
-            <li>Emulators that read <code>.a78</code> files</li>
+            <li>the original Atari 7800, with a 7800 flash cartridge;</li>
+            <li>the Atari 7800+ and 2600+, depending on console firmware and cartridge;</li>
+            <li>emulators that read <code>.a78</code> files.</li>
           </ul>
-          <p class="note">Every game is tested in two emulators; testing on real consoles is under way. Not every flash cartridge works in every console, and the 7800+ and 2600+ depend on their firmware version, so check reports for your console and cartridge before you buy. If you try one, we'd love to hear which console, firmware and cartridge you used.</p>
+          <p class="note">Every game is tested in two emulators; testing on real consoles is under way. Not every flash cartridge works in every console, and the 7800+ and 2600+ depend on their firmware version, so check reports for your console and cartridge before you buy. We'll publish a compatibility list from our hardware tests. If you try one first, we'd love to hear which console, firmware and cartridge you used.</p>
         </aside>
       </div>
     </section>
@@ -274,7 +276,7 @@
   <footer class="site-footer">
     <div class="wrap footer-row">
       <p>Cartridge Studio is free software (GPL-3.0-or-later). <a href="https://github.com/AnnabelleChimpton/CartridgeStudio">Source code</a></p>
-      <p class="legal">Not affiliated with or endorsed by Atari. Atari, 2600+ and 7800+ are trademarks of their respective owners and are used here only to describe compatibility. Fonts: Press Start 2P and Atkinson Hyperlegible, <a href="fonts/press-start-2p-OFL.txt">SIL Open Font License</a>.</p>
+      <p class="legal">Not affiliated with or endorsed by Atari. Atari, 7800, 2600+ and 7800+ are trademarks of their respective owners and are used here only to describe compatibility. Fonts: Press Start 2P and Atkinson Hyperlegible, <a href="fonts/press-start-2p-OFL.txt">SIL Open Font License</a>.</p>
     </div>
   </footer>
 
