@@ -75,6 +75,15 @@
  rem timed "turn into": seconds left, and the type to turn back into
  dim otimer = $22B8
  dim oback = $22D0
+{{#if hasVelocity}}
+ rem model v2 spike: velocity in quarter pixels per frame (signed), and the
+ rem quarter-pixel fraction each thing has built up
+ dim ovx = $22E8
+ dim ovy = $2300
+ dim ofx = $2318
+ dim ofy = $2330
+ const VELOCITY = 13
+{{/if}}
 
  const STATE_TITLE = 0
  const STATE_PLAY = 1
@@ -144,6 +153,21 @@ st_play
  ot = otype[oi]
  if ot = EMPTY then goto nextobj
  beh = typebeh[ot]
+{{#if hasVelocity}}
+ rem things that move by their own velocity skip the behaviour dispatch
+ if beh <> VELOCITY then goto notvelocity
+{{#if velocitySlice}}
+ rnd = oi ^ frame
+ rnd = rnd & 1
+ if rnd then goto nextobj
+ amt = 2
+{{else}}
+ amt = 1
+{{/if}}
+ gosub b_velocity
+ goto afterupdate
+notvelocity
+{{/if}}
  amt = typeamt[ot]
  rem time-slicing: patrollers, bouncers, chasers and fallers (4-7, 9) move on
  rem alternate frames by odd and even slot, twice as far, so speeds don't change
@@ -156,6 +180,7 @@ st_play
  amt = typeamt2[ot]
 updatenow
  on beh gosub b_still b_player_lr b_player_4 b_player_8 b_patrol_h b_patrol_v b_bounce b_chase b_march b_fall b_proj_up b_proj_down b_flee
+afterupdate
 {{#if hasDrops}}
  ot = otype[oi]
  if ot = EMPTY then goto nextobj
@@ -233,6 +258,10 @@ startroom
  ox[oi] = spawnx[oi] : oy[oi] = spawny[oi]
  osx[oi] = spawnx[oi] : osy[oi] = spawny[oi]
  odx[oi] = 1 : ody[oi] = 1
+{{#if hasVelocity}}
+ ovx[oi] = typevx[ot] : ovy[oi] = typevy[ot]
+ ofx[oi] = 0 : ofy[oi] = 0
+{{/if}}
  next
  heroi = EMPTY
  for oi = 0 to 23
@@ -459,6 +488,76 @@ b_proj_down
  if blocked then otype[oi] = EMPTY
  return
 
+ {{#if hasVelocity}}
+ rem ---- model v2 spike: velocity movement ----
+ rem b_velocity: add the velocity (doubled when amt = 2, for time-sliced
+ rem movers) to the quarter-pixel fraction; whole pixels move the thing,
+ rem one axis at a time, and a wall or edge in the way calls its reaction
+b_velocity
+ rnd = ovx[oi]
+ if rnd = 0 then goto velocityy
+ if amt = 2 then rnd = rnd + rnd
+ rnd = rnd + ofx[oi]
+ ofx[oi] = rnd & 3
+ cell = rnd / 4
+ if rnd >= 128 then cell = cell | 192
+ if cell = 0 then goto velocityy
+ nx = ox[oi] + cell : ny = oy[oi]
+ gosub trymove
+ if !blocked then goto velocityy
+ beh = typereact[ot]
+ on beh gosub hitstopx hitbouncex hitwrapx hitturn hitdestroy
+ if otype[oi] = EMPTY then return
+velocityy
+ rnd = ovy[oi]
+ if rnd = 0 then return
+ if amt = 2 then rnd = rnd + rnd
+ rnd = rnd + ofy[oi]
+ ofy[oi] = rnd & 3
+ cell = rnd / 4
+ if rnd >= 128 then cell = cell | 192
+ if cell = 0 then return
+ nx = ox[oi] : ny = oy[oi] + cell
+ gosub trymove
+ if !blocked then return
+ beh = typereact[ot]
+ on beh goto hitstopy hitbouncey hitwrapy hitturn hitdestroy
+
+hitstopx
+ ovx[oi] = 0
+ return
+hitbouncex
+ rnd = ovx[oi] : ovx[oi] = 0 - rnd
+ return
+hitwrapx
+ rem the screen edges wrap round; walls stop
+ px = nx + wid - 1
+ if nx < 160 && px < 160 then goto hitstopx
+ rnd = ovx[oi]
+ if rnd < 128 then ox[oi] = 0 else ox[oi] = 160 - wid
+ return
+hitstopy
+ ovy[oi] = 0
+ return
+hitbouncey
+ rnd = ovy[oi] : ovy[oi] = 0 - rnd
+ return
+hitwrapy
+ py = ny + hgt - 1
+ if ny >= ROOMTOP && py < 192 then goto hitstopy
+ rnd = ovy[oi]
+ if rnd < 128 then oy[oi] = ROOMTOP else oy[oi] = 192 - hgt
+ return
+hitturn
+ rem a quarter turn clockwise: right becomes down, down becomes left
+ rnd = ovx[oi] : cell = ovy[oi]
+ ovx[oi] = 0 - cell : ovy[oi] = rnd
+ return
+hitdestroy
+ otype[oi] = EMPTY
+ return
+{{/if}}
+
  rem drops: a type can drop another (bombs, eggs) at random, one at a time
 drops
  ot = otype[oi]
@@ -493,6 +592,10 @@ spawnhere
  ox[count] = nx : oy[count] = ny
  osx[count] = nx : osy[count] = ny
  odx[count] = 1 : ody[count] = 1
+{{#if hasVelocity}}
+ ovx[count] = typevx[oj] : ovy[count] = typevy[oj]
+ ofx[count] = 0 : ofy[count] = 0
+{{/if}}
  return
 
 {{#if hasTimedTurns}}

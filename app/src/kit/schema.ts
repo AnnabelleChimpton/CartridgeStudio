@@ -40,6 +40,26 @@ export const LEVEL = "level";
 
 const Id = z.string().regex(/^[a-z][a-z0-9-]{0,23}$/, "Ids are short lowercase names");
 
+/**
+ * Model v2 spike (docs/kit-model-v2.md): movement built from parts. A type
+ * with `move` ignores its behaviour's movement and moves by its own velocity
+ * properties instead, reacting to walls and screen edges.
+ */
+export const REACTIONS = ["stop", "bounce", "wrap", "turn", "destroy"] as const;
+export type Reaction = (typeof REACTIONS)[number];
+/** Velocity is in quarter pixels per frame, so 4 is one pixel. */
+const Velocity = z.number().int().min(-16).max(16);
+export const MoveSchema = z
+  .object({
+    /** Starting velocity of each thing of this type. */
+    vx: Velocity,
+    vy: Velocity,
+    /** What happens when a wall or the screen edge is in the way. */
+    react: z.enum(REACTIONS),
+  })
+  .strict();
+export type KitMove = z.infer<typeof MoveSchema>;
+
 export const KitTypeSchema = z.object({
   id: Id,
   label: z.string().min(1).max(30),
@@ -55,6 +75,8 @@ export const KitTypeSchema = z.object({
   shoots: Id.optional(),
   /** Any type: drops another type below it at random, one at a time. */
   drops: z.object({ type: Id, chance: z.number().int().min(1).max(40) }).optional(),
+  /** Spike: velocity movement instead of the behaviour's (not for players). */
+  move: MoveSchema.optional(),
 });
 export type KitType = z.infer<typeof KitTypeSchema>;
 

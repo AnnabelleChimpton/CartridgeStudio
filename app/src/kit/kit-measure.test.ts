@@ -9,8 +9,8 @@ import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import { parseSymbols, type CoreHost } from "../emulator/core-host.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { cpuCost, validateKit } from "./generate.ts";
-import type { Behaviour, KitGame, KitRule, KitType } from "./schema.ts";
+import { cpuCost, validateKit, type KitOptions } from "./generate.ts";
+import type { Behaviour, KitGame, KitMove, KitRule, KitType } from "./schema.ts";
 import { buildKitRom } from "./tests.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
@@ -56,8 +56,8 @@ beforeAll(async () => {
   host = await nodeHost();
 });
 
-async function fps(g: KitGame): Promise<number> {
-  const rom = await buildKitRom(g, SOUND_LIBRARY, builder, false, { ignoreBudget: true });
+async function fps(g: KitGame, opts: KitOptions = {}): Promise<number> {
+  const rom = await buildKitRom(g, SOUND_LIBRARY, builder, false, { ignoreBudget: true, ...opts });
   if (!rom.ok) throw new Error(rom.failure);
   const s = parseSymbols(rom.symbols);
   const loops = () => {
@@ -77,11 +77,11 @@ async function fps(g: KitGame): Promise<number> {
 }
 
 /** Most fillers that still hold 60 fps. */
-async function capacity(make: (fillers: number) => KitGame): Promise<number> {
+async function capacity(make: (fillers: number) => KitGame, opts: KitOptions = {}): Promise<number> {
   let best = -1;
   for (let n = 0; n <= 15; n++) {
     // (24 objects at most: the hero, up to 8 movers and 15 fillers.)
-    if ((await fps(make(n))) < 59.5) break;
+    if ((await fps(make(n), opts)) < 59.5) break;
     best = n;
   }
   return best;
@@ -151,6 +151,55 @@ describe.skipIf(!process.env.KIT_MEASURE)("kit cost measurements", () => {
         n = m;
       }
       console.log(`${mover}: ${n} fit at 60 fps (no fillers)`);
+    }
+  });
+});
+
+/** The base game with its movers moving by velocity (model v2 spike) instead of a behaviour; optionally without walls. */
+function velocityBase(fillers: number, movers: number, move: KitMove | null, speed = 2, walls = true): KitGame {
+  const g = base(fillers, movers);
+  const m = g.types[1]!;
+  if (move) m.move = move;
+  m.speed = speed;
+  if (!walls) g.room.rows = g.room.rows.map((r) => r.replace(/#/g, " "));
+  return g;
+}
+
+describe.skipIf(!process.env.KIT_MEASURE)("model v2 spike: velocity movement", () => {
+  it("counts velocity movers at 60 fps against the bounce behaviour", { timeout: 1_800_000 }, async () => {
+    const most = async (make: (m: number) => KitGame, opts: KitOptions = {}) => {
+      let n = 0;
+      for (let m = 4; m <= 20; m++) {
+        if ((await fps(make(m), opts)) < 59.5) break;
+        n = m;
+      }
+      return n;
+    };
+    const cases: { name: string; make: (fillers: number, movers: number) => KitGame; opts?: KitOptions }[] = [];
+    for (const walls of [true, false]) {
+      const room = walls ? "walled room" : "open room";
+      for (const [speed, v] of [
+        [2, 2],
+        [3, 4],
+      ] as const) {
+        const px = v / 4;
+        cases.push({ name: `bounce behaviour, ${px} px/frame, ${room}`, make: (f, m) => velocityBase(f, m, null, speed, walls) });
+        cases.push({ name: `velocity + bounce, ${px} px/frame, time-sliced, ${room}`, make: (f, m) => velocityBase(f, m, { vx: v, vy: v, react: "bounce" }, speed, walls) });
+        cases.push({
+          name: `velocity + bounce, ${px} px/frame, every frame, ${room}`,
+          make: (f, m) => velocityBase(f, m, { vx: v, vy: v, react: "bounce" }, speed, walls),
+          opts: { velocityEveryFrame: true },
+        });
+      }
+    }
+    cases.push({ name: "velocity + wrap, 1 px/frame, time-sliced, open room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 4, react: "wrap" }, 3, false) });
+    cases.push({ name: "velocity + turn, 1 px/frame, time-sliced, walled room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 0, react: "turn" }, 3, true) });
+    // Points per mover: fillers displaced by 8 movers against 7, as in the batch 1 calibration (one filler ≈ 4.5 points).
+    for (const c of cases) {
+      const n = await most((m) => c.make(0, m), c.opts);
+      const seven = await capacity((f) => c.make(f, 7), c.opts);
+      const eight = await capacity((f) => c.make(f, 8), c.opts);
+      console.log(`${c.name}: ${n} fit at 60 fps (hero, no fillers); 8 movers leave room for ${eight} fillers, 7 for ${seven} → ≈ ${((seven - eight) * 4.5).toFixed(1)} points each`);
     }
   });
 });

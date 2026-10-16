@@ -13,6 +13,7 @@ import {
   LEVEL,
   MAX_OBJECTS,
   PLAYER_BEHAVIOURS,
+  REACTIONS,
   ROOM_COLS,
   ROOM_ROWS,
   TILES,
@@ -81,6 +82,14 @@ const CONDITION_COST = 0.2;
 const TIMED_TURN_COST = 2;
 const LEVELS_COST = 2;
 const HUD_NUMBER_COST = 7;
+/**
+ * Model v2 spike: a thing moving by its own velocity, with a wall reaction.
+ * Measured in a walled room against bounce (src/kit/kit-measure.test.ts,
+ * docs/kit-model-v2.md): time-sliced like bounce, it costs the same.
+ */
+const VELOCITY_COST = 9;
+/** The behaviour index the runtime gives velocity movers (after the 13 behaviours). */
+const VELOCITY_BEH = BEHAVIOURS.length;
 
 /** The type of thing a rule's "first" or "second" refers to, if any. */
 export function ruleThing(w: KitTrigger, who: "first" | "second"): string | null {
@@ -129,7 +138,7 @@ export function cpuCost(g: KitGame, spawns: { type: number }[]): number {
   const population = (t: number) => g.types.reduce((n, _, u) => n + (reach.get(u)!.has(t) ? base(u) : 0), 0);
   const each = (i: number) => {
     const t = g.types[i]!;
-    return BEHAVIOUR_COST[t.behaviour]! + EXTRA_ZONE_COST * (Math.ceil(t.height / 8) - 1) + (t.drops ? DROPPER_COST : 0);
+    return (t.move ? VELOCITY_COST : BEHAVIOUR_COST[t.behaviour]!) + EXTRA_ZONE_COST * (Math.ceil(t.height / 8) - 1) + (t.drops ? DROPPER_COST : 0);
   };
   let cost = 0;
   // An object that can turn into something busier is priced as the busiest thing it can be.
@@ -173,6 +182,8 @@ interface Spawn {
 export interface KitOptions {
   /** Skip the CPU budget check (cost measurements only). */
   ignoreBudget?: boolean;
+  /** Velocity movers update every frame instead of on alternate frames (cost measurements only). */
+  velocityEveryFrame?: boolean;
 }
 
 export function validateKit(
@@ -202,6 +213,7 @@ export function validateKit(
     if (t.shoots && !typeIndex.has(t.shoots)) errors.push(`"${t.label}" shoots something that doesn't exist.`);
     if (t.shoots && !PLAYER_BEHAVIOURS.includes(t.behaviour)) errors.push(`Only the player can shoot ("${t.label}" can't).`);
     if (t.drops && !typeIndex.has(t.drops.type)) errors.push(`"${t.label}" drops something that doesn't exist.`);
+    if (t.move && PLAYER_BEHAVIOURS.includes(t.behaviour)) errors.push(`The player moves by the joystick ("${t.label}" can't have its own velocity).`);
   }
 
   // Room: walls and where things start.
@@ -571,10 +583,18 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
     return [line, line]; // each 16-line room row is two 8-line character rows
   });
   const hasLevels = g.rules.some((r) => r.then.some((a) => "nextLevel" in a));
+  const hasVelocity = g.types.some((t) => t.move);
   const data = [
     dataTable("typew", g.types.map((t) => t.width)),
     dataTable("typeh", g.types.map((t) => t.height)),
-    dataTable("typebeh", g.types.map((t) => BEHAVIOURS.indexOf(t.behaviour))),
+    dataTable("typebeh", g.types.map((t) => (t.move ? VELOCITY_BEH : BEHAVIOURS.indexOf(t.behaviour)))),
+    ...(hasVelocity
+      ? [
+          dataTable("typevx", g.types.map((t) => (t.move?.vx ?? 0) & 255)),
+          dataTable("typevy", g.types.map((t) => (t.move?.vy ?? 0) & 255)),
+          dataTable("typereact", g.types.map((t) => REACTIONS.indexOf(t.move?.react ?? "stop"))),
+        ]
+      : []),
     dataTable("typespeed", g.types.map((t) => t.speed - 1)),
     dataTable("typeshoots", g.types.map((t) => (t.shoots ? typeIndex.get(t.shoots)! : 255))),
     dataTable("typedrops", g.types.map((t) => (t.drops ? typeIndex.get(t.drops.type)! : 255))),
@@ -611,6 +631,8 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
       hasLevels,
       hudCounter: g.counters.some((c) => c.show) ? `cnt${g.counters.findIndex((c) => c.show)}` : "",
       hasDrops: g.types.some((t) => t.drops),
+      hasVelocity,
+      velocitySlice: !opts.velocityEveryFrame,
       graphics: graphics.join("\n"),
       alphachars: FONT_CHARS,
       palettes,

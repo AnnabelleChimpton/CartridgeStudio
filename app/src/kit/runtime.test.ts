@@ -8,7 +8,7 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { runRomOnHost, type Step, type WatchMap } from "../harness/behaviour.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import type { Behaviour, KitCounter, KitGame, KitRule, KitType } from "./schema.ts";
+import type { Behaviour, KitCounter, KitGame, KitMove, KitRule, KitType } from "./schema.ts";
 import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
@@ -239,5 +239,37 @@ describe("kit runtime: batch 1 (state)", () => {
     // Walls still block when there are other tiles: the hero stops at the wall in column 7.
     const wall = game(["", "", "", "", "P  ~   #"], [hero()], []);
     await run(wall, [{ hold: ["right"], frames: 90 }, { expect: { heroX: 48 } }]);
+  });
+});
+
+describe("kit runtime: model v2 spike (velocity movement)", () => {
+  const VEL: WatchMap = { vx1: { symbol: "ovx", offset: 1 }, vy1: { symbol: "ovy", offset: 1 } };
+  const mover = (vx: number, vy: number, react: KitMove["react"]) => type("mover", "still", { move: { vx, vy, react } });
+  const walled = (row: string) => {
+    const w = ["####################", ...Array(9).fill("#                  #"), "####################"];
+    w[5] = row;
+    w[8] = "# P                #";
+    return w;
+  };
+
+  it("bounce: velocity flips at a wall, and quarter pixels add up", async () => {
+    // 2 pixels a frame to the right; the wall at column 19 (x = 152) stops an 8-wide thing at x = 144.
+    const g = game(walled("#       A          #"), [hero(), mover(8, 0, "bounce")]);
+    await run(g, [{ until: { vx1: 248 }, maxFrames: 120, steps: [{ frames: 1 }] }, { frames: 20 }, { expect: { x1: { lt: 120 }, y1: 96 } }], VEL);
+    // A quarter pixel a frame: 10 pixels in 40 frames.
+    const slow = game(walled("#       A          #"), [hero(), mover(1, 0, "bounce")]);
+    await run(slow, [{ frames: 40 }, { expect: { x1: { gte: 72, lte: 76 } } }], VEL);
+  });
+
+  it("stop, turn and destroy at a wall", async () => {
+    await run(game(walled("#       A          #"), [hero(), mover(8, 0, "stop")]), [{ frames: 60 }, { expect: { x1: 144, vx1: 0 } }], VEL);
+    // A quarter turn clockwise: moving right becomes moving down.
+    await run(game(walled("#       A          #"), [hero(), mover(8, 0, "turn")]), [{ until: { vy1: 8 }, maxFrames: 120, steps: [{ frames: 1 }] }, { expect: { vx1: 0 } }], VEL);
+    await run(game(walled("#       A          #"), [hero(), mover(-8, 0, "destroy")]), [{ until: { type1: 255 }, maxFrames: 120, steps: [{ frames: 1 }] }], VEL);
+  });
+
+  it("wrap: leaving the right edge comes back at the left", async () => {
+    const g = game(["", "", "", "", "               A", "", "", "", "", "P"], [hero(), mover(8, 0, "wrap")]);
+    await run(g, [{ until: { x1: { gte: 150 } }, maxFrames: 120, steps: [{ frames: 1 }] }, { until: { x1: { lt: 16 } }, maxFrames: 20, steps: [{ frames: 1 }] }, { expect: { vx1: 8 } }], VEL);
   });
 });

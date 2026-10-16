@@ -13,6 +13,7 @@ import {
   BEHAVIOURS,
   LEVEL,
   PLAYER_BEHAVIOURS,
+  REACTIONS,
   type Behaviour,
   type KitAction,
   type KitCondition,
@@ -61,6 +62,14 @@ export function randomKitGame(seed: number, density: number): KitGame {
       behaviour,
       speed: 1 + r.int(4),
     };
+  });
+  // Model v2 spike: some things move by velocity instead. A separate stream, so
+  // the rest of each seed's game is unchanged.
+  const rv = rng(seed ^ 0x7e10);
+  types.forEach((t, i) => {
+    if (i === 0 || rv.next() >= 0.25) return;
+    const v = () => rv.int(33) - 16;
+    t.move = { vx: v(), vy: v(), react: rv.pick(REACTIONS) };
   });
   const projectile = types.findIndex((t, i) => i > 0 && t.behaviour === "projectile-up");
   if (projectile > 0 && r.next() < 0.7) types[0]!.shoots = types[projectile]!.id;
@@ -184,7 +193,7 @@ describe("kit fuzz", () => {
     const json = games.map((g) => JSON.stringify(g));
     const seen = (needle: string) => json.filter((j) => j.includes(needle)).length;
     const tally = Object.fromEntries(
-      ['"if":', '"every":', '"reaches":', '"onTile":', '"turn":', '"turnAll":', '"seconds":', '"nextLevel":', '"add":', '"show":true', '"flee"'].map((k) => [k, seen(k)]),
+      ['"if":', '"every":', '"reaches":', '"onTile":', '"turn":', '"turnAll":', '"seconds":', '"nextLevel":', '"add":', '"show":true', '"flee"', '"move":'].map((k) => [k, seen(k)]),
     );
     tally["hazard or goal tiles in the room"] = games.filter((g) => g.room.rows.some((r) => /[~*]/.test(r))).length;
     console.log(`kit fuzz: ${games.length} of ${COUNT} seeds valid; primitives seen in games: ${JSON.stringify(tally)}`);
