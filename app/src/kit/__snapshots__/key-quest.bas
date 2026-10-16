@@ -997,7 +997,7 @@ drawtitle
  plotchars 'PRESS FIRE' 5 60 12
  return
 drawwon
- plotchars 'THE CROWN IS YOURS!' 5 42 11
+ plotchars 'THE CROWN IS YOURS' 5 44 11
  plotchars 'SCORE' 5 56 14
  plotvalue font 5 score0 6 80 14
  return

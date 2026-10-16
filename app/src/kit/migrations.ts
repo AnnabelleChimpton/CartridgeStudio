@@ -82,12 +82,12 @@ export function rulesFromV1(rules: KitRuleV1[], ctx: V1Context): KitRule[] {
   }));
 }
 
-/** v1 speeds 1-4 in quarter pixels a frame, for the spike's `move`. */
+/** A v1 type as v2 parts. */
 function typeFromV1(t: KitTypeV1, player: string | null, pace: { plus: string; max: number } | undefined): KitType {
   const isPlayer = PLAYER_BEHAVIOURS.includes(t.behaviour as Behaviour);
   const parts = presetParts(t.behaviour as Behaviour, t.speed, player, isPlayer ? undefined : pace);
   if (t.move && !isPlayer) {
-    // The velocity spike: quarter pixels become sixteenths; walls stopped a wrapping thing.
+    // v1's optional `move`: quarter pixels become sixteenths; walls stopped a wrapping thing.
     const react = t.move.react;
     parts.move = { vx: t.move.vx * 4, vy: t.move.vy * 4, wall: react === "wrap" ? "stop" : react, edge: react };
     delete parts.steer;
@@ -104,7 +104,7 @@ function typeFromV1(t: KitTypeV1, player: string | null, pace: { plus: string; m
   } as KitType;
 }
 
-/** v1 → v2 (docs/kit-model-v2.md, "Migration from schema v1"). */
+/** v1 → v2: behaviours become parts, shooting, dropping and lives become rules and counters. */
 export function migrateV1(g: KitGameV1): KitGame {
   const playerTypes = g.types.filter((t) => PLAYER_BEHAVIOURS.includes(t.behaviour as Behaviour));
   const players = playerTypes.map((t) => t.id);

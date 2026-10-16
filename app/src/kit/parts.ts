@@ -1,6 +1,5 @@
 // Movement presets: v1's 13 behaviours, re-expressed as bundles of the
-// general movement parts (docs/kit-model-v2.md, "Today's 13 behaviours as
-// presets"). The migration uses them, and the editor offers them as the
+// general movement parts. The migration uses them, and the editor offers them as the
 // simple way to say how a thing moves; presetOf reads a type's parts back
 // as a preset when they match one.
 

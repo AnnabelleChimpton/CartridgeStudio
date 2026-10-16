@@ -372,7 +372,7 @@
    ]
   }
  ],
- "text": { "title": "Key Quest", "win": "The crown is yours!", "lose": "Game over" },
+ "text": { "title": "Key Quest", "win": "The crown is yours", "lose": "Game over" },
  "flow": {
   "title": true,
   "attract": { "after": 20 },

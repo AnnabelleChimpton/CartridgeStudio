@@ -1,4 +1,4 @@
-// Game kit spike: the three genres (templates/kit/games/*.json) are only data
+// Game kit: the starter games (templates/kit/games/*.json) are only data
 // for one runtime. Each must build, pass its behaviour tests and hold 60 fps.
 
 import { beforeAll, describe, expect, it } from "vitest";

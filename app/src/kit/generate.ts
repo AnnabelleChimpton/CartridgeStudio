@@ -20,8 +20,7 @@ export const KIT_RUNTIME_VERSION = "0.4.0";
 
 /**
  * Frame-time cost model, in points of a frame (100 = all of it), calibrated
- * from measurements in js7800 (src/kit/kit-measure.test.ts; docs/kit-model-v2.md,
- * "Phase A results"). A game whose total is at most 100 runs at 60 fps; the
+ * from measurements in js7800 (kit-measure.test.ts). A game whose total is at most 100 runs at 60 fps; the
  * fuzz test checks that this stays true.
  */
 export const CPU_BUDGET = 100;
@@ -99,7 +98,7 @@ function kindCost(ir: IR, k: number): number {
   return c;
 }
 
-/** Rules whose actions can run every frame; other rules' actions are rare, as batch 1 found, and aren't priced. */
+/** Rules whose actions can run every frame; other rules' actions are rare (measured in js7800) and aren't priced. */
 const frequent = (r: IRRule) => r.trigger.k === "every" && r.trigger.frames && r.trigger.n <= 2;
 
 /** The estimate, line by line. */

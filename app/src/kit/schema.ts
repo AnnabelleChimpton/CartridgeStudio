@@ -1,4 +1,4 @@
-// Game kit, model v2 (docs/kit-model-v2.md): a kit game is kinds of thing
+// Game kit: one runtime (engine.bas.hbs) driven by data. A kit game is kinds of thing
 // built from movement parts, rooms, counters and rules made of general
 // events, targets and values. The generator compiles it to 7800basic
 // through a typed IR (ir.ts); nothing in the runtime knows about genres.

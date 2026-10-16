@@ -1,5 +1,5 @@
-// "What's in the room": each room as a plain list, for non-visual access
-// (phase 2 audit). It's read from the same IR the ROM is built from, so it
+// "What's in the room": each room as a plain list, for non-visual access.
+// It's read from the same IR the ROM is built from, so it
 // can't drift from what plays.
 
 import { movementLabel } from "./edit.ts";

@@ -1,4 +1,4 @@
-// The success measure for kit model v2 (docs/kit-model-v2.md, Part 3): eight
+// The success measure for the kit model: eight
 // game ideas the kit wasn't designed around, written as kit data. Each one
 // that Phase A can express must validate, build, play its core moment and
 // hold 60 fps. The count that matters is engine special cases (runtime code

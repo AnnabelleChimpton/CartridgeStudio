@@ -1,6 +1,6 @@
 // Cost measurements for the CPU model (not part of the normal run):
 //   KIT_MEASURE=1 npx vitest run src/kit/kit-measure.test.ts --silent=false
-// Kit model v2 runs too fast for batch 1's method (a base game plus "still"
+// The kit runs too fast for the old method (a base game plus "still"
 // fillers until it drops below 60 fps: 23 things now fit). Instead each game
 // gets ballast: a busy loop in its user_frame hook (coder mode's hook, with
 // no declared cost), and a binary search finds the most ballast that still
@@ -11,8 +11,7 @@
 // the runtime's fixed work (input, the score and lives, drawscreen) plus the
 // hero is taken as BASE points, so a unit is (100 - BASE) / N0 points. Any
 // BASE keeps the model right at the 60 fps boundary, as long as parts add up.
-// The model's numbers (COST in generate.ts) come from this run; see
-// docs/kit-model-v2.md, "Phase A results".
+// The model's numbers (COST in generate.ts) come from this run.
 
 import { beforeAll, describe, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";

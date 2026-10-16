@@ -37,7 +37,7 @@ import {
 } from "./schema.ts";
 
 export const ROOMTOP = 16;
-/** Objects one zone (8 lines) can hold, besides the walls and HUD. Measured, see docs/kit-spike-findings.md. */
+/** Objects one zone (8 lines) can hold, besides the walls and HUD. Measured in js7800. */
 export const ZONE_BUDGET = 12;
 /** The built-in value for the room number (1 = the first room). */
 export const ROOM = "room";

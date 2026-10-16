@@ -507,6 +507,16 @@ describe("kit model v2: targets, values and actions", () => {
     await runV2(g, [{ frames: 300 }, { expect: { x1: 64 } }, { hold: ["right"], frames: 30 }, { expect: { lives: 2 } }]);
   });
 
+  it("counters named like 7800basic's own variables still build", async () => {
+    // `a` is one of 7800basic's built-in variables; the runtime names counters cnt_<id>.
+    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ add: { what: { counter: "a" }, by: 1 } }] })], {
+      counters: [{ id: "a", label: "A", start: 0 }, { id: "switch", label: "Switch", start: 0 }],
+    });
+    await runV2(g, [{ frames: 130 }, { expect: { a: 2 } }], { a: { symbol: "cnt_a" } });
+    // "score" is the built-in score, so a counter can't take the name.
+    expect(await buildKitRom(v2(["P"], [player()], [], { counters: [{ id: "score", label: "Score", start: 0 }] }), SOUND_LIBRARY, builder)).toMatchObject({ ok: false });
+  });
+
   it("run code: a rule calls the game's own routine; hooks run each frame", async () => {
     const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ run: "bonus" }] })], {
       counters: hits,
