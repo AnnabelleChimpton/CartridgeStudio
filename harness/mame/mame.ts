@@ -162,18 +162,30 @@ export async function runInMame(
   // Signed, because the real BIOS refuses an unsigned cartridge.
   const built = await builder.build({ ...gen.input, sign: true });
   if (!built.ok) return { passed: false, frames: 0, failure: `Build failed in ${built.stage}: ${built.message}` };
+  return runRomInMame(built.a78, built.symbols, template.manifest.watch, test, mame, { timeoutMs });
+}
 
-  const symbols = parseSymbols(built.symbols);
+/** Runs a test's steps against an already built (signed) ROM; `watch` names game variables by symbol. */
+export async function runRomInMame(
+  a78: Uint8Array,
+  symbolTable: string,
+  watchSymbols: Record<string, { symbol: string; offset?: number; bytes?: number; bcd?: boolean }>,
+  test: Pick<BehaviourTest, "name" | "steps">,
+  mame: Mame,
+  { timeoutMs = 120_000 } = {},
+): Promise<MameResult> {
+  const built = { a78 };
+  const symbols = parseSymbols(symbolTable);
   const watch: Record<string, Watch> = {};
-  for (const [name, w] of Object.entries(template.manifest.watch)) {
-    const address = symbols.get(w.symbol);
-    if (address !== undefined) watch[name] = { ...w, address };
+  for (const [name, w] of Object.entries(watchSymbols)) {
+    const base = symbols.get(w.symbol);
+    if (base !== undefined) watch[name] = { symbol: w.symbol, bytes: w.bytes ?? 1, bcd: w.bcd ?? false, address: base + (w.offset ?? 0) };
   }
   const conditions: Condition[] = [];
   const steps = toLua(test.steps, conditions);
   for (const cond of conditions) {
     for (const name of Object.keys(cond)) {
-      const w = template.manifest.watch[name];
+      const w = watchSymbols[name];
       if (!w) return { passed: false, frames: 0, failure: `"${name}" isn't in the template's watch list` };
       if (!watch[name]) return { passed: false, frames: 0, failure: `The ROM has no symbol "${w.symbol}"` };
     }
@@ -207,7 +219,7 @@ function check(
   reports: Report[],
   conditions: Condition[],
   watch: Record<string, Watch>,
-  test: BehaviourTest,
+  test: Pick<BehaviourTest, "name" | "steps">,
   log: string,
 ): MameResult {
   let frames = 0;

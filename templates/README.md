@@ -62,7 +62,7 @@ Each `tests/*.json` file is run by `app/src/harness/template-behaviour.test.ts` 
 
 ## 7800basic 0.41 pitfalls
 
-These were found while writing `fixed-shooter`. The code generator's lint catches 1, 2 and 6.
+These were found while writing `fixed-shooter` and the game kit runtime (`kit/`). The code generator's lint catches 1, 2 and 6.
 
 1. **Never multiply by a const name** (`x = col * COLSPACING`). The compiler loops forever. Multiply by a literal instead (`col * 20`).
 2. **Never pass a const as a `plotsprite` or `boxcollision` position.** The value is read from the zero-page address with that number instead of being used as the number. Copy it into a variable first (`ey = PLAYERY`).
@@ -70,3 +70,5 @@ These were found while writing `fixed-shooter`. The code generator's lint catche
 4. Set `characterset <font>` before `plotvalue`. Otherwise digits are fetched from the wrong memory.
 5. `if rand < n` doesn't re-roll the random number. Assign it first (`rnd = rand`).
 6. **Score math takes a const's value as-is.** `score0 = score0 + 30` adds BCD `$30`, but with `const P = 30`, `score0 = score0 + P` adds binary 30 and corrupts the score. Write score consts in BCD (`const P = $30`). The template tests lint for this too.
+7. **`a`–`z` are 7800basic's own variables**, so `autodim byte i` (or `b`, `h`, `j`, `t`, `w`, ...) clashes at assembly time with "EQU: Value mismatch". Use longer names. A stray `[t]` index still compiles, but it silently reads the built-in `t`.
+8. **An `if` can't chain three `||` (or `&&`) conditions**: 7800basic reports "unknown keyword" for the first variable. Split it into separate `if` lines.

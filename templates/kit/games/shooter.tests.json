@@ -1,0 +1,302 @@
+[
+  {
+    "name": "waits on the title screen until fire",
+    "steps": [
+      {
+        "frames": 60
+      },
+      {
+        "expect": {
+          "state": 0,
+          "lives": 3
+        }
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "expect": {
+          "state": 1,
+          "lives": 3,
+          "score": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "shooting the formation scores",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "score": {
+            "gte": 30
+          }
+        },
+        "maxFrames": 4000,
+        "steps": [
+          {
+            "repeat": 6,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 6,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": {
+            "multipleOf": 10
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "clearing the formation brings the next wave",
+    "game": {
+      "rules": [
+        {
+          "when": {
+            "touch": [
+              "shot",
+              "invader"
+            ]
+          },
+          "then": [
+            {
+              "remove": "first"
+            },
+            {
+              "remove": "second"
+            },
+            {
+              "score": 10
+            }
+          ]
+        },
+        {
+          "when": {
+            "allGone": "invader"
+          },
+          "then": [
+            {
+              "restartRoom": true
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "score": {
+            "gte": 110
+          }
+        },
+        "maxFrames": 30000,
+        "steps": [
+          {
+            "repeat": 9,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 9,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "state": 1,
+          "lives": 3
+        }
+      }
+    ]
+  },
+  {
+    "name": "a bomb hit costs a life",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "lives": 2
+        },
+        "maxFrames": 8000,
+        "steps": [
+          {
+            "frames": 10
+          }
+        ]
+      },
+      {
+        "expect": {
+          "state": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "holds 60 fps while playing",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "repeat": 5,
+        "steps": [
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "loops": {
+            "gte": 640
+          }
+        }
+      }
+    ]
+  }
+]

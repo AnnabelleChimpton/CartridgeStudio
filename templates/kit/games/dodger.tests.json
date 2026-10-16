@@ -1,0 +1,237 @@
+[
+  {
+    "name": "the timer counts seconds",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "frames": 300
+      },
+      {
+        "expect": {
+          "seconds": 5
+        }
+      }
+    ]
+  },
+  {
+    "name": "surviving 30 seconds wins",
+    "game": {
+      "rules": [
+        {
+          "when": {
+            "timer": 30
+          },
+          "then": [
+            {
+              "win": true
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "frames": 1850
+      },
+      {
+        "expect": {
+          "state": 2
+        }
+      }
+    ]
+  },
+  {
+    "name": "a falling rock costs a life",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "lives": 2
+        },
+        "maxFrames": 4000,
+        "steps": [
+          {
+            "frames": 10
+          }
+        ]
+      },
+      {
+        "expect": {
+          "state": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "catching stars scores",
+    "game": {
+      "lives": 9
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "score": {
+            "gte": 50
+          }
+        },
+        "maxFrames": 8000,
+        "steps": [
+          {
+            "repeat": 6,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 6,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": {
+            "multipleOf": 50
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "holds 60 fps while playing",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "repeat": 5,
+        "steps": [
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "loops": {
+            "gte": 640
+          }
+        }
+      }
+    ]
+  }
+]

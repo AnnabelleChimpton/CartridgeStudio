@@ -1,0 +1,167 @@
+[
+  {
+    "name": "walls stop the player",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "up"
+        ],
+        "frames": 30
+      },
+      {
+        "hold": [
+          "left"
+        ],
+        "frames": 30
+      },
+      {
+        "expect": {
+          "heroX": 8,
+          "heroY": 32
+        }
+      }
+    ]
+  },
+  {
+    "name": "collecting yarn scores, and the wall ahead stops the cat",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 100
+      },
+      {
+        "expect": {
+          "score": 20,
+          "heroX": 88,
+          "heroY": 32
+        }
+      }
+    ]
+  },
+  {
+    "name": "a chasing ghost catches the cat eventually",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "lives": 2
+        },
+        "maxFrames": 4000,
+        "steps": [
+          {
+            "frames": 10
+          }
+        ]
+      },
+      {
+        "expect": {
+          "state": 1,
+          "heroX": 8,
+          "heroY": 32
+        }
+      }
+    ]
+  },
+  {
+    "name": "holds 60 fps while playing",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "repeat": 5,
+        "steps": [
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "left",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "left"
+                ],
+                "frames": 6
+              }
+            ]
+          },
+          {
+            "repeat": 8,
+            "steps": [
+              {
+                "hold": [
+                  "right",
+                  "fire"
+                ],
+                "frames": 2
+              },
+              {
+                "hold": [
+                  "right"
+                ],
+                "frames": 6
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "expect": {
+          "loops": {
+            "gte": 640
+          }
+        }
+      }
+    ]
+  }
+]

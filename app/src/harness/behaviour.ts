@@ -87,15 +87,29 @@ export async function runBehaviourTest(
   if (!gen.ok) return { passed: false, frames: 0, failure: `Project invalid: ${gen.errors.join("; ")}` };
   const built = await builder.build({ ...gen.input, sign: false });
   if (!built.ok) return { passed: false, frames: 0, failure: `Build failed in ${built.stage}: ${built.message}` };
-  const symbols = parseSymbols(built.symbols);
-  await host.load(built.a78);
+  return runRomOnHost(host, built.a78, built.symbols, template.manifest.watch, test.steps);
+}
+
+/** Game variables by name: a symbol (plus `offset` bytes, e.g. one slot of an object table). */
+export type WatchMap = Record<string, { symbol: string; offset?: number; bytes?: number; bcd?: boolean }>;
+
+/** Runs steps against a built ROM in the headless core; `watch` names game variables by symbol. */
+export async function runRomOnHost(
+  host: CoreHost,
+  a78: Uint8Array,
+  symbolTable: string,
+  watch: WatchMap,
+  steps: Step[],
+): Promise<BehaviourResult> {
+  const symbols = parseSymbols(symbolTable);
+  await host.load(a78);
 
   const read = (name: string): number => {
-    const w = template.manifest.watch[name];
+    const w = watch[name];
     if (!w) throw new Failure(`"${name}" isn't in the template's watch list`);
-    const address = symbols.get(w.symbol);
-    if (address === undefined) throw new Failure(`The ROM has no symbol "${w.symbol}"`);
-    const bytes = host.readMemory(address, w.bytes);
+    const base = symbols.get(w.symbol);
+    if (base === undefined) throw new Failure(`The ROM has no symbol "${w.symbol}"`);
+    const bytes = host.readMemory(base + (w.offset ?? 0), w.bytes ?? 1);
     if (w.bcd) return Number([...bytes].map((b) => b.toString(16).padStart(2, "0")).join(""));
     return bytes.reduce((n, b, i) => n + b * 256 ** i, 0); // little-endian
   };
@@ -152,7 +166,7 @@ export async function runBehaviourTest(
   };
 
   try {
-    exec(test.steps);
+    exec(steps);
     return { passed: true, frames: host.frame };
   } catch (e) {
     if (e instanceof Failure) return { passed: false, frames: host.frame, failure: e.message };

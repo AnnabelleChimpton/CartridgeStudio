@@ -1,0 +1,221 @@
+{
+ "kit": 1,
+ "title": "Cat vs. Vacuums",
+ "palettes": [
+  {
+   "id": "ship",
+   "colors": [
+    "$3A",
+    "$02",
+    "$0F"
+   ]
+  },
+  {
+   "id": "enemy",
+   "colors": [
+    "$96",
+    "$42",
+    "$90"
+   ]
+  },
+  {
+   "id": "shot",
+   "colors": [
+    "$0F",
+    "$1C",
+    "$1C"
+   ]
+  },
+  {
+   "id": "bomb",
+   "colors": [
+    "$46",
+    "$46",
+    "$46"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  }
+ ],
+ "background": "$00",
+ "wallPalette": "text",
+ "textPalette": "text",
+ "lives": 3,
+ "types": [
+  {
+   "id": "ship",
+   "label": "Player ship",
+   "width": 16,
+   "height": 16,
+   "frames": [
+    [ "0000000110000000", "0000001111000000", "0000001221000000", "0000011221100000", "0000011111100000", "0000111111110000", "0001113333111000", "0011113333111100", "0111111111111110", "1111111111111111", "1111222222221111", "1110022222200111", "1100002222000011", "1000000330000001", "0000003333000000", "0000000330000000" ]
+   ],
+   "palette": "ship",
+   "behaviour": "player-lr",
+   "speed": 4,
+   "shoots": "shot"
+  },
+  {
+   "id": "invader",
+   "label": "Vacuum",
+   "width": 12,
+   "height": 8,
+   "frames": [
+    [ "001111111100", "011222222110", "112233332211", "112233332211", "111111111111", "010011110010", "100100001001", "010000000010" ],
+    [ "001111111100", "011222222110", "112233332211", "112233332211", "111111111111", "001011110100", "010010010010", "100000000001" ]
+   ],
+   "palette": "enemy",
+   "behaviour": "march",
+   "speed": 2,
+   "drops": {
+    "type": "bomb",
+    "chance": 4
+   }
+  },
+  {
+   "id": "shot",
+   "label": "Shot",
+   "width": 4,
+   "height": 6,
+   "frames": [
+    [ "0110", "0110", "1221", "1221", "0110", "0110" ]
+   ],
+   "palette": "shot",
+   "behaviour": "projectile-up",
+   "speed": 3
+  },
+  {
+   "id": "bomb",
+   "label": "Dust bomb",
+   "width": 4,
+   "height": 4,
+   "frames": [
+    [ "1001", "0110", "0110", "1001" ]
+   ],
+   "palette": "bomb",
+   "behaviour": "projectile-down",
+   "speed": 3
+  }
+ ],
+ "room": {
+  "rows": [
+   "                    ",
+   "   V  V  V  V  V    ",
+   "   V  V  V  V  V    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "         P          "
+  ],
+  "legend": {
+   "V": "invader",
+   "P": "ship"
+  }
+ },
+ "rules": [
+  {
+   "when": {
+    "touch": [
+     "shot",
+     "invader"
+    ]
+   },
+   "then": [
+    {
+     "remove": "first"
+    },
+    {
+     "remove": "second"
+    },
+    {
+     "score": 10
+    },
+    {
+     "sound": "boom"
+    }
+   ]
+  },
+  {
+   "when": {
+    "touch": [
+     "bomb",
+     "ship"
+    ]
+   },
+   "then": [
+    {
+     "remove": "first"
+    },
+    {
+     "loseLife": true
+    },
+    {
+     "sound": "down"
+    }
+   ]
+  },
+  {
+   "when": {
+    "touch": [
+     "invader",
+     "ship"
+    ]
+   },
+   "then": [
+    {
+     "loseLife": true
+    },
+    {
+     "sound": "down"
+    },
+    {
+     "restartRoom": true
+    }
+   ]
+  },
+  {
+   "when": {
+    "reachesBottom": "invader"
+   },
+   "then": [
+    {
+     "loseLife": true
+    },
+    {
+     "restartRoom": true
+    }
+   ]
+  },
+  {
+   "when": {
+    "allGone": "invader"
+   },
+   "then": [
+    {
+     "sound": "up"
+    },
+    {
+     "restartRoom": true
+    }
+   ]
+  }
+ ],
+ "text": {
+  "title": "Cat vs. Vacuums",
+  "win": "You win!",
+  "lose": "Game over"
+ },
+ "sounds": {
+  "shoot": "zap"
+ }
+}
