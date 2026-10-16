@@ -19,8 +19,7 @@ import {
 
 type Tool = "pencil" | "fill";
 
-const MAX_CANVAS_WIDTH = 360;
-const MAX_CELL_HEIGHT = 28;
+const MAX_CELL_HEIGHT = 32;
 
 let strokeCounter = 0;
 
@@ -38,9 +37,11 @@ export interface PixelEditorProps {
   /** Extra controls on the frames row (e.g. turning animation on or off). */
   framesExtra?: ReactNode;
   hint?: string;
+  /** Widest the drawing canvas gets, in CSS pixels. */
+  maxWidth?: number;
 }
 
-export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint }: PixelEditorProps) {
+export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360 }: PixelEditorProps) {
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState<PixelValue>(1);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -70,7 +71,7 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
   const cursor = grid.cursor;
 
   // Cell size: 160A pixels are twice as wide as they are tall.
-  const cellH = Math.max(4, Math.min(MAX_CELL_HEIGHT, Math.floor(MAX_CANVAS_WIDTH / (width * 2))));
+  const cellH = Math.max(4, Math.min(MAX_CELL_HEIGHT, Math.floor(maxWidth / (width * 2))));
   const cellW = cellH * 2;
   const canvasW = width * cellW;
   const canvasH = height * cellH;

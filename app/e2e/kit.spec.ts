@@ -15,10 +15,16 @@ async function nextBuild(page: Page, after: number) {
   await expect(page.getByTestId("build-status")).not.toHaveText("Building…");
   return page.evaluate(() => window.__cs!.builds[0]!);
 }
+const openTab = (page: Page, name: "Things" | "Room" | "Rules" | "Game") => page.getByRole("tab", { name }).click();
+async function viewCode(page: Page) {
+  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+  await page.getByText("View code").click();
+}
 const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState().project);
 
 /** Drags across room cells (col, row) on the 20×11 room canvas. */
 async function paint(page: Page, from: [number, number], to: [number, number], button: "left" | "right" = "left") {
+  await openTab(page, "Room");
   const box = (await page.getByLabel("Room grid").boundingBox())!;
   const at = ([c, r]: [number, number]) => ({ x: box.x + ((c + 0.5) * box.width) / 20, y: box.y + ((r + 0.5) * box.height) / 11 });
   const a = at(from);
@@ -68,6 +74,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
   await page.getByRole("button", { name: "Add a thing" }).click();
   await page.getByLabel("Thing name").fill("Comet");
   await page.getByLabel("Behaviour").selectOption({ label: "Chases the player" });
+  await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Comet" }).click();
   const n = await buildCount(page);
   await paint(page, [15, 4], [15, 4]);
@@ -76,28 +83,30 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
   expect(comet.behaviour).toBe("chase");
   expect(g.room.rows[4]![15]).toBe(Object.entries(g.room.legend).find(([, v]) => v === comet.id)![0]);
   expect((await nextBuild(page, n)).kind).toBe("built");
-  await page.getByText("View code").click();
+  await viewCode(page);
   await expect(page.getByTestId("game-bas")).toContainText("rem Comet");
 });
 
 test("rules use the game's own things", async ({ page }) => {
   await start(page, "Maze");
   const rules = (await game(page)).rules.length;
+  await openTab(page, "Rules");
   await page.getByRole("button", { name: "Add rule" }).click();
   const n = rules + 1;
   await page.getByLabel(`Rule ${n} trigger`).selectOption({ label: "seconds have passed" });
   await page.getByLabel(`Rule ${n} seconds`).fill("45");
-  await page.getByLabel(`Rule ${n} action 1`, { exact: true }).selectOption({ label: "Lose the game" });
+  await page.getByLabel(`Rule ${n} action 1`, { exact: true }).selectOption({ label: "lose the game" });
   const g = await game(page);
   expect(g.rules.at(-1)).toEqual({ when: { timer: 45 }, then: [{ lose: true }] });
   await nextBuild(page, await buildCount(page) - 1);
-  await page.getByText("View code").click();
+  await viewCode(page);
   await expect(page.getByTestId("game-bas")).toContainText("45 seconds pass");
 });
 
 test("the CPU meter stops a game that's too busy", async ({ page }) => {
   await start(page, "Maze");
   // Ghosts chase through walls, the costliest behaviour: three more push the maze over budget.
+  await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Dust ghost" }).click();
   await paint(page, [10, 5], [12, 5]);
   await expect(page.getByTestId("cpu-meter")).toContainText("Too busy");

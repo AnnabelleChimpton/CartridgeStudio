@@ -16,16 +16,20 @@ const TRIGGERS: { kind: TriggerKind; label: string }[] = [
   { kind: "timer", label: "seconds have passed" },
 ];
 
+// Lower case: they're read mid-sentence ("When …, remove the yarn ball").
 const ACTION_LABELS: Record<ActionKind, string> = {
-  remove: "Remove",
-  respawn: "Send back to start",
-  score: "Add points",
-  loseLife: "Lose a life",
-  win: "Win the game",
-  lose: "Lose the game",
-  restartRoom: "Start the room again",
-  sound: "Play a sound",
+  remove: "remove",
+  respawn: "send back to start",
+  score: "add points",
+  loseLife: "lose a life",
+  win: "win the game",
+  lose: "lose the game",
+  restartRoom: "start the room again",
+  sound: "play a sound",
 };
+
+/** Sizes a select to its chosen option, so rules read as sentences without cut-off words. */
+const fit = (text: string) => ({ width: `calc(${text.length}ch + 30px)` });
 
 const triggerKind = (w: KitTrigger): TriggerKind => Object.keys(w)[0] as TriggerKind;
 const actionKind = (a: KitAction): ActionKind => Object.keys(a)[0] as ActionKind;
@@ -67,7 +71,7 @@ export function KitRulesPanel() {
   const setRule = (i: number, recipe: (r: KitRule) => void, key?: string) => edit((d) => recipe(d.rules[i]!), key);
 
   const thingSelect = (value: string, label: string, onChange: (id: string) => void) => (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+    <select aria-label={label} className="fit" style={fit(name(value))} value={value} onChange={(e) => onChange(e.target.value)}>
       {game.types.map((t) => (
         <option key={t.id} value={t.id}>
           {t.label}
@@ -78,7 +82,8 @@ export function KitRulesPanel() {
 
   return (
     <section className="panel" aria-labelledby="kit-rules-h">
-      <h2 id="kit-rules-h">Rules</h2>
+      <h2 id="kit-rules-h" className="visually-hidden">Rules</h2>
+      <p className="muted lead">Rules say what happens in your game. Each one reads as a sentence: change any underlined word.</p>
       <ol className="rules">
         {game.rules.map((rule, i) => {
           const w = rule.when;
@@ -86,7 +91,7 @@ export function KitRulesPanel() {
           const n = i + 1;
           return (
             <li key={i} className="rule">
-              <div className="rule-when">
+              <p className="rule-sentence">
                 <span className="kw">When</span>
                 {"touch" in w &&
                   thingSelect(w.touch[0], `Rule ${n} first thing`, (id) => setRule(i, (r) => void ("touch" in r.when && (r.when.touch[0] = id))))}
@@ -96,7 +101,7 @@ export function KitRulesPanel() {
                 {"timer" in w && (
                   <input
                     type="number"
-                    className="num"
+                    className="num fit"
                     aria-label={`Rule ${n} seconds`}
                     min={1}
                     max={99}
@@ -108,6 +113,8 @@ export function KitRulesPanel() {
                 )}
                 <select
                   aria-label={`Rule ${n} trigger`}
+                  className="fit"
+                  style={fit(TRIGGERS.find((t) => t.kind === kind)!.label)}
                   value={kind}
                   onChange={(e) =>
                     setRule(i, (r) => {
@@ -127,23 +134,20 @@ export function KitRulesPanel() {
                 </select>
                 {"touch" in w &&
                   thingSelect(w.touch[1], `Rule ${n} second thing`, (id) => setRule(i, (r) => void ("touch" in r.when && (r.when.touch[1] = id))))}
-                <button
-                  type="button"
-                  className="icon"
-                  aria-label={`Delete rule ${n}`}
-                  title="Delete rule"
-                  onClick={() => edit((d) => void d.rules.splice(i, 1))}
-                >
-                  ×
-                </button>
-              </div>
+                <span className="kw">,</span>
               {rule.then.map((action, j) => {
                 const ak = actionKind(action);
+                const whichLabel =
+                  "remove" in action || "respawn" in action
+                    ? `the ${"touch" in w ? name(w.touch[("remove" in action ? action.remove : action.respawn) === "second" ? 1 : 0]) : "reachesBottom" in w ? name(w.reachesBottom) : "thing"}`
+                    : "";
                 return (
-                  <div key={j} className="rule-then">
-                    <span className="kw">{j === 0 ? "then" : "and"}</span>
+                  <span key={j} className="rule-action">
+                    {j > 0 && <span className="kw">and</span>}
                     <select
                       aria-label={`Rule ${n} action ${j + 1}`}
+                      className="fit"
+                      style={fit(ACTION_LABELS[ak])}
                       value={ak}
                       onChange={(e) => setRule(i, (r) => void (r.then[j] = defaultAction(e.target.value as ActionKind, r.when)))}
                     >
@@ -156,6 +160,8 @@ export function KitRulesPanel() {
                     {("remove" in action || "respawn" in action) && (
                       <select
                         aria-label={`Rule ${n} action ${j + 1} which`}
+                        className="fit"
+                        style={fit(whichLabel)}
                         value={"remove" in action ? action.remove : action.respawn}
                         onChange={(e) =>
                           setRule(i, (r) => {
@@ -179,6 +185,8 @@ export function KitRulesPanel() {
                     {"score" in action && (
                       <select
                         aria-label={`Rule ${n} action ${j + 1} points`}
+                        className="fit"
+                        style={fit(String(action.score))}
                         value={action.score}
                         onChange={(e) => setRule(i, (r) => void ("score" in r.then[j]! && ((r.then[j] as { score: number }).score = Number(e.target.value))))}
                       >
@@ -192,6 +200,8 @@ export function KitRulesPanel() {
                     {"sound" in action && (
                       <select
                         aria-label={`Rule ${n} action ${j + 1} sound`}
+                        className="fit"
+                        style={fit(SOUND_LIBRARY.find((x) => x.id === action.sound)?.label ?? "")}
                         value={action.sound}
                         onChange={(e) => setRule(i, (r) => void ("sound" in r.then[j]! && ((r.then[j] as { sound: string }).sound = e.target.value)))}
                       >
@@ -207,19 +217,28 @@ export function KitRulesPanel() {
                         type="button"
                         className="icon"
                         aria-label={`Remove action ${j + 1} from rule ${n}`}
+                        title="Remove this action"
                         onClick={() => setRule(i, (r) => void r.then.splice(j, 1))}
                       >
                         ×
                       </button>
                     )}
-                  </div>
+                  </span>
                 );
               })}
-              {rule.then.length < 6 && (
-                <button type="button" className="link" onClick={() => setRule(i, (r) => void r.then.push({ score: 10 }))}>
-                  + action
+                <span className="kw">.</span>
+              </p>
+              <div className="rule-tools">
+                {rule.then.length < 6 && (
+                  <button type="button" className="link" onClick={() => setRule(i, (r) => void r.then.push({ score: 10 }))}>
+                    + another action
+                  </button>
+                )}
+                <span className="spacer" />
+                <button type="button" className="link danger" onClick={() => edit((d) => void d.rules.splice(i, 1))}>
+                  Delete rule {n}
                 </button>
-              )}
+              </div>
             </li>
           );
         })}

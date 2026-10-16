@@ -10,6 +10,7 @@ async function start(page: Page, choice: RegExp) {
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 }
 
+const openTab = (page: Page, name: string) => page.getByRole("tab", { name }).click();
 const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState().project);
 
 async function axe(page: Page) {
@@ -24,7 +25,12 @@ test("the start screen and both editors pass axe", async ({ page }) => {
 
   await start(page, /^Shooter/);
   expect(await axe(page)).toEqual([]);
+  for (const name of ["Room", "Rules", "Game"]) {
+    await openTab(page, name);
+    expect(await axe(page), name).toEqual([]);
+  }
   await page.getByRole("button", { name: /^Background/ }).first().click();
+  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
   expect(await axe(page)).toEqual([]);
 
   await page.getByRole("button", { name: "New game" }).click();
@@ -36,6 +42,7 @@ test("the start screen and both editors pass axe", async ({ page }) => {
 
 test("the room can be painted from the keyboard, and Shift+arrows is one undo step", async ({ page }) => {
   await start(page, /^Dodger/);
+  await openTab(page, "Room");
   const room = page.getByLabel("Room grid");
   await room.focus();
   await expect(page.getByText("Keyboard: arrows move, Space paints")).toBeVisible();
@@ -87,6 +94,7 @@ test("sprites can be drawn from the keyboard", async ({ page }) => {
 
 test("the color picker works with arrows, Enter and Escape", async ({ page }) => {
   await start(page, /^Dodger/);
+  await openTab(page, "Game");
   const before = (await game(page)).background;
   const swatch = page.getByRole("button", { name: /^Background/ }).first();
   await swatch.click();

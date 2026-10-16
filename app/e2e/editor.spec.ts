@@ -3,6 +3,9 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
+/** Opens the Play panel's "For developers" section (ROM downloads, timings, code). */
+const openDev = (page: Page) => page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+
 interface BuildRecord {
   n: number;
   kind: string;
@@ -109,6 +112,7 @@ test("rules edit the generated code", async ({ page }) => {
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "A shot hits an enemy" });
   await page.getByLabel("Rule 5 action 1").selectOption({ label: "Lose a life" });
   await waitForBuild(page, n + 1);
+  await openDev(page);
   await page.getByText("View code").click();
   await expect(page.getByTestId("game-bas")).toContainText("rem rule 5: shot.hits.enemy -> lives.lose");
 
@@ -262,6 +266,7 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
   });
   expect(preview?.signed).toBe(false);
 
+  await openDev(page);
   const fetchDownload = async (name: string) => {
     const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name }).click()]);
     expect(download.suggestedFilename()).toMatch(/^cat-vs-vacuums\.(a78|bin)$/);
@@ -421,6 +426,7 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
 });
 
 async function downloadBytes(page: Page, button: string) {
+  await openDev(page);
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
     page.getByRole("button", { name: button, exact: true }).click(),

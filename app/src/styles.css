@@ -192,7 +192,7 @@ input.num { width: 56px; background: #0f1115; color: var(--text); border: 1px so
 .brush canvas { max-height: 16px; width: auto; }
 .brush.active { background: var(--accent); color: #1a1205; }
 .room-wrap { background: #0f1115; border-radius: 6px; padding: 8px; display: grid; place-items: center; }
-.room-canvas { width: 100%; max-width: 440px; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+.room-canvas { width: 100%; max-width: 880px; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
 
 .cpu-meter { font-size: 13px; }
 .cpu-label { display: flex; justify-content: space-between; margin-bottom: 4px; }
@@ -202,3 +202,51 @@ input.num { width: 56px; background: #0f1115; color: var(--text); border: 1px so
 .cpu-bar .near, strong.near { background-color: var(--accent); color: var(--accent); }
 .cpu-bar .over, strong.over { background-color: var(--error); color: var(--error); }
 strong.ok, strong.near, strong.over { background: none; }
+
+/* Kit editor layout: one job at a time beside the running game. */
+.workspace-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .workspace-layout { grid-template-columns: minmax(0, 1fr); } .play-column { grid-row: 1; } }
+.play-column { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
+@media (max-width: 1000px) { .play-column { position: static; } }
+.workspace { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.workspace-tabs { display: flex; gap: 4px; padding: 8px 8px 0; border-bottom: 1px solid var(--line); }
+.workspace-tabs button {
+  background: transparent; color: var(--muted); font-size: 15px; padding: 10px 18px; min-height: 40px;
+  border-radius: 6px 6px 0 0; border-bottom: 3px solid transparent;
+}
+.workspace-tabs button:hover { color: var(--text); }
+.workspace-tabs button.active { color: var(--text); border-bottom-color: var(--accent); }
+.workspace-panel { padding: 16px; font-size: 14px; }
+.workspace-panel > .panel { background: transparent; border: 0; padding: 0; }
+.workspace-panel > .panel > h2 {
+  position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.workspace-panel .field-grid { font-size: 14px; }
+.workspace-panel .field-grid > label, .workspace-panel .color-row { grid-template-columns: 120px minmax(0, 320px); }
+.lead { margin: 0 0 12px; }
+
+.things-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 700px) { .things-layout { grid-template-columns: minmax(0, 1fr); } }
+.things-list .sprite-select { grid-template-columns: 64px 1fr; width: 100%; }
+.things-list .sprite-preview { max-width: 56px; }
+.thing-editor { border: 0; margin: 0; padding: 0; }
+.thing-editor .field-grid { margin-top: 0; }
+.palette-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font-size: 14px; }
+details.more { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+details.more > summary, details.dev > summary, details > summary { min-height: 24px; line-height: 24px; }
+details.more > summary, details.dev > summary { font-size: 14px; }
+
+.rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-size: 15px; line-height: 2; }
+.rule-sentence .kw { width: auto; font-size: 15px; color: var(--text); }
+.rule-action { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+select.fit, input.fit {
+  flex: none; max-width: 100%; background: transparent; border: 0; border-bottom: 2px solid var(--accent);
+  border-radius: 0; color: var(--accent); font-size: 15px; font-weight: 600; padding: 2px 4px; min-height: 30px;
+}
+input.num.fit { width: 4em; }
+select.fit option { color: var(--text); background: #0f1115; font-weight: 400; }
+.rule-tools { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.rule .rule-tools button.link { font-size: 13px; }
+button.link.danger { color: var(--error); }
+
+details.dev { margin-top: 10px; }

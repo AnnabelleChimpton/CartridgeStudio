@@ -165,14 +165,20 @@ export function usePreview(source: GameSource) {
     : building
       ? "Building…"
       : result?.kind === "built"
-        ? `Up to date · ${record!.wallMs.toFixed(0)} ms${record!.cached ? " (cached)" : ""}`
+        ? "Up to date"
         : result?.kind === "invalid"
           ? "Needs a fix"
           : result?.kind === "failed"
             ? "We couldn't build this game; your work is saved."
             : "";
 
-  return { emuContainer, emulator, ready, result, lastGood, status, error, setError, buildSigned, screenshot };
+  const timing = record
+    ? `Last build ${record.wallMs.toFixed(0)} ms${record.cached ? " (cached)" : ""}` +
+      ` · generate ${record.generateMs.toFixed(1)} ms · toolchain ${record.buildMs.toFixed(1)} ms` +
+      (ready ? ` · ${ready.toolchainVersion}` : "")
+    : "";
+
+  return { emuContainer, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
 }
 
 export type Preview = ReturnType<typeof usePreview>;

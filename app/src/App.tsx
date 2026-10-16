@@ -182,10 +182,6 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
             cartridgeFile={cartridgeFile}
             onDownload={download}
           />
-          <details className="panel code">
-            <summary>View code</summary>
-            <pre data-testid="game-bas">{preview.lastGood?.source ?? ""}</pre>
-          </details>
         </div>
       </main>
     </div>
