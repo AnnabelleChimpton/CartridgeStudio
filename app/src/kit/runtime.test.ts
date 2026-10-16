@@ -8,7 +8,8 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { runRomOnHost, type Step, type WatchMap } from "../harness/behaviour.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import type { Behaviour, KitCounter, KitGame, KitRule, KitType } from "./schema.ts";
+import type { Behaviour, KitCounter, KitGame, KitMove, KitRule, KitType } from "./schema.ts";
+import type { KitOptions } from "./generate.ts";
 import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
@@ -62,8 +63,8 @@ beforeAll(async () => {
   host = await nodeHost();
 });
 
-async function run(g: KitGame, steps: Step[], watch: WatchMap = {}) {
-  const rom = await buildKitRom(g, SOUND_LIBRARY, builder);
+async function run(g: KitGame, steps: Step[], watch: WatchMap = {}, opts: KitOptions = {}) {
+  const rom = await buildKitRom(g, SOUND_LIBRARY, builder, false, opts);
   if (!rom.ok) throw new Error(rom.failure);
   const r = await runRomOnHost(host, rom.a78, rom.symbols, { ...KIT_WATCH, ...watch, ...slot(1), ...slot(2), ...slot(3) }, [...START, ...steps]);
   expect(r.failure ?? null).toBeNull();
@@ -239,5 +240,82 @@ describe("kit runtime: batch 1 (state)", () => {
     // Walls still block when there are other tiles: the hero stops at the wall in column 7.
     const wall = game(["", "", "", "", "P  ~   #"], [hero()], []);
     await run(wall, [{ hold: ["right"], frames: 90 }, { expect: { heroX: 48 } }]);
+  });
+});
+
+const VELOCITY_MODES: [string, KitOptions][] = [
+  ["compiled", {}],
+  ["interpreted", { interpretVelocity: true }],
+  ["compiled, 8.8 fixed point", { fixed88: true }],
+];
+for (const [mode, opts] of VELOCITY_MODES) {
+  describe(`kit runtime: model v2 spike (velocity movement, ${mode})`, () => {
+    const VEL: WatchMap = { vx1: { symbol: "ovx", offset: 1 }, vy1: { symbol: "ovy", offset: 1 } };
+    /** How a velocity in quarter pixels reads in ovx/ovy: as is, or whole pixels in 8.8. */
+    const reads = (v: number) => (opts.fixed88 ? Math.floor(v / 4) : v) & 255;
+    const mover = (vx: number, vy: number, react: KitMove["react"]) => type("mover", "still", { move: { vx, vy, react } });
+    const walled = (row: string) => {
+      const w = ["####################", ...Array(9).fill("#                  #"), "####################"];
+      w[5] = row;
+      w[8] = "# P                #";
+      return w;
+    };
+
+    it("bounce: velocity flips at a wall, and fractions add up", async () => {
+      // 2 pixels a frame to the right; the wall at column 19 (x = 152) stops an 8-wide thing at x = 144.
+      const g = game(walled("#       A          #"), [hero(), mover(8, 0, "bounce")]);
+      await run(g, [{ until: { vx1: reads(-8) }, maxFrames: 120, steps: [{ frames: 1 }] }, { frames: 20 }, { expect: { x1: { lt: 120 }, y1: 96 } }], VEL, opts);
+      // A quarter pixel a frame: 10 pixels in 40 frames.
+      const slow = game(walled("#       A          #"), [hero(), mover(1, 0, "bounce")]);
+      await run(slow, [{ frames: 40 }, { expect: { x1: { gte: 72, lte: 76 } } }], VEL, opts);
+    });
+
+    it("stop, turn and destroy at a wall", async () => {
+      await run(game(walled("#       A          #"), [hero(), mover(8, 0, "stop")]), [{ frames: 60 }, { expect: { x1: 144, vx1: 0 } }], VEL, opts);
+      // A quarter turn clockwise: moving right becomes moving down.
+      await run(game(walled("#       A          #"), [hero(), mover(8, 0, "turn")]), [{ until: { vy1: reads(8) }, maxFrames: 120, steps: [{ frames: 1 }] }, { expect: { vx1: 0 } }], VEL, opts);
+      await run(game(walled("#       A          #"), [hero(), mover(-8, 0, "destroy")]), [{ until: { type1: 255 }, maxFrames: 120, steps: [{ frames: 1 }] }], VEL, opts);
+    });
+
+    it("wrap: leaving the right edge comes back at the left", async () => {
+      const g = game(["", "", "", "", "               A", "", "", "", "", "P"], [hero(), mover(8, 0, "wrap")]);
+      await run(g, [{ until: { x1: { gte: 150 } }, maxFrames: 120, steps: [{ frames: 1 }] }, { until: { x1: { lt: 16 } }, maxFrames: 20, steps: [{ frames: 1 }] }, { expect: { vx1: reads(8) } }], VEL, opts);
+    });
+  });
+}
+
+describe("kit runtime: fixes from the phase 2 audit", () => {
+  it("a tile rule doesn't stop later event rules from firing (no border wall)", async () => {
+    // The hero sits in column 0, where the tile lookup's column is 0; that used to clear the
+    // odd-frame gate the event rules share, so the timer rule never fired.
+    const rules: KitRule[] = [
+      { when: { onTile: ["hero", "goal"] }, then: [{ score: 10 }] },
+      { when: { timer: 2 }, then: [{ score: 50 }] },
+    ];
+    await run(game(["", "", "", "", "P"], [hero()], rules), [{ frames: 200 }, { expect: { score: 50 } }]);
+  });
+
+  it("falling things come back in a column that fits, clear of walls", async () => {
+    // Only columns 15-19 of the top row are open; the rock starts in column 16.
+    const g = game(["###############", "                A", "", "", "", "", "", "", "", "P"], [hero(), type("rock", "fall", { speed: 4 })]);
+    await run(g, [
+      {
+        repeat: 5,
+        steps: [
+          { until: { y1: { gte: 150 } }, maxFrames: 200, steps: [{ frames: 1 }] },
+          { until: { y1: { lt: 40 } }, maxFrames: 200, steps: [{ frames: 1 }] },
+          { expect: { x1: { gte: 120, lte: 152 } } },
+        ],
+      },
+    ]);
+  });
+
+  it("turning into a bigger thing keeps it on the screen", async () => {
+    const small = type("chip", "still", { width: 4, frames: [box(4, 8)] });
+    const big = type("block", "still", { width: 16, frames: [box(16, 8)] });
+    const rules: KitRule[] = [{ when: { touch: ["hero", "chip"] }, then: [{ turn: { who: "second", into: "block" } }] }];
+    // The chip is in the last column (x = 152); as a 16-wide block it must move left to x = 144.
+    const g = game(["", "", "", "", "P                  A"], [hero(), small, big], rules);
+    await run(g, [{ until: { type1: 2 }, maxFrames: 200, steps: [{ hold: ["right"], frames: 1 }] }, { expect: { x1: 144 } }]);
   });
 });

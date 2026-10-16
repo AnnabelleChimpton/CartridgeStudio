@@ -14,6 +14,9 @@
  set zoneheight 8
  set romsize 32k
  set screenheight 192
+ rem console Pause is 7800basic's own: drawscreen holds the game while paused;
+ rem this also keeps the sound effects quiet until it's unpaused
+ set pausesilence on
 
  autodim init var0 var99
  autodim byte gamestate
@@ -22,7 +25,11 @@
  autodim byte livesbcd
  autodim byte fireheld
  autodim byte firepressed
+ autodim byte tmp
+ rem rnd holds random numbers only; tmp is scratch; oddframe gates the event rules
  autodim byte rnd
+ autodim byte oddframe
+ autodim byte resetheld
  autodim byte oi
  autodim byte oj
  autodim byte ot
@@ -75,6 +82,21 @@
  rem timed "turn into": seconds left, and the type to turn back into
  dim otimer = $22B8
  dim oback = $22D0
+{{#if hasVelocity}}
+ rem model v2 spike: velocity in quarter pixels per frame (signed), and the
+ rem quarter-pixel fraction each thing has built up
+ dim ovx = $22E8
+ dim ovy = $2300
+ dim ofx = $2318
+ dim ofy = $2330
+ const VELOCITY = 13
+{{#if fixed88}}
+ rem 8.8 fixed point: ovx/ovy are then whole pixels (signed) and these the 1/256ths,
+ rem and ofx/ofy hold the position's 1/256ths
+ dim ovxl = $2348
+ dim ovyl = $2360
+{{/if}}
+{{/if}}
 
  const STATE_TITLE = 0
  const STATE_PLAY = 1
@@ -100,11 +122,14 @@
 main
  restorescreen
  frame = frame + 1
- rnd = frame & 15
- if rnd = 0 then animframe = animframe ^ 1
+ tmp = frame & 15
+ if tmp = 0 then animframe = animframe ^ 1
  rem count main-loop passes (frame-rate checks read this)
  loopslo = loopslo + 1
  if loopslo = 0 then loopshi = loopshi + 1
+ rem console Reset goes back to the title screen, once per press; Select is reserved
+ if !switchreset then resetheld = 0
+ if switchreset && resetheld = 0 then resetheld = 1 : gamestate = STATE_TITLE : gosub startroom
  firepressed = 0
  if !joy0fire then fireheld = 0
  if joy0fire && fireheld = 0 then fireheld = 1 : firepressed = 1
@@ -128,14 +153,14 @@ st_play
 {{/if}}
  marchmin = 255 : marchmax = 0
  rem speed: typespeed is 0-3; speedsteps holds pixels per frame phase
- rnd = frame & 3
+ tmp = frame & 3
  for ot = 0 to typecount_minus1
  amt = typespeed[ot]
 {{#if hasLevels}}
  if typefaster[ot] then amt = amt + speedbonus
  if amt > 3 then amt = 3
 {{/if}}
- amt = amt * 4 + rnd
+ amt = amt * 4 + tmp
  typeamt[ot] = speedsteps[amt]
  amt = amt ^ 1
  typeamt2[ot] = speedsteps[amt] + typeamt[ot]
@@ -144,18 +169,39 @@ st_play
  ot = otype[oi]
  if ot = EMPTY then goto nextobj
  beh = typebeh[ot]
+{{#if hasVelocity}}
+ rem things that move by their own velocity skip the behaviour dispatch
+ if beh <> VELOCITY then goto notvelocity
+{{#if compiledVelocity}}
+ rem (they move in their type's own compiled loop, after this one)
+ goto afterupdate
+{{else}}
+{{#if velocitySlice}}
+ tmp = oi ^ frame
+ tmp = tmp & 1
+ if tmp then goto nextobj
+ amt = 2
+{{else}}
+ amt = 1
+{{/if}}
+ gosub b_velocity
+ goto afterupdate
+{{/if}}
+notvelocity
+{{/if}}
  amt = typeamt[ot]
  rem time-slicing: patrollers, bouncers, chasers and fallers (4-7, 9) move on
  rem alternate frames by odd and even slot, twice as far, so speeds don't change
  if beh < 4 then goto updatenow
  if beh = 8 then goto updatenow
  if beh > 9 && beh <> 12 then goto updatenow
- rnd = oi ^ frame
- rnd = rnd & 1
- if rnd then goto nextobj
+ tmp = oi ^ frame
+ tmp = tmp & 1
+ if tmp then goto nextobj
  amt = typeamt2[ot]
 updatenow
  on beh gosub b_still b_player_lr b_player_4 b_player_8 b_patrol_h b_patrol_v b_bounce b_chase b_march b_fall b_proj_up b_proj_down b_flee
+afterupdate
 {{#if hasDrops}}
  ot = otype[oi]
  if ot = EMPTY then goto nextobj
@@ -163,6 +209,7 @@ updatenow
 {{/if}}
 nextobj
  next
+{{{compiledMovement}}}
  rem the formation turns (and steps down) when its outermost marcher reaches an edge
  if marchmax = 0 then goto nomarch
  if marchdir = 1 && marchmax >= 158 then gosub turnmarch
@@ -189,8 +236,9 @@ draw
  px = ox[oi] : py = oy[oi]
  if oi <> heroi then goto drawit
  if invuln = 0 then goto drawit
- rnd = frame & 4
- if rnd then goto nextdraw
+ rem blink slowly enough to be safe (WCAG 2.3.1): 16 frames on, 16 off, under 2 Hz
+ tmp = frame & 16
+ if tmp then goto nextdraw
 drawit
  on ot gosub {{drawLabels}}
 nextdraw
@@ -233,6 +281,13 @@ startroom
  ox[oi] = spawnx[oi] : oy[oi] = spawny[oi]
  osx[oi] = spawnx[oi] : osy[oi] = spawny[oi]
  odx[oi] = 1 : ody[oi] = 1
+{{#if hasVelocity}}
+ ovx[oi] = typevx[ot] : ovy[oi] = typevy[ot]
+ ofx[oi] = 0 : ofy[oi] = 0
+{{#if fixed88}}
+ ovxl[oi] = typevxl[ot] : ovyl[oi] = typevyl[ot]
+{{/if}}
+{{/if}}
  next
  heroi = EMPTY
  for oi = 0 to 23
@@ -265,9 +320,11 @@ nextreset
  rem ---- movement ----
  rem trymove: move object i to (nx, ny) unless a wall or the screen edge is in the way
 trymove
- blocked = 0
  ot = otype[oi]
  wid = typew[ot] : hgt = typeh[ot]
+ rem compiled movers set wid and hgt themselves and come in here
+trymovesized
+ blocked = 0
  if nx > 159 then blocked = 1 : return
  if ny > 191 then blocked = 1 : return
  px = nx + wid - 1
@@ -280,20 +337,20 @@ trymove
  if nx = ox[oi] then goto trymovev
  rem horizontal: the leading column, at the top and bottom rows (objects are at most 16 lines tall).
  rem Walls only need checking when the leading edge enters a new 8-pixel column.
- px = nx : rnd = ox[oi]
- if nx > ox[oi] then px = nx + wid - 1 : rnd = rnd + wid - 1
- cell = px / 8 : rnd = rnd / 8
- if cell = rnd then goto trymoveok
+ px = nx : tmp = ox[oi]
+ if nx > ox[oi] then px = nx + wid - 1 : tmp = tmp + wid - 1
+ cell = px / 8 : tmp = tmp / 8
+ if cell = tmp then goto trymoveok
  py = ny : gosub wallat : if cell = 1 then blocked = 1 : return
  py = ny + hgt - 1 : gosub wallat : if cell = 1 then blocked = 1 : return
  goto trymoveok
 trymovev
  rem vertical: the leading row, at the left, middle and right columns (up to 16 pixels wide);
  rem only when the leading edge enters a new 16-line row.
- py = ny : rnd = oy[oi]
- if ny > oy[oi] then py = ny + hgt - 1 : rnd = rnd + hgt - 1
- cell = py / 16 : rnd = rnd / 16
- if cell = rnd then goto trymoveok
+ py = ny : tmp = oy[oi]
+ if ny > oy[oi] then py = ny + hgt - 1 : tmp = tmp + hgt - 1
+ cell = py / 16 : tmp = tmp / 16
+ if cell = tmp then goto trymoveok
  px = nx : gosub wallat : if cell = 1 then blocked = 1 : return
  px = nx + wid - 1 : gosub wallat : if cell = 1 then blocked = 1 : return
  if wid <= 8 then goto trymoveok
@@ -309,8 +366,8 @@ wallat
  cell = py - ROOMTOP
  cell = cell / 16
  cell = rowoffset[cell]
- rnd = px / 8
- cell = cell + rnd
+ tmp = px / 8
+ cell = cell + tmp
  cell = roomwalls[cell]
  return
 {{/if}}
@@ -437,10 +494,27 @@ b_fall
  if amt = 0 then return
  oy[oi] = oy[oi] + amt
  if oy[oi] < 184 then return
- rem off the bottom: come back at the top somewhere new
+ rem off the bottom: come back at the top in a random column where it fits
+ rem (the whole screen width, and clear of walls in the top row); after 4
+ rem tries that don't fit it keeps its column
  oy[oi] = ROOMTOP
- rnd = rand & 15
- ox[oi] = rnd * 8 + 8
+ wid = typew[ot]
+ for count = 0 to 3
+ rnd = rand & 31
+ if rnd >= 20 then rnd = rnd - 12
+ nx = rnd * 8
+ px = nx + wid - 1
+ if px > 159 then goto fallretry
+{{#if hasWalls}}
+ py = ROOMTOP : px = nx : gosub wallat
+ if cell = 1 then goto fallretry
+ px = nx + wid - 1 : gosub wallat
+ if cell = 1 then goto fallretry
+{{/if}}
+ ox[oi] = nx
+ return
+fallretry
+ next
  return
 
 b_proj_up
@@ -458,6 +532,76 @@ b_proj_down
  gosub trymove
  if blocked then otype[oi] = EMPTY
  return
+
+ {{#if hasVelocity}}
+ rem ---- model v2 spike: velocity movement ----
+ rem b_velocity: add the velocity (doubled when amt = 2, for time-sliced
+ rem movers) to the quarter-pixel fraction; whole pixels move the thing,
+ rem one axis at a time, and a wall or edge in the way calls its reaction
+b_velocity
+ tmp = ovx[oi]
+ if tmp = 0 then goto velocityy
+ if amt = 2 then tmp = tmp + tmp
+ tmp = tmp + ofx[oi]
+ ofx[oi] = tmp & 3
+ cell = tmp / 4
+ if tmp >= 128 then cell = cell | 192
+ if cell = 0 then goto velocityy
+ nx = ox[oi] + cell : ny = oy[oi]
+ gosub trymove
+ if !blocked then goto velocityy
+ beh = typereact[ot]
+ on beh gosub hitstopx hitbouncex hitwrapx hitturn hitdestroy
+ if otype[oi] = EMPTY then return
+velocityy
+ tmp = ovy[oi]
+ if tmp = 0 then return
+ if amt = 2 then tmp = tmp + tmp
+ tmp = tmp + ofy[oi]
+ ofy[oi] = tmp & 3
+ cell = tmp / 4
+ if tmp >= 128 then cell = cell | 192
+ if cell = 0 then return
+ nx = ox[oi] : ny = oy[oi] + cell
+ gosub trymove
+ if !blocked then return
+ beh = typereact[ot]
+ on beh goto hitstopy hitbouncey hitwrapy hitturn hitdestroy
+
+hitstopx
+ ovx[oi] = 0
+ return
+hitbouncex
+ tmp = ovx[oi] : ovx[oi] = 0 - tmp
+ return
+hitwrapx
+ rem the screen edges wrap round; walls stop
+ px = nx + wid - 1
+ if nx < 160 && px < 160 then goto hitstopx
+ tmp = ovx[oi]
+ if tmp < 128 then ox[oi] = 0 else ox[oi] = 160 - wid
+ return
+hitstopy
+ ovy[oi] = 0
+ return
+hitbouncey
+ tmp = ovy[oi] : ovy[oi] = 0 - tmp
+ return
+hitwrapy
+ py = ny + hgt - 1
+ if ny >= ROOMTOP && py < 192 then goto hitstopy
+ tmp = ovy[oi]
+ if tmp < 128 then oy[oi] = ROOMTOP else oy[oi] = 192 - hgt
+ return
+hitturn
+ rem a quarter turn clockwise: right becomes down, down becomes left
+ tmp = ovx[oi] : cell = ovy[oi]
+ ovx[oi] = 0 - cell : ovy[oi] = tmp
+ return
+hitdestroy
+ otype[oi] = EMPTY
+ return
+{{/if}}
 
  rem drops: a type can drop another (bombs, eggs) at random, one at a time
 drops
@@ -493,6 +637,13 @@ spawnhere
  ox[count] = nx : oy[count] = ny
  osx[count] = nx : osy[count] = ny
  odx[count] = 1 : ody[count] = 1
+{{#if hasVelocity}}
+ ovx[count] = typevx[oj] : ovy[count] = typevy[oj]
+ ofx[count] = 0 : ofy[count] = 0
+{{#if fixed88}}
+ ovxl[count] = typevxl[oj] : ovyl[count] = typevyl[oj]
+{{/if}}
+{{/if}}
  return
 
 {{#if hasTimedTurns}}
@@ -502,7 +653,13 @@ turnback
  if otimer[tk] = 0 then return
  if otype[tk] = EMPTY then otimer[tk] = 0 : return
  otimer[tk] = otimer[tk] - 1
- if otimer[tk] = 0 then otype[tk] = oback[tk]
+ if otimer[tk] <> 0 then return
+ ot = oback[tk] : otype[tk] = ot
+ rem the type it turns back into may be bigger: keep it on the screen
+ tmp = 160 - typew[ot]
+ if ox[tk] > tmp then ox[tk] = tmp
+ tmp = 192 - typeh[ot]
+ if oy[tk] > tmp then oy[tk] = tmp
  return
 {{/if}}
 

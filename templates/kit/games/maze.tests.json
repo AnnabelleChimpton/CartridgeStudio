@@ -163,5 +163,179 @@
         }
       }
     ]
+  },
+  {
+    "name": "the console's Reset switch goes back to the title screen",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 10
+      },
+      {
+        "expect": {
+          "heroX": {
+            "gte": 14
+          },
+          "state": 1
+        }
+      },
+      {
+        "hold": [
+          "reset"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "expect": {
+          "state": 0,
+          "heroX": 8
+        }
+      },
+      {
+        "hold": [
+          "reset"
+        ],
+        "frames": 30
+      },
+      {
+        "expect": {
+          "state": 0
+        }
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "expect": {
+          "state": 1,
+          "heroX": 8
+        }
+      }
+    ]
+  },
+  {
+    "name": "the console's Pause switch holds the game until it's pressed again",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "pause"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 30
+      },
+      {
+        "expect": {
+          "heroX": 8,
+          "state": 1
+        }
+      },
+      {
+        "hold": [
+          "pause"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 10
+      },
+      {
+        "expect": {
+          "heroX": {
+            "gte": 14
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "the console's Select switch changes nothing (reserved)",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "select"
+        ],
+        "frames": 30
+      },
+      {
+        "expect": {
+          "state": 1,
+          "heroX": 8
+        }
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 10
+      },
+      {
+        "expect": {
+          "heroX": {
+            "gte": 14
+          }
+        }
+      }
+    ]
   }
 ]

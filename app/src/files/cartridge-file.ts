@@ -3,19 +3,25 @@
 // template upgrades and validation as a saved project.
 
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
-import { KitGameSchema, type KitGame } from "../kit/schema.ts";
+import { KIT_RUNTIME_VERSION } from "../kit/generate.ts";
+import { loadKit } from "../kit/migrations.ts";
+import type { KitGame } from "../kit/schema.ts";
 import { loadProject, type LoadResult } from "../project/load.ts";
 import type { Project, Template } from "../project/schema.ts";
+import { APP_VERSION } from "../version.ts";
 
 export const CARTRIDGE_EXTENSION = ".cartridge";
 const FORMAT = "cartridge-studio";
 const FORMAT_VERSION = 1;
 
-/** Writes a template project or a kit game; `cartridge.json` says which (no `kind` means a template project). */
+/**
+ * Writes a template project or a kit game. `cartridge.json` says which (no
+ * `kind` means a template project), and which app and kit runtime wrote it.
+ */
 export function writeCartridgeFile(project: Project | KitGame, thumbnailPng?: Uint8Array): Uint8Array {
-  const kind = "kit" in project ? { kind: "kit" } : {};
+  const kind = "kit" in project ? { kind: "kit", kitRuntime: KIT_RUNTIME_VERSION } : {};
   const files: Record<string, Uint8Array> = {
-    "cartridge.json": strToU8(JSON.stringify({ format: FORMAT, version: FORMAT_VERSION, ...kind }, null, 2)),
+    "cartridge.json": strToU8(JSON.stringify({ format: FORMAT, version: FORMAT_VERSION, appVersion: APP_VERSION, ...kind }, null, 2)),
     "project.json": strToU8(JSON.stringify(project, null, 2)),
   };
   if (thumbnailPng) files["thumbnail.png"] = thumbnailPng;
@@ -46,9 +52,9 @@ export function readCartridgeFile(bytes: Uint8Array, templates: Record<string, T
     }
     const json: unknown = JSON.parse(strFromU8(project));
     if (meta.kind === "kit") {
-      const kit = KitGameSchema.safeParse(json);
-      if (!kit.success) return { result: { ok: false, errors: ["This game file is damaged."] } };
-      return { result: { ok: true, kit: kit.data }, thumbnail: files["thumbnail.png"] };
+      const kit = loadKit(json);
+      if (!kit.ok) return { result: { ok: false, errors: [kit.newer ? "This game file was saved by a newer version of Cartridge Studio." : "This game file is damaged."] } };
+      return { result: { ok: true, kit: kit.game }, thumbnail: files["thumbnail.png"] };
     }
     return { result: loadProject(json, templates), thumbnail: files["thumbnail.png"] };
   } catch {

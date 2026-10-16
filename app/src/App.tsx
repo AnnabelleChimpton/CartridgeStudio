@@ -11,7 +11,7 @@ import { encodeRgbaPng } from "./files/png.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
-import { loadSession, saveMode, saveProject, type EditorMode } from "./project/persist.ts";
+import { loadSession, recoveredMessage, saveMode, saveProject, type EditorMode } from "./project/persist.ts";
 import { useProjectStore } from "./project/store.ts";
 import { TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
@@ -46,6 +46,7 @@ export function App() {
       if (cancelled) return;
       if (s.project) useProjectStore.getState().load(s.project);
       if (s.kit) useKitStore.getState().load(s.kit);
+      setOpenError(recoveredMessage(s.recovered));
       setMode(s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : null);
     });
     return () => {
@@ -91,18 +92,26 @@ export function App() {
   const onNew = () => setChoosing(true);
 
   if (mode === "loading") return <div className="page loading">Loading…</div>;
-  if (mode === null) return <StartChooser onChoose={choose} />;
+  const banner = openError && (
+    <p className="error banner" role="alert">
+      {openError}{" "}
+      <button type="button" className="link" onClick={() => setOpenError(null)}>
+        Dismiss
+      </button>
+    </p>
+  );
+  if (mode === null) {
+    return (
+      <>
+        {banner}
+        <StartChooser onChoose={choose} />
+      </>
+    );
+  }
 
   return (
     <>
-      {openError && (
-        <p className="error banner" role="alert">
-          {openError}{" "}
-          <button type="button" className="link" onClick={() => setOpenError(null)}>
-            Dismiss
-          </button>
-        </p>
-      )}
+      {banner}
       {mode === "kit" ? (
         <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
       ) : (
