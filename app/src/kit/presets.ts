@@ -20,17 +20,20 @@ export interface KitIdea {
 
 export interface KitPreset {
   id: string;
+  /** The game's own title, so the card and the game agree. */
   name: string;
+  /** What kind of game it is ("A shooter"). */
+  kind: string;
   description: string;
   ideas: KitIdea[];
   game: KitGame;
 }
 
 const DESCRIPTIONS: Record<string, [string, string]> = {
-  shooter: ["Shooter", "A formation marches down. Shoot it before it lands."],
-  maze: ["Maze", "Collect everything while ghosts chase you through the walls."],
-  "ghost-panic": ["Ghost Panic", "Catnip turns the tables for a few seconds. Mind the spikes; three mazes to clear."],
-  dodger: ["Dodger", "Rocks fall from the sky. Catch the stars and survive."],
+  shooter: ["A shooter", "A line of vacuums marches down. Shoot them before they land."],
+  maze: ["A maze game", "Collect all the yarn while ghosts chase you through the walls."],
+  "ghost-panic": ["A chase game", "Catnip makes the ghosts run from you for a few seconds. Mind the spikes; three mazes to clear."],
+  dodger: ["A dodging game", "Rocks fall from the sky. Catch the stars and survive."],
 };
 
 const IDEAS: Record<string, KitIdea[]> = {
@@ -60,7 +63,8 @@ export const KIT_PRESETS: KitPreset[] = Object.entries(files)
   .filter(([path]) => !path.endsWith(".tests.json"))
   .map(([path, json]) => {
     const id = path.split("/").pop()!.replace(/\.json$/, "");
-    const [name, description] = DESCRIPTIONS[id] ?? [id, ""];
-    return { id, name, description, ideas: IDEAS[id] ?? [], game: KitGameSchema.parse(json) };
+    const [kind, description] = DESCRIPTIONS[id] ?? ["A game", ""];
+    const game = KitGameSchema.parse(json);
+    return { id, name: game.title, kind, description, ideas: IDEAS[id] ?? [], game };
   })
   .sort((a, b) => Object.keys(DESCRIPTIONS).indexOf(a.id) - Object.keys(DESCRIPTIONS).indexOf(b.id));

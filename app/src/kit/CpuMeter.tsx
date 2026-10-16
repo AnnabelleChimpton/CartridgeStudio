@@ -24,7 +24,7 @@ export function CpuMeter({ onGo }: { onGo?: (tab: KitTab) => void }) {
   return (
     <div className="cpu-meter" data-testid="cpu-meter">
       <div className="cpu-label">
-        <span id="cpu-meter-label">How busy the game is</span>
+        <span id="cpu-meter-label">How busy the console is</span>
         <span className={`cpu-word ${level}`}>{WORDS[level]}</span>
       </div>
       <div

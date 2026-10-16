@@ -2,7 +2,7 @@
 // cell is 8×16 game pixels, which on screen is square (160A pixels are wide).
 // A drag is one undo step.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { linePoints } from "../sprite/pixels.ts";
 import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
@@ -86,10 +86,10 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, 
   if (cursor) drawCursor(ctx, cursor[0] * CELL, cursor[1] * CELL, CELL, CELL);
 }
 
-export function RoomPainter() {
+/** The brush lives with the editor, so other tabs can pick one ("Put it in the room"). */
+export function RoomPainter({ brush, setBrush }: { brush: Brush; setBrush: (b: Brush) => void }) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
-  const [brush, setBrush] = useState<Brush>("wall");
   const canvas = useRef<HTMLCanvasElement>(null);
   const stroke = useRef<{ key: string; last: readonly [number, number]; brush: Brush } | null>(null);
 

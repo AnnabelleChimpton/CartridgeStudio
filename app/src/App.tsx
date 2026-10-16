@@ -21,6 +21,7 @@ import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/pane
 import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
 import { ShowItPanel } from "./ui/ShowItPanel.tsx";
+import { ConfirmDialog } from "./ui/Dialog.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
 import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
@@ -40,6 +41,8 @@ export function App() {
   const [mode, setMode] = useState<EditorMode | null | "loading">("loading");
   const [choosing, setChoosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+  /** An "are you sure?" waiting for an answer. */
+  const [ask, setAsk] = useState<{ title: string; message: string; yes: string; onYes: () => void } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,20 +79,26 @@ export function App() {
     const opened = readCartridgeFile(new Uint8Array(await file.arrayBuffer()), TEMPLATES);
     const r = opened.result;
     if (!r.ok) {
-      setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")}`);
+      setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")} Pick a file you made with Save game file.`);
       return;
     }
     const title = "kit" in r ? r.kit.title : r.project.title;
-    if (!confirm(`Open "${title}"? The game you're editing will be replaced.`)) return;
     setOpenError(null);
-    if ("kit" in r) {
-      useKitStore.getState().load(r.kit);
-      useGuide.getState().start(null, false);
-      switchTo("kit");
-    } else {
-      useProjectStore.getState().load(r.project);
-      switchTo("template");
-    }
+    setAsk({
+      title: `Open “${title}”?`,
+      message: "The game you're editing now will be replaced. Save it first if you want to keep it.",
+      yes: `Open “${title}”`,
+      onYes: () => {
+        if ("kit" in r) {
+          useKitStore.getState().load(r.kit);
+          useGuide.getState().start(null, false);
+          switchTo("kit");
+        } else {
+          useProjectStore.getState().load(r.project);
+          switchTo("template");
+        }
+      },
+    });
   };
 
   const onNew = () => setChoosing(true);
@@ -115,11 +124,18 @@ export function App() {
       {choosing && (
         <StartChooser
           onChoose={(c) => {
-            if (confirm("Start a new game? The one you're editing will be replaced; save it first to keep it.")) choose(c);
+            setChoosing(false);
+            setAsk({
+              title: "Start a new game?",
+              message: "The game you're editing now will be replaced. Save it first (Save game file) if you want to keep it.",
+              yes: "Start the new game",
+              onYes: () => choose(c),
+            });
           }}
           onCancel={() => setChoosing(false)}
         />
       )}
+      {ask && <ConfirmDialog title={ask.title} message={ask.message} yes={ask.yes} onYes={ask.onYes} onClose={() => setAsk(null)} />}
     </>
   );
 }
@@ -213,11 +229,11 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
               <button
                 type="button"
                 className="secondary"
-                title="game.bas and its graphics, for 7800basic"
+                title="Your game as 7800basic code, with its pictures, to keep working on by hand"
                 onClick={() => download(sourceZip(project, template), `${slugify(project.title)}-source.zip`)}
                 disabled={preview.result?.kind === "invalid"}
               >
-                Export source
+                Download the code
               </button>
             }
           />

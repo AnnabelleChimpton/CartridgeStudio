@@ -5,6 +5,9 @@ import { useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { download, type Preview } from "./usePreview.ts";
 
+/** How to play, in the editor and on the TV alike. */
+const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to fire. Esc to stop playing.";
+
 interface Props {
   preview: Preview;
   title: string;
@@ -43,7 +46,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads, explainErr
         </p>
         <div ref={emuContainer} className="emu" />
         <p className="tv-hint" aria-hidden="true">
-          Joystick or arrow keys to move · Fire button or Space · Esc to leave
+          {PLAY_HINT}
         </p>
       </div>
       <div className="emu-controls">
@@ -75,7 +78,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads, explainErr
           Full screen
         </button>
         <span className="hint" id="emu-hint">
-          Arrows move, Space fires, Tab leaves. Gamepads work too.
+          {PLAY_HINT}
         </span>
       </div>
       <p className={`status ${result?.kind ?? ""}`} data-testid="build-status" role="status">

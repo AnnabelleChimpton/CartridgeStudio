@@ -23,7 +23,7 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   await expect(page.getByText("What do you want to make?")).toBeVisible();
   expect(await axe(page)).toEqual([]);
 
-  await start(page, /^Shooter/);
+  await start(page, /^Cat vs\. Vacuums/);
   expect(await axe(page)).toEqual([]);
   for (const name of ["Room", "Rules", "Game"]) {
     await openTab(page, name);
@@ -31,8 +31,8 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   }
   // Ghost Panic's rules use every kind of rule word, and its Game tab lists counters.
   await page.getByRole("button", { name: "New game" }).click();
-  page.once("dialog", (d) => void d.accept());
   await page.getByRole("dialog").getByRole("button", { name: /^Ghost Panic/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
   for (const name of ["Rules", "Game"]) {
     await openTab(page, name);
@@ -43,8 +43,8 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   expect(await axe(page)).toEqual([]);
 
   await page.getByRole("button", { name: "New game" }).click();
-  page.once("dialog", (d) => void d.accept());
   await page.getByRole("button", { name: "Classic shooter" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
   expect(await axe(page)).toEqual([]);
   for (const name of ["Rules", "Sounds", "Settings", "Print"]) {
@@ -53,8 +53,32 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   }
 });
 
+test("controls inside a <label> are named by it, not an aria-label (WCAG 2.5.3)", async ({ page }) => {
+  // An aria-label would hide the visible label from speech input ("click Speed") and screen readers.
+  const overridden = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("label input, label select, label textarea")]
+        .filter((e) => e.hasAttribute("aria-label"))
+        .map((e) => e.outerHTML.slice(0, 80)),
+    );
+  await start(page, /^Ghost Panic/);
+  await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+  await page.getByRole("button", { name: /^Dust ghost/ }).click();
+  await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+  expect(await overridden(), "Things").toEqual([]);
+  await expect(page.getByLabel("How it moves")).toHaveValue("chase");
+  for (const name of ["Room", "Rules", "Game"]) {
+    await openTab(page, name);
+    expect(await overridden(), name).toEqual([]);
+  }
+  await expect(page.getByLabel("Title screen", { exact: true })).toHaveValue("Ghost Panic");
+  await page.getByRole("button", { name: /^Print the box/ }).click();
+  expect(await overridden(), "Print").toEqual([]);
+  await expect(page.getByRole("dialog").getByLabel(/^Paper/)).toBeVisible();
+});
+
 test("the room can be painted from the keyboard, and Shift+arrows is one undo step", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   await openTab(page, "Room");
   const room = page.getByLabel("Room grid");
   await room.focus();
@@ -87,7 +111,7 @@ test("the room can be painted from the keyboard, and Shift+arrows is one undo st
 });
 
 test("sprites can be drawn from the keyboard", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   const pixels = page.locator('canvas[aria-roledescription="pixel grid"]');
   await pixels.focus();
   await page.keyboard.press("3");
@@ -106,7 +130,7 @@ test("sprites can be drawn from the keyboard", async ({ page }) => {
 });
 
 test("the color picker works with arrows, Enter and Escape", async ({ page }) => {
-  await start(page, /^Dodger/);
+  await start(page, /^Rock Fall/);
   await openTab(page, "Game");
   const before = (await game(page)).background;
   const swatch = page.getByRole("button", { name: /^Background/ }).first();

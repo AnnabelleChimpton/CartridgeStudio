@@ -12,9 +12,9 @@ async function start(page: Page, preset: string) {
 const guide = (page: Page) => page.getByRole("region", { name: /Make it yours|You made it yours/ });
 const announced = (page: Page, text: string) => expect(page.getByRole("status").filter({ hasText: text })).toBeAttached();
 
-test("the guide walks through drawing, painting and playing", async ({ page }) => {
+test("the guide walks through drawing, playing on the TV and changing a rule", async ({ page }) => {
   await page.goto("/");
-  await start(page, "Dodger");
+  await start(page, "Rock Fall");
   await expect(guide(page)).toBeVisible();
   await expect(guide(page).getByRole("listitem").first()).toHaveAttribute("aria-current", "step");
   await expect(guide(page).getByRole("button", { name: "Survive for a whole minute" })).toBeVisible();
@@ -30,23 +30,24 @@ test("the guide walks through drawing, painting and playing", async ({ page }) =
   await page.keyboard.press("3");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Enter");
-  await announced(page, "Done: Draw your hero. Next: Paint the room.");
+  await announced(page, "Your hero has your drawing. Next: Play it on the TV.");
   await expect(guide(page).getByRole("listitem").nth(1)).toHaveAttribute("aria-current", "step");
-  await expect(page.getByRole("tab", { name: "Room" })).toHaveClass(/guide-target/);
+  await expect(page.locator(".play-column")).toHaveClass(/guide-play/);
 
-  // 2: Paint opens the room grid.
-  await page.getByRole("button", { name: "Paint: Paint the room" }).click();
-  await expect(page.getByRole("tab", { name: "Room" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByLabel("Room grid")).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Space");
-  await announced(page, "Done: Paint the room. Next: Press Play.");
-
-  // 3: Play hands the keyboard to the game.
-  await page.getByRole("button", { name: "Play: Press Play" }).click();
+  // 2: Play goes to TV mode, with the keyboard in the game.
+  await page.getByRole("button", { name: "Play: Play it on the TV" }).click();
   await expect(page.getByRole("application", { name: "Game preview" })).toBeFocused();
-  await announced(page, "All three steps done.");
-  await expect(page.getByRole("heading", { name: "You made it yours!" })).toBeVisible();
+  await announced(page, "You played your own game! Next: Change a rule (if you like).");
+  await page.evaluate(() => document.fullscreenElement && document.exitFullscreen());
+  await page.keyboard.press("Escape"); // Esc stops playing
+  await expect(page.getByRole("application", { name: "Game preview" })).not.toBeFocused();
+
+  // 3: Rules opens the rules; changing one finishes the guide.
+  await page.getByRole("button", { name: "Rules: Change a rule (if you like)" }).click();
+  await expect(page.getByRole("tab", { name: "Rules" })).toHaveAttribute("aria-selected", "true");
+  await page.getByLabel("Rule 3 action 1 points").selectOption("100");
+  await announced(page, "You changed how your game plays. All three steps done.");
+  await expect(page.getByRole("heading", { name: "You made a game!" })).toBeVisible();
 
   // An idea opens where to make it.
   await page.getByRole("button", { name: "Make the rocks fall faster" }).click();
@@ -80,10 +81,10 @@ test("a hidden guide stays hidden for that game, comes back from Guide, and a ne
     await expect(guide(page).getByRole("button", { name: "Hide guide" })).toBeFocused();
   }
 
-  page.on("dialog", (d) => void d.accept());
   await guide(page).getByRole("button", { name: "Hide guide" }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /^Maze/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /^Yarn Hunt/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(guide(page)).toBeVisible();
   await expect(guide(page).getByRole("button", { name: "Race the clock" })).toBeVisible();
 });

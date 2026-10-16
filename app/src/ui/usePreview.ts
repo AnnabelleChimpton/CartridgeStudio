@@ -87,10 +87,14 @@ export function usePreview(source: GameSource) {
     canvas.height = 240;
     canvas.className = "screen";
     canvas.setAttribute("aria-label", "Game preview");
-    // Focusing it hands the arrows, Space and Z to the game; Tab leaves.
+    // Focusing it hands the arrows, Space and Z to the game; Esc or Tab leaves.
     canvas.setAttribute("role", "application");
     canvas.setAttribute("aria-roledescription", "game");
     canvas.setAttribute("aria-describedby", "emu-hint");
+    // Esc stops playing (the TV's full screen handles its own Esc); Tab still moves on as usual.
+    canvas.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !document.fullscreenElement) canvas.blur();
+    });
     emuContainer.current!.replaceChildren(canvas);
     const emu = new WorkerEmulator(canvas);
     emulator.current = emu;

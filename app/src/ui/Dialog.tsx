@@ -46,3 +46,42 @@ export function Dialog({ title, onClose, children, wide, returnTo }: Props) {
     </dialog>
   );
 }
+
+/** "Are you sure?" in the app's own dialog, in place of window.confirm(). */
+export function ConfirmDialog({
+  title,
+  message,
+  yes,
+  onYes,
+  onClose,
+  danger,
+}: {
+  title: string;
+  message: ReactNode;
+  /** The button that goes ahead, saying what it does ("Start the new game"). */
+  yes: string;
+  onYes: () => void;
+  onClose: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <Dialog title={title} onClose={onClose}>
+      <p>{message}</p>
+      <div className="toolbar">
+        <button
+          type="button"
+          className={danger ? "danger-solid" : undefined}
+          onClick={() => {
+            onClose();
+            onYes();
+          }}
+        >
+          {yes}
+        </button>
+        <button type="button" className="secondary" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </Dialog>
+  );
+}

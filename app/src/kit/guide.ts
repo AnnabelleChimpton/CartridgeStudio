@@ -6,7 +6,7 @@
 
 import { create } from "zustand";
 
-export const GUIDE_STEPS = ["draw", "paint", "play"] as const;
+export const GUIDE_STEPS = ["draw", "tv", "rule"] as const;
 export type GuideStep = (typeof GUIDE_STEPS)[number];
 
 export interface GameGuide {

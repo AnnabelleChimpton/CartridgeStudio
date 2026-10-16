@@ -1,7 +1,7 @@
 // Game-wide settings for kit games: lives, colors, the words on screen, the
 // shooting sound and the counters rules can keep.
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
 import { addCounter, removeCounter, showCounter } from "./edit.ts";
@@ -47,13 +47,12 @@ export function KitSettingsPanel() {
           <span>Lives</span>
           <input
             type="range"
-            aria-label="Lives"
             min={1}
             max={9}
             value={game.lives}
             onChange={(e) => edit((d) => void (d.lives = Number(e.target.value)), "lives")}
           />
-          <output>{game.lives}</output>
+          <output aria-hidden="true">{game.lives}</output>
         </label>
         <div className="color-row">
           <span>Colors</span>
@@ -83,24 +82,24 @@ export function KitSettingsPanel() {
           </span>
         </div>
         {TEXTS.map(({ key, label }) => (
-          <label key={key}>
-            <span>{label}</span>
-            <input
-              aria-label={`${label} text`}
-              value={game.text[key]}
-              maxLength={32}
-              onChange={(e) => edit((d) => void (d.text[key] = e.target.value), `text:${key}`)}
-            />
+          <Fragment key={key}>
+            <label>
+              <span>{label}</span>
+              <input value={game.text[key]} maxLength={32} onChange={(e) => edit((d) => void (d.text[key] = e.target.value), `text:${key}`)} />
+            </label>
             {kitText(game.text[key]) !== game.text[key].trim().toUpperCase() && (
               <span className="muted small">Shows as “{kitText(game.text[key])}”: capitals, numbers and . ! ? - : only.</span>
             )}
-          </label>
+            {key === "title" && game.text.title === game.title && (
+              <span className="muted small">Follows your game's name until you change it here.</span>
+            )}
+          </Fragment>
         ))}
         {shooter && (
           <label>
             <span>Shooting sound</span>
             <select
-              aria-label="Shooting sound"
+              
               value={game.sounds.shoot ?? ""}
               onChange={(e) => edit((d) => (e.target.value ? (d.sounds.shoot = e.target.value) : delete d.sounds.shoot))}
             >
@@ -127,11 +126,12 @@ export function KitSettingsPanel() {
                 onChange={(v) => edit((d) => void (d.counters[i]!.label = v), `counter:${c.id}:label`)}
               />
               <label>
-                <span>starts at</span>
+                <span>
+                  <span className="visually-hidden">{c.label} </span>starts at
+                </span>
                 <input
                   type="number"
                   className="num"
-                  aria-label={`${c.label} starts at`}
                   min={0}
                   max={99}
                   value={c.start}
@@ -142,7 +142,9 @@ export function KitSettingsPanel() {
               </label>
               <label>
                 <input type="checkbox" checked={!!c.show} onChange={(e) => edit((d) => showCounter(d, e.target.checked ? c.id : null))} />
-                <span>Show on screen</span>
+                <span>
+                  Show on screen<span className="visually-hidden">: {c.label}</span>
+                </span>
               </label>
               <button type="button" className="link danger" onClick={() => edit((d) => removeCounter(d, c.id))}>
                 Remove {c.label}

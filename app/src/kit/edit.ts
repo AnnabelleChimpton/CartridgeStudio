@@ -210,6 +210,27 @@ export function setBehaviour(g: KitGame, id: string, behaviour: Behaviour) {
   }
 }
 
+/**
+ * "Make this my player": the thing's drawing, name and size become the
+ * player's, and the old player's look moves to the thing. Rules, the room and
+ * how everything moves stay as they were, so the game still plays the same.
+ * Returns the id now wearing the thing's look (the player), or null.
+ */
+export function makePlayer(g: KitGame, id: string): string | null {
+  const t = g.types.find((x) => x.id === id);
+  if (!t || isPlayer(t)) return null;
+  const p = g.types.find(isPlayer);
+  if (!p) {
+    setBehaviour(g, id, "player-4way");
+    return id;
+  }
+  const look = (x: KitType) => ({ label: x.label, palette: x.palette, width: x.width, height: x.height, frames: x.frames });
+  const [a, b] = [look(p), look(t)];
+  Object.assign(p, b);
+  Object.assign(t, a);
+  return p.id;
+}
+
 /** Adds a counter (keys, coins, combo…) and returns its id. */
 export function addCounter(g: KitGame): string | null {
   if (g.counters.length >= MAX_COUNTERS) return null;

@@ -15,8 +15,8 @@ import { ShowItPanel } from "../ui/ShowItPanel.tsx";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
-import { isPlayer } from "./edit.ts";
-import { useCurrentGuide, useGuide, type GuideStep } from "./guide.ts";
+import { isPlayer, type Brush } from "./edit.ts";
+import { GUIDE_STEPS, useCurrentGuide, useGuide, type GuideStep } from "./guide.ts";
 import { explainError } from "./help.ts";
 import { GUIDE_TAB, KitGuide, guideAnnouncement } from "./KitGuide.tsx";
 import { KitPrint } from "./KitPrint.tsx";
@@ -53,6 +53,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   const preview = usePreview(game);
   const [selected, setSelected] = useState<string | null>(() => game.types[0]?.id ?? null);
   const [tab, setTab] = useState<KitTab>("things");
+  const [brush, setBrush] = useState<Brush>("wall");
   const ids = useId();
 
   // The getting-started guide.
@@ -69,7 +70,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   const guideButton = useRef<HTMLButtonElement>(null);
   const focusGuide = useRef(false);
   const guideOpen = !!guide?.open;
-  const current = guide && (["draw", "paint", "play"] as const).find((s) => !guide.done.includes(s));
+  const current = guide && GUIDE_STEPS.find((s) => !guide.done.includes(s));
 
   const tick = (step: GuideStep) => {
     const g = useGuide.getState();
@@ -84,13 +85,13 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   useEffect(() => {
     if (!guide) return;
     if (!guide.done.includes("draw") && drawn(game, baseline)) tick("draw");
-    if (!guide.done.includes("paint") && game.room.rows.join("\n") !== baseline.room.rows.join("\n")) tick("paint");
+    if (!guide.done.includes("rule") && JSON.stringify(game.rules) !== JSON.stringify(baseline.rules)) tick("rule");
   });
 
-  // Playing the game (focusing it) ticks "Press Play".
+  // Playing the game (focusing it, here or on the TV) ticks "Play it on the TV".
   useEffect(() => {
     const stage = preview.stage.current;
-    const onFocus = () => tickRef.current("play");
+    const onFocus = () => tickRef.current("tv");
     stage?.addEventListener("focusin", onFocus);
     return () => stage?.removeEventListener("focusin", onFocus);
   }, [preview.stage]);
@@ -105,17 +106,12 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
     setTab(t);
     requestAnimationFrame(() => (document.querySelector<HTMLElement>(focus ?? "") ?? document.getElementById(`${ids}-${t}`))?.focus());
   };
-  const playGame = () => {
-    const canvas = preview.stage.current?.querySelector("canvas");
-    canvas?.scrollIntoView({ block: "nearest" });
-    canvas?.focus();
-  };
   const onStep = (step: GuideStep) => {
     if (step === "draw") {
       if (hero) setSelected(hero.id);
       openTab("things", 'canvas[aria-roledescription="pixel grid"]');
-    } else if (step === "paint") openTab("room", '[aria-label="Room grid"]');
-    else playGame();
+    } else if (step === "rule") openTab("rules");
+    else preview.enterTv();
   };
   const onIdea = (idea: KitIdea) => {
     if (idea.thing && game.types.some((t) => t.id === idea.thing)) setSelected(idea.thing);
@@ -142,7 +138,13 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
     <div className="page">
       <TopBar
         title={game.title}
-        onTitle={(t) => edit((d) => void (d.title = t), "title")}
+        onTitle={(t) =>
+          edit((d) => {
+            // The title screen follows the game's title until it's given words of its own (Game tab).
+            if (d.text.title === d.title) d.text.title = t;
+            d.title = t;
+          }, "title")
+        }
         kind="Game kit"
         canUndo={canUndo}
         canRedo={canRedo}
@@ -201,13 +203,22 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             ))}
           </div>
           <div className="workspace-panel" role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${tab}`}>
-            {tab === "things" && <ThingsPanel selected={selected} onSelect={setSelected} />}
-            {tab === "room" && <RoomPainter />}
+            {tab === "things" && (
+              <ThingsPanel
+                selected={selected}
+                onSelect={setSelected}
+                onPlace={(id) => {
+                  setBrush(id);
+                  openTab("room", '[aria-label="Room grid"]');
+                }}
+              />
+            )}
+            {tab === "room" && <RoomPainter brush={brush} setBrush={setBrush} />}
             {tab === "rules" && <KitRulesPanel />}
             {tab === "game" && <KitSettingsPanel />}
           </div>
         </div>
-        <div className={`play-column${guideOpen && current === "play" ? " guide-play" : ""}`}>
+        <div className={`play-column${guideOpen && current === "tv" ? " guide-play" : ""}`}>
           <PreviewPanel
             preview={preview}
             title={game.title}
@@ -217,11 +228,11 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
               <button
                 type="button"
                 className="secondary"
-                title="game.bas and its graphics, for 7800basic"
+                title="Your game as 7800basic code, with its pictures, to keep working on by hand"
                 disabled={preview.result?.kind === "invalid"}
                 onClick={() => download(folderZip(game.title, "source", kitSourceFiles(game, SOUND_LIBRARY)), `${slugify(game.title)}-source.zip`)}
               >
-                Export source
+                Download the code
               </button>
             }
           />

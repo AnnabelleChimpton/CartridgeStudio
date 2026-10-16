@@ -3,9 +3,9 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-async function start(page: Page, preset: "Shooter" | "Maze" | "Dodger" | "Ghost Panic") {
+async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Rock Fall" | "Ghost Panic") {
   await page.goto("/");
-  await page.getByRole("button", { name: new RegExp(`^${preset}`) }).click();
+  await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 }
 
@@ -56,11 +56,11 @@ async function paint(page: Page, from: [number, number], to: [number, number], b
 }
 
 test("starts from a kit preset and plays it", async ({ page }) => {
-  await start(page, "Maze");
+  await start(page, "Yarn Hunt");
   await expect(page.getByLabel("Game title")).toHaveValue("Yarn Hunt");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
-  await expect(page.getByTestId("cpu-meter")).toContainText("How busy the game is");
-  await expect(page.getByRole("meter", { name: "How busy the game is" })).toHaveAttribute("aria-valuetext", /Room to spare|Nearly full/);
+  await expect(page.getByTestId("cpu-meter")).toContainText("How busy the console is");
+  await expect(page.getByRole("meter", { name: "How busy the console is" })).toHaveAttribute("aria-valuetext", /Room to spare|Nearly full/);
   // Animation alternates frames every 16 frames: sample across 48.
   const pictures = await page.evaluate(async () => {
     const e = window.__cs!.emulator!;
@@ -75,7 +75,7 @@ test("starts from a kit preset and plays it", async ({ page }) => {
 });
 
 test("painting the room rebuilds the game, and a drag is one undo step", async ({ page }) => {
-  await start(page, "Dodger");
+  await start(page, "Rock Fall");
   const n = await buildCount(page);
   await paint(page, [3, 6], [12, 6]);
   const g = await game(page);
@@ -91,9 +91,9 @@ test("painting the room rebuilds the game, and a drag is one undo step", async (
 });
 
 test("adds a thing, places it and makes it chase the player", async ({ page }) => {
-  await start(page, "Dodger");
+  await start(page, "Rock Fall");
   await page.getByRole("button", { name: "Add a thing" }).click();
-  await page.getByLabel("Thing name").fill("Comet");
+  await page.getByLabel("Name", { exact: true }).fill("Comet");
   await page.getByLabel("How it moves").selectOption({ label: "Chases the player" });
   await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Comet" }).click();
@@ -110,7 +110,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
 
 test("rules use the game's own things", async ({ page }) => {
   // The Dodger: it already shows a timer, so a timer rule has room in the budget (the HUD digits cost 7).
-  await start(page, "Dodger");
+  await start(page, "Rock Fall");
   const rules = (await game(page)).rules.length;
   await openTab(page, "Rules");
   await page.getByRole("button", { name: "Add rule" }).click();
@@ -126,7 +126,7 @@ test("rules use the game's own things", async ({ page }) => {
 });
 
 test("the CPU meter stops a game that's too busy", async ({ page }) => {
-  await start(page, "Maze");
+  await start(page, "Yarn Hunt");
   // Ghosts chase through walls, the costliest behaviour: three more push the maze over budget.
   await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Dust ghost" }).click();
@@ -141,7 +141,7 @@ test("the CPU meter stops a game that's too busy", async ({ page }) => {
 });
 
 test("a kit game survives a reload and round-trips through a game file", async ({ page }) => {
-  await start(page, "Shooter");
+  await start(page, "Cat vs. Vacuums");
   await page.getByLabel("Game title").fill("Moon Patrol-ish");
   await page.waitForTimeout(800); // autosave
   await page.reload();
@@ -153,11 +153,12 @@ test("a kit game survives a reload and round-trips through a game file", async (
   const file = Buffer.concat(chunks);
 
   // Switch to another game, then open the file again.
-  page.on("dialog", (d) => void d.accept());
   await page.getByRole("button", { name: "New game" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /^Dodger/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /^Rock Fall/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Rock Fall");
   await page.getByLabel("Open game file").setInputFiles({ name: download.suggestedFilename(), mimeType: "application/zip", buffer: file });
+  await page.getByRole("dialog").getByRole("button", { name: "Open “Moon Patrol-ish”" }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
 });
@@ -188,10 +189,10 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
 });
 
 test("builds a key-and-door rule with a counter and only if", async ({ page }) => {
-  await start(page, "Dodger");
+  await start(page, "Rock Fall");
   for (const name of ["Key", "Door"]) {
     await page.getByRole("button", { name: "Add a thing" }).click();
-    await page.getByLabel("Thing name").fill(name);
+    await page.getByLabel("Name", { exact: true }).fill(name);
   }
   await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Key" }).click();
@@ -299,4 +300,43 @@ test("rules can be reordered by keyboard and by dragging", async ({ page, browse
   await expect.poll(order).toEqual([start0[1], start0[2], start0[0], ...start0.slice(3)]);
   await page.getByRole("button", { name: "Undo" }).click();
   expect(await order()).toEqual(start0);
+});
+
+test("deleting a rule announces it and keeps focus in the list", async ({ page }) => {
+  await start(page, "Rock Fall");
+  await openTab(page, "Rules");
+  const count = (await game(page)).rules.length;
+  await page.getByRole("button", { name: "Delete rule 2" }).click();
+  expect((await game(page)).rules.length).toBe(count - 1);
+  await expect(page.getByRole("button", { name: "Move rule 2", exact: true })).toBeFocused();
+  await expect(page.getByRole("status").filter({ hasText: "Rule 2 deleted. Undo brings it back." })).toBeAttached();
+  // The last one: focus goes to Add rule.
+  for (let n = count - 1; n > 0; n--) await page.getByRole("button", { name: `Delete rule ${n}` }).click();
+  await expect(page.getByRole("button", { name: "Add rule" })).toBeFocused();
+  await expect(page.getByTestId("rules-empty")).toBeVisible();
+});
+
+test("a thing can be put in the room or made the player, and the title screen follows the name", async ({ page }) => {
+  await start(page, "Yarn Hunt");
+  await page.getByRole("button", { name: "Add a thing" }).click();
+  await page.getByLabel("Name", { exact: true }).fill("Lily");
+  await page.getByRole("button", { name: "Put it in the room" }).click();
+  await expect(page.getByRole("tab", { name: "Room" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("radio", { name: "Paint Lily" })).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByLabel("Room grid")).toBeFocused();
+
+  await openTab(page, "Things");
+  await page.locator(".sprite-select", { hasText: "Lily" }).click();
+  await page.getByRole("button", { name: "Make this my player" }).click();
+  const g = await game(page);
+  expect(g.types.find((t) => t.id === "cat")!.label).toBe("Lily");
+  await expect(page.locator(".sprite-select[aria-pressed=true]", { hasText: "Lily" })).toBeVisible();
+  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+
+  await page.getByLabel("Game title").fill("Lily's Yarn");
+  expect((await game(page)).text.title).toBe("Lily's Yarn");
+  await openTab(page, "Game");
+  await page.getByLabel("Title screen", { exact: true }).fill("Press fire, Lily");
+  await page.getByLabel("Game title").fill("Lily's Game");
+  expect((await game(page)).text.title).toBe("Press fire, Lily");
 });

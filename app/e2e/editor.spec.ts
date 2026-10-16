@@ -418,7 +418,7 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
   await manual.fill("# Story\nThe vacuums are back, and only one cat can stop them.");
   await expect(page.getByRole("button", { name: "Reset to draft" })).toBeVisible();
 
-  await page.getByLabel("Paper size").selectOption("a4");
+  await page.getByLabel(/^Paper/).selectOption("a4");
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
     page.getByRole("button", { name: "Download print PDF" }).click(),
@@ -462,8 +462,8 @@ test("saves a game file and opens it again", async ({ page }) => {
 
   await page.getByLabel("Game title").fill("Something Else");
   await page.getByLabel("Lives").fill("2");
-  page.once("dialog", (d) => void d.accept());
   await page.getByLabel("Open game file").setInputFiles({ name: saved.name, mimeType: "application/zip", buffer: saved.bytes });
+  await page.getByRole("dialog").getByRole("button", { name: /^Open “/ }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
   await expect(page.getByLabel("Lives")).toHaveValue("6");
 
@@ -477,12 +477,12 @@ test("exports the source and the submission package", async ({ page }) => {
   await open(page);
   const { unzipSync } = await import("fflate");
 
-  const source = await downloadBytes(page, "Export source");
+  const source = await downloadBytes(page, "Download the code");
   expect(source.name).toBe("cat-vs-vacuums-source.zip");
   expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
 
   await openTab(page, "Print");
-  const pkg = await downloadBytes(page, "Download submission package");
+  const pkg = await downloadBytes(page, "Download everything");
   expect(pkg.name).toBe("cat-vs-vacuums-submission.zip");
   const files = unzipSync(pkg.bytes);
   const root = "cat-vs-vacuums-submission/";
