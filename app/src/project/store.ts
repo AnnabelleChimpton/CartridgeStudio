@@ -1,10 +1,9 @@
 // Document stores with undo/redo history (SPEC.md, "State"). Edits are
 // recipes applied to a copy, so every history entry is an independent,
-// serializable snapshot. One store per kind of game: template projects here,
-// kit games in kit/store.ts.
+// serializable snapshot. One store per kind of game: kit games in
+// kit/store.ts, code projects in code/store.ts.
 
 import { create } from "zustand";
-import type { Project } from "./schema.ts";
 
 const HISTORY_LIMIT = 200;
 /** Edits with the same key this close together merge into one undo step (slider drags, typing). */
@@ -63,5 +62,3 @@ export function createHistoryStore<T>() {
     },
   }));
 }
-
-export const useProjectStore = createHistoryStore<Project>();

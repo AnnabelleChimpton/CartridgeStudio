@@ -1,67 +1,62 @@
 // Cartridge Studio: pick what to make, then edit it while it runs. Kit games
-// (things, rooms and rules on one runtime), template projects (the classic
-// shooter) and code projects (game.bas by hand, usually ejected from one of
-// the others) each have their own editor, laid out the same way: one job at a
-// time in tabs on the left and the running game on the right. All rebuild
-// the ROM 300 ms after every change and reload the preview.
+// (things, rooms and rules on one runtime) and code projects (game.bas by
+// hand, usually ejected from a kit game) each have their own editor, laid out
+// the same way: one job at a time in tabs on the left and the running game on
+// the right. Both rebuild the ROM 300 ms after every change and reload the
+// preview. Every game is kept in My games (project/persist.ts); starting or
+// opening one adds to it.
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { CodeEditor } from "./code/CodeEditor.tsx";
 import { EjectDialog } from "./code/EjectDialog.tsx";
-import { blankCodeProject, ejectKit, ejectTemplate } from "./code/eject.ts";
-import { CodeTier } from "./code/CodeTier.tsx";
-import { useGeneratedDiff } from "./code/useGeneratedDiff.ts";
+import { blankCodeProject, ejectKit } from "./code/eject.ts";
 import { useCodeStore } from "./code/store.ts";
-import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
-import { folderZip, slugify, sourceFiles } from "./files/exports.ts";
-import { encodeRgbaPng } from "./files/png.ts";
+import { readCartridgeFile } from "./files/cartridge-file.ts";
 import { useGuide } from "./kit/guide.ts";
 import { JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
 import { JamBanner, JamLinks } from "./jam/JamBanner.tsx";
-import { JamEntryPanel } from "./jam/JamEntryPanel.tsx";
 import { useJamStore } from "./jam/store.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
-import { loadSession, recoveredMessage, saveMode, saveProject, type EditorMode } from "./project/persist.ts";
-import { useProjectStore } from "./project/store.ts";
-import { SOUND_LIBRARY, TEMPLATES, getTemplate } from "./project/templates.ts";
-import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
-import { arrowKeys, tabProps } from "./ui/a11y.ts";
-import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
+import {
+  addGame,
+  classicNotice,
+  classicToCode,
+  deleteGame,
+  autosave,
+  flushOnLeave,
+  flushSave,
+  loadGame,
+  loadSession,
+  recoveredMessage,
+  renameGame,
+  renamed,
+  setOpen,
+  type EditorMode,
+  type GameData,
+} from "./project/persist.ts";
+import { SOUND_LIBRARY, TEMPLATES } from "./project/templates.ts";
 import { ContextItem } from "./ui/ContextStrip.tsx";
-import { PreviewPanel } from "./ui/PreviewPanel.tsx";
-import { PrintPanel } from "./ui/PrintPanel.tsx";
-import { ShowItPanel } from "./ui/ShowItPanel.tsx";
-import { ConfirmDialog } from "./ui/Dialog.tsx";
+import type { LibraryActions } from "./ui/MyGames.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
 import { toast } from "./ui/Toaster.tsx";
-import { TopBar } from "./ui/TopBar.tsx";
-import { useTier } from "./ui/prefs.ts";
-import { download, usePreview } from "./ui/usePreview.ts";
 
-const SAVE_DEBOUNCE_MS = 500;
 const PRESET_IDS = KIT_PRESETS.map((p) => p.id);
 
-const TEMPLATE_TABS = [
-  { id: "graphics", label: "Graphics" },
-  { id: "rules", label: "Rules" },
-  { id: "sounds", label: "Sounds" },
-  { id: "settings", label: "Settings" },
-  { id: "print", label: "Print" },
-  { id: "code", label: "Code" },
-] as const;
-type TemplateTab = (typeof TEMPLATE_TABS)[number]["id"];
+/** The game being edited: its id in My games and which editor it opens in. */
+type Current = { id: string; kind: EditorMode };
 
 export function App() {
-  const [mode, setMode] = useState<EditorMode | null | "loading">("loading");
+  const [current, setCurrent] = useState<Current | null | "loading">("loading");
   const [choosing, setChoosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
-  /** An "are you sure?" waiting for an answer. */
-  const [ask, setAsk] = useState<{ title: string; message: string; yes: string; onYes: () => void } | null>(null);
-  /** Asking before ejecting the kit or template game into a code project. */
-  const [ejecting, setEjecting] = useState<"kit" | "template" | null>(null);
-  const [ejectedFrom, setEjectedFrom] = useState<"kit" | "template" | null>(null);
+  /** Something that changed about a game on the way in, in plain words (a Classic shooter game that's now code). */
+  const [notice, setNotice] = useState<string | null>(null);
+  /** Asking before ejecting the kit game into a code project. */
+  const [ejecting, setEjecting] = useState(false);
+  /** The kit game a code project was just ejected from, for the way back. */
+  const [ejectedFrom, setEjectedFrom] = useState<{ id: string; title: string } | null>(null);
   const jam = useJamStore((s) => s.brief);
   const only = jam ? offeredPresets(jam, PRESET_IDS) : undefined;
 
@@ -78,43 +73,101 @@ export function App() {
     history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash}`);
   }, []);
 
+  /** Puts a game in its editor. */
+  const show = (id: string, data: GameData) => {
+    if (data.kind === "kit") useKitStore.getState().load(data.game);
+    else useCodeStore.getState().load(data.game);
+    setOpen(id, data);
+    setCurrent({ id, kind: data.kind });
+  };
+
   useEffect(() => {
     let cancelled = false;
     void loadSession(TEMPLATES).then((s) => {
       if (cancelled) return;
-      if (s.project) useProjectStore.getState().load(s.project);
-      if (s.kit) useKitStore.getState().load(s.kit);
-      if (s.code) useCodeStore.getState().load(s.code);
       setOpenError(recoveredMessage(s.recovered));
-      setMode(
-        s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : s.mode === "code" && s.code ? "code" : null,
-      );
+      setNotice(s.notices.join(" ") || null);
+      if (!s.open) return setCurrent(null);
+      if (s.open.data.kind === "kit") useGuide.getState().select(s.open.id, s.migrated);
+      show(s.open.id, s.open.data);
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const switchTo = (m: EditorMode) => {
-    setMode(m);
-    void saveMode(m);
+  // Leaving the page (closing the tab, or a phone putting it away) writes any save still waiting.
+  useEffect(() => {
+    const flush = () => flushOnLeave();
+    const hidden = () => document.visibilityState === "hidden" && flush();
+    addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", hidden);
+    };
+  }, []);
+
+  /** Adds a game to My games and opens it. */
+  const addAndOpen = async (data: GameData, thumbnail?: Uint8Array, preset?: string) => {
+    await flushSave();
+    const id = await addGame(data, thumbnail);
+    if (data.kind === "kit") {
+      // A new game from a starter opens with its getting-started guide.
+      if (preset) useGuide.getState().start(preset, true, id);
+      else useGuide.getState().start(null, false, id);
+    }
+    setChoosing(false);
+    setEjectedFrom(null);
+    show(id, data);
+    return id;
   };
 
   const choose = (c: StartChoice) => {
-    setChoosing(false);
-    if (c.kind === "kit") {
-      useKitStore.getState().load(structuredClone(KIT_PRESETS.find((p) => p.id === c.preset)!.game));
-      // A new game from a starter opens with its getting-started guide.
-      useGuide.getState().start(c.preset);
-      switchTo("kit");
-    } else if (c.kind === "code") {
-      useCodeStore.getState().load(blankCodeProject());
-      setEjectedFrom(null);
-      switchTo("code");
-    } else {
-      useProjectStore.getState().load(structuredClone(getTemplate(c.template).sample));
-      switchTo("template");
+    if (c.kind === "kit") void addAndOpen({ kind: "kit", game: structuredClone(KIT_PRESETS.find((p) => p.id === c.preset)!.game) }, undefined, c.preset);
+    else void addAndOpen({ kind: "code", game: blankCodeProject() });
+  };
+
+  /** Opens a game from My games. */
+  const openGame = async (id: string) => {
+    if (current !== "loading" && current?.id === id) return setChoosing(false);
+    const { data, recovered } = await loadGame(id);
+    if (!data) {
+      setOpenError(recoveredMessage(recovered) ?? "That game couldn't be found in this browser any more.");
+      return;
     }
+    setOpenError(null);
+    setChoosing(false);
+    setEjectedFrom(null);
+    if (data.kind === "kit") useGuide.getState().select(id);
+    show(id, data);
+  };
+
+  const library: LibraryActions = {
+    current: current === "loading" ? undefined : current?.id,
+    onOpen: (id) => void openGame(id),
+    async onRename(id, title) {
+      if (current !== "loading" && current?.id === id) {
+        // The open game: rename it in its editor, which saves it.
+        if (current.kind === "kit") {
+          const next = renamed({ kind: "kit", game: useKitStore.getState().project }, title).game;
+          useKitStore.getState().edit((d) => Object.assign(d, { title: next.title, text: next.text }));
+          autosave(id, { kind: "kit", game: useKitStore.getState().project });
+        } else {
+          useCodeStore.getState().edit((d) => void (d.title = title));
+          autosave(id, { kind: "code", game: useCodeStore.getState().project });
+        }
+        await flushSave();
+      } else await renameGame(id, title);
+    },
+    async onDelete(id) {
+      await deleteGame(id);
+      if (current !== "loading" && current?.id === id) {
+        setOpen(null);
+        setChoosing(false);
+        setCurrent(null);
+      }
+    },
   };
 
   const openBrief = async (file: File) => {
@@ -127,6 +180,7 @@ export function App() {
     useJamStore.getState().join(r.brief);
   };
 
+  /** Opens a game file as a new game in My games. */
   const open = async (file: File) => {
     if (file.name.endsWith(JAM_EXTENSION)) return openBrief(file);
     const opened = readCartridgeFile(new Uint8Array(await file.arrayBuffer()), TEMPLATES);
@@ -135,86 +189,73 @@ export function App() {
       setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")} Pick a file you made with Save game file.`);
       return;
     }
-    const title = "kit" in r ? r.kit.title : "code" in r ? r.code.title : r.project.title;
+    let data: GameData;
+    if ("kit" in r) data = { kind: "kit", game: r.kit };
+    else if ("code" in r) data = { kind: "code", game: r.code };
+    else {
+      // A Classic shooter game: its editor is retired, so it opens as code.
+      try {
+        data = { kind: "code", game: classicToCode(r.project, TEMPLATES) };
+      } catch (e) {
+        setOpenError(`Couldn't open ${file.name}: ${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      setNotice(classicNotice(data.game.title));
+    }
     setOpenError(null);
-    setAsk({
-      title: `Open “${title}”?`,
-      message: "The game you're editing now will be replaced. Save it first if you want to keep it.",
-      yes: `Open “${title}”`,
-      onYes: () => {
-        toast(`Opened “${title}”`);
-        if ("kit" in r) {
-          useKitStore.getState().load(r.kit);
-          useGuide.getState().start(null, false);
-          switchTo("kit");
-        } else if ("code" in r) {
-          useCodeStore.getState().load(r.code);
-          setEjectedFrom(null);
-          switchTo("code");
-        } else {
-          useProjectStore.getState().load(r.project);
-          switchTo("template");
-        }
-      },
-    });
+    await addAndOpen(data, opened.thumbnail);
+    toast(`Opened “${data.game.title || "Untitled"}”. It's in My games now.`);
   };
 
-  const onNew = () => setChoosing(true);
-
-  /** Ejects the kit or template game into a code project; the original is kept. */
-  const eject = (from: "kit" | "template") => {
-    setEjecting(null);
-    const code =
-      from === "kit"
-        ? ejectKit(useKitStore.getState().project, SOUND_LIBRARY)
-        : (() => {
-            const p = useProjectStore.getState().project;
-            return ejectTemplate(p, getTemplate(p.template.id));
-          })();
-    useCodeStore.getState().load(code);
-    setEjectedFrom(from);
-    switchTo("code");
+  const onNew = () => {
+    // So My games shows the latest of the open game.
+    void flushSave().then(() => setChoosing(true));
   };
 
-  /** The way back from a code project to the kit or template game it came from (or whichever is around). */
-  const backFrom = (): { label: string; go: () => void } | undefined => {
+  /** Ejects the kit game into a new code project; the kit game is kept. */
+  const eject = async () => {
+    setEjecting(false);
+    if (current === "loading" || !current) return;
     const kit = useKitStore.getState().project;
-    const project = useProjectStore.getState().project;
-    const to = ejectedFrom ?? (kit ? "kit" : project ? "template" : null);
-    if (to === "kit" && kit) return { label: `the kit game “${kit.title || "Untitled"}”`, go: () => switchTo("kit") };
-    if (to === "template" && project) return { label: `“${project.title || "Untitled"}”`, go: () => switchTo("template") };
-    return undefined;
+    const from = { id: current.id, title: kit.title };
+    await addAndOpen({ kind: "code", game: ejectKit(kit, SOUND_LIBRARY) });
+    setEjectedFrom(from);
   };
+
+  /** The way back from a code project to the kit game it was just ejected from. */
+  const back = ejectedFrom ? { label: `the kit game “${ejectedFrom.title || "Untitled"}”`, go: () => void openGame(ejectedFrom.id) } : undefined;
 
   /** One of the jam's own starting games (a .cartridge in the brief). */
   const openStarter = (name: string, base64: string) => {
     let r;
     try {
-      r = readCartridgeFile(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)), TEMPLATES).result;
+      r = readCartridgeFile(Uint8Array.from(atob(base64), (c) => c.charCodeAt(0)), TEMPLATES);
     } catch {
       r = null;
     }
-    if (!r?.ok || !("kit" in r)) {
+    if (!r?.result.ok || !("kit" in r.result)) {
       setOpenError(`The jam's starting game "${name}" couldn't be opened. Ask the organizer for a new link.`);
       return;
     }
-    if (mode !== null && !confirm(`Start from "${name}"? The game you're editing will be replaced; save it first to keep it.`)) return;
     setOpenError(null);
-    setChoosing(false);
-    useKitStore.getState().load(r.kit);
-    switchTo("kit");
+    void addAndOpen({ kind: "kit", game: r.result.kit }, r.thumbnail);
   };
 
-  if (mode === "loading") return <div className="page loading">Loading…</div>;
-  // Errors go in the context strip under the top bar (design/DIRECTION.md).
-  const banner = openError && <ContextItem kind="error" message={openError} onDismiss={() => setOpenError(null)} />;
+  if (current === "loading") return <div className="page loading">Loading…</div>;
+  // Errors and notes go in the context strip under the top bar (design/DIRECTION.md).
+  const banner = (
+    <>
+      {openError && <ContextItem kind="error" message={openError} onDismiss={() => setOpenError(null)} />}
+      {notice && <ContextItem kind="note" message={notice} onDismiss={() => setNotice(null)} />}
+    </>
+  );
 
-  if (mode === null) {
+  if (current === null) {
     return (
       <>
         {banner}
         <JamBanner onStarter={openStarter} />
-        <StartChooser onChoose={choose} only={only} />
+        <StartChooser onChoose={choose} only={only} library={library} />
         <JamLinks onBrief={(f) => void openBrief(f)} />
       </>
     );
@@ -224,168 +265,15 @@ export function App() {
     <>
       {banner}
       <JamBanner onNewGame={onNew} onStarter={openStarter} />
-      {mode === "kit" ? (
-        <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("kit")} />
-      ) : mode === "code" ? (
-        <CodeEditor key="code" onOpen={(f) => void open(f)} onNew={onNew} back={backFrom()} />
+      {current.kind === "kit" ? (
+        <KitEditor key={current.id} gameId={current.id} onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting(true)} />
       ) : (
-        <TemplateEditor key="template" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("template")} />
+        <CodeEditor key={current.id} gameId={current.id} onOpen={(f) => void open(f)} onNew={onNew} back={back} />
       )}
       {ejecting && (
-        <EjectDialog
-          title={(ejecting === "kit" ? useKitStore.getState().project : useProjectStore.getState().project).title}
-          kind={ejecting === "kit" ? "kit game" : "game"}
-          replaces={useCodeStore.getState().project?.title}
-          onConfirm={() => eject(ejecting)}
-          onClose={() => setEjecting(null)}
-        />
+        <EjectDialog title={useKitStore.getState().project.title} kind="kit game" onConfirm={() => void eject()} onClose={() => setEjecting(false)} />
       )}
-      {choosing && (
-        <StartChooser
-          onChoose={(c) => {
-            setChoosing(false);
-            setAsk({
-              title: "Start a new game?",
-              message: "The game you're editing now will be replaced. Save it first (Save game file) if you want to keep it.",
-              yes: "Start the new game",
-              onYes: () => choose(c),
-            });
-          }}
-          onCancel={() => setChoosing(false)}
-          only={only}
-        />
-      )}
-      {ask && <ConfirmDialog title={ask.title} message={ask.message} yes={ask.yes} onYes={ask.onYes} onClose={() => setAsk(null)} />}
+      {choosing && <StartChooser onChoose={choose} onCancel={() => setChoosing(false)} only={only} library={library} />}
     </>
-  );
-}
-
-function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) => void; onNew: () => void; onEditAsCode: () => void }) {
-  const project = useProjectStore((s) => s.project);
-  const canUndo = useProjectStore((s) => s.past.length > 0);
-  const canRedo = useProjectStore((s) => s.future.length > 0);
-  const { edit, undo, redo } = useProjectStore.getState();
-  const template = getTemplate(project.template.id);
-  const preview = usePreview(project);
-  const [selectedSprite, setSelectedSprite] = useState<string | null>(
-    () => template.manifest.sprites.find((s) => s.editable)?.role ?? null,
-  );
-  const [chosenTab, setTab] = useState<TemplateTab>("graphics");
-  // The Code tab is for the Coder tier, as in the kit editor.
-  const tier = useTier();
-  const tabs = TEMPLATE_TABS.filter((t) => tier === "coder" || t.id !== "code");
-  const tab = tabs.some((t) => t.id === chosenTab) ? chosenTab : "graphics";
-  const ids = useId();
-  const [codeKey, setCodeKey] = useState<string | null>(null);
-  const changed = useGeneratedDiff(preview.lastGood?.source);
-
-  useEffect(() => {
-    window.__cs!.store = useProjectStore;
-  }, []);
-
-  // Autosave.
-  useEffect(() => {
-    const timer = setTimeout(() => void saveProject(project), SAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [project]);
-
-  const cartridgeFile = async () => {
-    const shot = await preview.screenshot().catch(() => undefined);
-    return writeCartridgeFile(project, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
-  };
-
-  return (
-    <div className="page">
-      <TopBar
-        title={project.title}
-        onTitle={(t) => edit((d) => void (d.title = t), "title")}
-        kind={template.manifest.name}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        undo={undo}
-        redo={redo}
-        onOpen={onOpen}
-        onSave={async () => download(await cartridgeFile(), `${slugify(project.title)}${CARTRIDGE_EXTENSION}`)}
-        onNew={onNew}
-      />
-
-      <main className="workspace-layout">
-        <div className="workspace">
-          <div className="workspace-tabs" role="tablist" aria-label="Edit" onKeyDown={arrowKeys("tab")}>
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                {...tabProps(tab === t.id)}
-                id={`${ids}-${t.id}`}
-                aria-controls={`${ids}-panel`}
-                className={tab === t.id ? "active" : undefined}
-                onClick={() => setTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="workspace-panel" role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${tab}`}>
-            {tab === "graphics" && (
-              <div className="graphics-layout">
-                <GraphicsPanel template={template} selected={selectedSprite} onSelect={setSelectedSprite} />
-                {selectedSprite && <SpriteEditor key={selectedSprite} template={template} role={selectedSprite} />}
-              </div>
-            )}
-            {tab === "rules" && <RulesPanel template={template} />}
-            {tab === "sounds" && <SoundsPanel template={template} />}
-            {tab === "settings" && <SettingsPanel template={template} />}
-            {tab === "code" && (
-              <CodeTier
-                preview={preview}
-                title={project.title}
-                jumps={[
-                  {
-                    heading: "Rules",
-                    items: project.rules.map((r, i) => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, detail: `${r.when} → ${r.then.join(", ")}`, ref: { rule: i + 1 } })),
-                  },
-                ]}
-                selected={codeKey}
-                onSelect={setCodeKey}
-                changed={changed}
-                onExportSource={async () => {
-                  const files = sourceFiles(project, template, {
-                    symbols: preview.lastGood?.symbols,
-                    cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
-                  });
-                  download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
-                }}
-                onEject={onEditAsCode}
-              />
-            )}
-            {tab === "print" && (
-              <PrintPanel
-                template={template}
-                screenshot={preview.screenshot}
-                buildSigned={preview.buildSigned}
-                cartridgeFile={cartridgeFile}
-                onDownload={download}
-              />
-            )}
-          </div>
-        </div>
-        <div className="play-column">
-          <PreviewPanel
-            preview={preview}
-            title={project.title}
-          />
-          <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
-          <JamEntryPanel
-            preview={preview}
-            gameTitle={project.title}
-            cartridgeFile={cartridgeFile}
-            facts={{}}
-            runtime={`${template.manifest.id} template ${template.manifest.version}`}
-            toolchain={template.manifest.toolchain}
-          />
-        </div>
-      </main>
-    </div>
   );
 }

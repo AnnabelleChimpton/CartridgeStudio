@@ -33,6 +33,8 @@ export function Dialog({ title, onClose, children, wide, returnTo }: Props) {
       aria-labelledby={id}
       onCancel={(e) => {
         e.preventDefault();
+        // React passes events up its own tree: a dialog opened from a dialog closes alone.
+        e.stopPropagation();
         onClose();
       }}
       onClick={(e) => e.target === ref.current && onClose()}

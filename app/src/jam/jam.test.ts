@@ -79,6 +79,8 @@ describe("jam briefs", () => {
     const all = KIT_PRESETS.map((p) => p.id);
     expect(offeredPresets(null, all)).toEqual(all);
     expect(offeredPresets(brief, all)).toEqual(all.filter((id) => id === "maze" || id === "ghost-panic"));
+    // Old briefs could name the Classic shooter; it's retired, so they get the kit's starters.
+    expect(all).not.toContain("fixed-shooter");
     expect(offeredPresets(newBrief({ name: "x", presets: ["fixed-shooter"] }), all)).toEqual(all);
   });
 });

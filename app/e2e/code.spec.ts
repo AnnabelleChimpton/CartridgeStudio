@@ -105,7 +105,6 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await expect(page.getByText("Game kit", { exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Rules" })).toBeVisible();
   await page.getByLabel("Open game file").setInputFiles({ name: "ghost-panic.cartridge", mimeType: "application/zip", buffer: Buffer.concat(chunks) });
-  await page.getByRole("dialog").getByRole("button", { name: /^Open “/ }).click();
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
   expect(await source(page)).toBe(saved);
   await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });

@@ -7,7 +7,6 @@ import { InlineBuildService, WorkerBuildService, type BuildService, type ReadyIn
 import type { GameSource, ProjectBuildResult } from "../build/project-build.ts";
 import { WorkerEmulator } from "../emulator/worker-emulator.ts";
 import type { Screenshot } from "../print/pdf.ts";
-import type { useProjectStore } from "../project/store.ts";
 import type { useKitStore } from "../kit/store.ts";
 import type { useCodeStore } from "../code/store.ts";
 import { isCodeProject } from "../code/schema.ts";
@@ -30,7 +29,6 @@ declare global {
   interface Window {
     /** Hooks for the Playwright tests. */
     __cs?: {
-      store?: typeof useProjectStore;
       kitStore?: typeof useKitStore;
       codeStore?: typeof useCodeStore;
       service?: BuildService;

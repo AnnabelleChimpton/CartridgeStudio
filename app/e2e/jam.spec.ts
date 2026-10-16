@@ -44,7 +44,6 @@ async function joinAndStart(page: Page) {
   // Only the jam's starting games.
   await expect(page.locator(".chooser-card")).toHaveCount(2);
   await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /^Classic shooter/ })).toHaveCount(0);
   expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });

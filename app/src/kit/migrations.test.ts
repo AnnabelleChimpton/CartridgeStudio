@@ -65,15 +65,18 @@ function memory(entries: Record<string, unknown>, failSet = false): KeyValue & {
       map.set(k, v);
     },
     del: async (k) => void map.delete(k),
+    keys: async () => [...map.keys()],
   };
 }
 
+// Single-slot saves from before My games move into it through the migrations.
 describe("saved sessions", () => {
   const maze = Object.entries(fixtures).find(([p]) => p.endsWith("/maze.json"))![1];
 
   it("loads a good kit save", async () => {
     const s = await loadSession(TEMPLATES, memory({ "current-kit": maze, mode: "kit" }));
-    expect(s.kit?.title).toBe("Yarn Hunt");
+    expect(s.open?.data.kind).toBe("kit");
+    expect(s.open?.data.game.title).toBe("Yarn Hunt");
     expect(s.recovered).toEqual([]);
   });
 
@@ -81,7 +84,7 @@ describe("saved sessions", () => {
     const newer = { ...(maze as object), kit: KIT_VERSION + 1 };
     const store = memory({ "current-kit": newer, mode: "kit" });
     const s = await loadSession(TEMPLATES, store);
-    expect(s.kit).toBeNull();
+    expect(s.open).toBeNull();
     expect(store.map.has("current-kit")).toBe(false);
     const key = s.recovered[0]!.key!;
     expect(key).toMatch(/^recovered-.*-current-kit$/);
@@ -95,26 +98,5 @@ describe("saved sessions", () => {
     expect(s.recovered[0]!.key).toBeNull();
     expect(store.map.get("current-kit")).toEqual({ kit: 1, title: 5 });
     expect(recoveredMessage(s.recovered)).toContain("won't save over it");
-  });
-});
-
-describe(".cartridge files for kit games", () => {
-  const maze = loadKit(Object.entries(fixtures).find(([p]) => p.endsWith("/maze.json"))![1]);
-  if (!maze.ok) throw new Error("maze fixture");
-
-  it("record the app and kit runtime versions, and open through the migrations", () => {
-    const bytes = writeCartridgeFile(maze.game);
-    const meta = JSON.parse(strFromU8(unzipSync(bytes)["cartridge.json"]!)) as Record<string, unknown>;
-    expect(meta).toMatchObject({ kind: "kit", appVersion: APP_VERSION, kitRuntime: KIT_RUNTIME_VERSION });
-    expect(readCartridgeFile(bytes, TEMPLATES).result).toEqual({ ok: true, kit: maze.game });
-  });
-
-  it("refuse a kit game from a newer version with a clear message", () => {
-    const bytes = zipSync({
-      "cartridge.json": strToU8('{"format":"cartridge-studio","version":1,"kind":"kit"}'),
-      "project.json": strToU8(JSON.stringify({ ...maze.game, kit: KIT_VERSION + 1 })),
-    });
-    const r = readCartridgeFile(bytes, TEMPLATES).result;
-    expect(r.ok ? null : r.errors).toEqual(["This game file was saved by a newer version of Cartridge Studio."]);
   });
 });

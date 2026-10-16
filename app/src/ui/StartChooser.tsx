@@ -1,17 +1,19 @@
-// "What do you want to make?" Shown on a first visit and from New game.
+// "What do you want to make?" The games made so far (My games), then the
+// starting games. Shown when no game is open, and from New game.
 
 import { useEffect, useState } from "react";
 import { KIT_PRESETS } from "../kit/presets.ts";
 import type { KitGame } from "../kit/schema.ts";
-import { getTemplate } from "../project/templates.ts";
 import type { Palette, Sprite } from "../project/schema.ts";
+import { ContextStrip } from "./ContextStrip.tsx";
 import { Dialog } from "./Dialog.tsx";
+import { MyGames, type LibraryActions } from "./MyGames.tsx";
 import { ntscCss } from "./ntsc.ts";
 import { TIERS, useTier } from "./prefs.ts";
 import { SpritePreview } from "./SpritePreview.tsx";
 import { Brand } from "./TopBar.tsx";
 
-export type StartChoice = { kind: "kit"; preset: string } | { kind: "template"; template: string } | { kind: "code" };
+export type StartChoice = { kind: "kit"; preset: string } | { kind: "code" };
 
 const FRAME_MS = 320;
 const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,14 +51,6 @@ function kitCast(game: KitGame) {
   }));
 }
 
-function classicCast() {
-  const sample = getTemplate("fixed-shooter").sample;
-  return sample.sprites
-    .filter((s) => s.id === "player" || s.id === "enemy")
-    .reverse()
-    .map((s) => ({ sprite: s, palette: sample.palettes.find((p) => p.id === s.palette) }));
-}
-
 function TierNote() {
   const tier = TIERS.find((t) => t.id === useTier())!;
   return (
@@ -70,10 +64,9 @@ function TierNote() {
 const INTRO =
   "Pick a starting game. You can change everything in it: the art, how things move, the room and the rules. Three short steps will show you how.";
 
-/** The starting games. `only` limits them to these ids (kit presets and "fixed-shooter"), e.g. for a jam. */
+/** The starting games. `only` limits them to these kit presets, e.g. for a jam. */
 function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
   const offered = (id: string) => !only || only.includes(id);
-  const classic = getTemplate("fixed-shooter").sample;
   // The card under the pointer or keyboard plays its cast's animation.
   const [live, setLive] = useState<string | null>(null);
   const liveProps = (id: string) => ({
@@ -94,23 +87,8 @@ function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?
           </span>
         </button>
       ))}
-      {offered("fixed-shooter") && (
-        <button
-          type="button"
-          className="chooser-card classic"
-          {...liveProps("classic")}
-          onClick={() => onChoose({ kind: "template", template: "fixed-shooter" })}
-        >
-          <Screen background={classic.background.color} cast={classicCast()} playing={live === "classic"} />
-          <span className="card-body">
-            <strong>Classic shooter</strong>
-            <span className="chooser-kind small">A shooter, in the older editor</span>
-            <span className="muted small">Change the art, sounds and speeds of one ready-made game. Fewer things to change.</span>
-          </span>
-        </button>
-      )}
       {!only && (
-        <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "code" })}>
+        <button type="button" className="chooser-card text-only" onClick={() => onChoose({ kind: "code" })}>
           <span className="card-body">
             <strong>Write code</strong>
             <span className="chooser-kind small">For coders</span>
@@ -123,10 +101,22 @@ function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?
 }
 
 /** A first visit gets the chooser as the page; New game shows it in a dialog. */
-export function StartChooser({ onChoose, onCancel, only }: { onChoose: (c: StartChoice) => void; onCancel?: () => void; only?: readonly string[] }) {
+export function StartChooser({
+  onChoose,
+  onCancel,
+  only,
+  library,
+}: {
+  onChoose: (c: StartChoice) => void;
+  onCancel?: () => void;
+  only?: readonly string[];
+  /** "My games", above the starting games. */
+  library?: LibraryActions;
+}) {
   if (onCancel) {
     return (
       <Dialog title="What do you want to make?" wide onClose={onCancel}>
+        {library && <MyGames {...library} />}
         <p className="muted">{INTRO}</p>
         <Choices onChoose={onChoose} only={only} />
         <div className="toolbar">
@@ -143,8 +133,12 @@ export function StartChooser({ onChoose, onCancel, only }: { onChoose: (c: Start
       <header className="start-head">
         <Brand />
       </header>
+      <div className="start-strip">
+        <ContextStrip />
+      </div>
       <div className="chooser">
         <h2>What do you want to make?</h2>
+        {library && <MyGames {...library} />}
         <p className="muted chooser-lead">{INTRO}</p>
         <Choices onChoose={onChoose} only={only} />
         <TierNote />

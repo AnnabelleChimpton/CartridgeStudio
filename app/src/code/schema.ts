@@ -1,7 +1,8 @@
 // Code projects (the Coder tier): game.bas written by hand, plus the graphics
 // it imports. Graphics stay editable sprite frames with display palettes; the
 // PNGs `incgraphic` reads are generated from them at build time. A code project
-// is usually made by ejecting a kit or template game (eject.ts).
+// is usually made by ejecting a kit game (eject.ts), or from an old Classic
+// shooter game, whose editor is retired.
 
 import { z } from "zod";
 import { PaletteSchema } from "../project/schema.ts";

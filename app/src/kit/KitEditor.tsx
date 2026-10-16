@@ -14,7 +14,7 @@ import { KIT_TOOLCHAIN, folderZip, kitSourceFiles, slugify } from "../files/expo
 import { encodeRgbaPng } from "../files/png.ts";
 import { JamEntryPanel } from "../jam/JamEntryPanel.tsx";
 import { kitFacts } from "../jam/limits.ts";
-import { saveKitGame } from "../project/persist.ts";
+import { useAutosave } from "../project/useAutosave.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
 import { PreviewPanel } from "../ui/PreviewPanel.tsx";
@@ -38,8 +38,6 @@ import { ThingsPanel } from "./ThingsPanel.tsx";
 import type { KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
-const SAVE_DEBOUNCE_MS = 500;
-
 /** The editor's tabs: the ones a guide step or idea can open, plus the code they become. */
 type Tab = KitTab | "code";
 
@@ -60,13 +58,15 @@ function drawn(a: KitGame, b: KitGame) {
 }
 
 interface Props {
+  /** Which game in My games this is. */
+  gameId: string;
   onOpen: (file: File) => void;
   onNew: () => void;
   /** Makes a code project from this game (after asking). */
   onEditAsCode?: () => void;
 }
 
-export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
+export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
   const game = useKitStore((s) => s.project);
   const canUndo = useKitStore((s) => s.past.length > 0);
   const canRedo = useKitStore((s) => s.future.length > 0);
@@ -179,11 +179,8 @@ export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
     window.__cs!.kitStore = useKitStore;
   }, []);
 
-  // Autosave.
-  useEffect(() => {
-    const timer = setTimeout(() => void saveKitGame(game), SAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [game]);
+  // Autosave, into My games.
+  useAutosave(gameId, { kind: "kit", game }, preview);
 
   const cartridgeFile = async () => {
     const shot = await preview.screenshot().catch(() => undefined);

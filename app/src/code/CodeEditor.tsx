@@ -7,7 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CARTRIDGE_EXTENSION, writeCartridgeFile } from "../files/cartridge-file.ts";
 import { folderZip, slugify } from "../files/exports.ts";
 import { encodeRgbaPng } from "../files/png.ts";
-import { saveCodeProject } from "../project/persist.ts";
+import { useAutosave } from "../project/useAutosave.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
 import { PreviewPanel } from "../ui/PreviewPanel.tsx";
 import { ShowItPanel } from "../ui/ShowItPanel.tsx";
@@ -26,8 +26,6 @@ import { insertAfterCursor } from "./source-edit.ts";
 import { useCodeStore } from "./store.ts";
 import "./code.css";
 
-const SAVE_DEBOUNCE_MS = 500;
-
 const TABS = [
   { id: "code", label: "Code" },
   { id: "assets", label: "Graphics" },
@@ -36,13 +34,15 @@ const TABS = [
 type Tab = (typeof TABS)[number]["id"];
 
 interface Props {
+  /** Which game in My games this is. */
+  gameId: string;
   onOpen: (file: File) => void;
   onNew: () => void;
-  /** The kit or template game this was ejected from, if it's still around. */
+  /** The kit game this was ejected from, if it's still around. */
   back?: { label: string; go: () => void };
 }
 
-export function CodeEditor({ onOpen, onNew, back }: Props) {
+export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
   const project = useCodeStore((s) => s.project);
   const canUndo = useCodeStore((s) => s.past.length > 0);
   const canRedo = useCodeStore((s) => s.future.length > 0);
@@ -56,11 +56,8 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
     window.__cs!.codeStore = useCodeStore;
   }, []);
 
-  // Autosave.
-  useEffect(() => {
-    const timer = setTimeout(() => void saveCodeProject(project), SAVE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [project]);
+  // Autosave, into My games.
+  useAutosave(gameId, { kind: "code", game: project }, preview);
 
   const result = preview.result;
   const problems = useMemo<BuildProblem[]>(() => {

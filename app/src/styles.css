@@ -367,6 +367,8 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .context-message { flex: 1; min-width: 0; }
 .context-item.error { background: var(--error-soft); }
 .context-item.error .context-icon { background: var(--error); color: var(--bg); }
+.context-item.note { background: var(--teal-soft); }
+.context-item.note .context-icon { background: var(--teal); color: var(--bg); }
 .context-item.guide { background: var(--accent-soft); }
 .context-item.guide .context-icon { background: var(--accent); color: var(--on-accent); }
 .context-item.jam { background: var(--teal-soft); }
@@ -425,6 +427,7 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 /* Start screen */
 .page.start { padding-bottom: var(--s-7); }
 .start-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) 0; }
+.start-strip .context-strip { margin: 0; }
 .chooser { position: relative; max-width: 1120px; margin: var(--s-6) auto; }
 .page.start .chooser { margin-top: clamp(var(--s-6), 9vh, 112px); }
 .chooser h2 {
@@ -441,7 +444,22 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .chooser-card:hover { border-color: var(--accent-text); transform: translateY(-3px); box-shadow: 0 6px 0 var(--edge), var(--shadow-2); }
 .chooser-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--edge); }
 .chooser-card strong { font: 400 13px / 1.5 var(--font-display); letter-spacing: 0.02em; }
-.chooser-card.classic { justify-content: flex-start; }
+.chooser-card.text-only { justify-content: flex-start; }
+/* My games: the games made so far, each with a picture of it running. */
+.my-games { margin: 0 0 var(--s-6); }
+.my-games h3:focus { outline: none; }
+.my-games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-4); list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+.game-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.game-open {
+  display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; text-align: left; font-weight: 400;
+  background: none; color: var(--text); border-radius: 0;
+}
+.game-open:hover:not(:disabled) { background: var(--raised); }
+.game-open strong { font: 400 12px / 1.5 var(--font-display); letter-spacing: 0.02em; overflow-wrap: anywhere; }
+.game-picture { display: block; aspect-ratio: 4 / 3; margin: 8px 8px 0; border-radius: 8px; overflow: hidden; background: var(--mat); }
+.game-picture img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.game-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); padding: 0 var(--s-2) var(--s-2); margin-top: auto; }
+.game-actions button { min-height: 32px; padding: 4px 8px; font-size: var(--fs-sm); }
 /* A little TV in each card: the preset's own background and cast. */
 .card-screen {
   position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; margin: 8px 8px 0; border-radius: 10px; overflow: hidden;
@@ -524,7 +542,7 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .inline input[type="range"] { flex: 1; accent-color: var(--accent); }
 input.num { width: 64px; font-variant-numeric: tabular-nums; }
 
-/* Template editor's Graphics tab: the sprite list beside the chosen sprite, drawn large. */
+/* The code editor's Graphics tab: the graphics list beside the chosen one, drawn large. */
 .graphics-layout { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
 @container (max-width: 600px) { .graphics-layout { grid-template-columns: minmax(0, 1fr); } }
 .graphics-layout > .panel { background: transparent; border: 0; padding: 0; box-shadow: none; }
@@ -623,8 +641,7 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 .counter-row > input:not([type]) { width: 12em; }
 .counter-row label { display: inline-flex; align-items: center; gap: 6px; }
 
-/* Template sounds and printing */
-.sound-row { display: grid; grid-template-columns: 1fr 160px; align-items: center; gap: var(--s-2); font-size: var(--fs-md); padding: 3px 0; }
+/* Printing */
 .print-row { display: flex; align-items: baseline; justify-content: space-between; font-size: var(--fs-md); margin-top: var(--s-2); }
 .manual-text { width: 100%; resize: vertical; margin-top: var(--s-1); padding: var(--s-3); font: var(--fs-md) / 1.55 var(--font-ui); }
 .print-paper { display: flex; align-items: center; gap: 6px; }

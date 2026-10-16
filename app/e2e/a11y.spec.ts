@@ -18,7 +18,7 @@ async function axe(page: Page) {
   return r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`);
 }
 
-test("the start screen and both editors pass axe", async ({ page }) => {
+test("the start screen, the kit editor and My games pass axe", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("What do you want to make?")).toBeVisible();
   expect(await axe(page)).toEqual([]);
@@ -33,7 +33,6 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Ghost Panic/ }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
   for (const name of ["Rules", "Game"]) {
     await openTab(page, name);
@@ -44,16 +43,22 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   await expect(page.locator(".cm-editor")).toBeVisible();
   expect(await axe(page), "Ghost Panic Code").toEqual([]);
 
+  // New game shows My games above the starters; it and its rename and delete dialogs pass axe.
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  await page.getByRole("button", { name: "Classic shooter" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
-  expect(await axe(page)).toEqual([]);
-  for (const name of ["Rules", "Sounds", "Settings", "Print"]) {
-    await openTab(page, name);
-    expect(await axe(page), name).toEqual([]);
-  }
+  const chooser = page.getByRole("dialog", { name: "What do you want to make?" });
+  await expect(chooser.getByRole("region", { name: "My games" }).getByRole("listitem")).toHaveCount(2);
+  expect(await axe(page), "My games").toEqual([]);
+  await chooser.getByRole("button", { name: "Rename Cat vs. Vacuums" }).click();
+  await expect(page.getByRole("dialog", { name: /^Rename/ })).toBeVisible();
+  expect(await axe(page), "Rename").toEqual([]);
+  await page.keyboard.press("Escape");
+  await chooser.getByRole("button", { name: "Delete Cat vs. Vacuums" }).click();
+  await expect(page.getByRole("dialog", { name: /^Delete/ })).toBeVisible();
+  expect(await axe(page), "Delete").toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: /^Delete/ })).toBeHidden();
+  await expect(chooser).toBeVisible();
 });
 
 test("controls inside a <label> are named by it, not an aria-label (WCAG 2.5.3)", async ({ page }) => {

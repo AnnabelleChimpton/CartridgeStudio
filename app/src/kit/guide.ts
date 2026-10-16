@@ -1,6 +1,6 @@
 // The getting-started guide's state: which starter the current kit game came
 // from, whether its guide is showing, and which steps are done. Kept per game
-// in localStorage, so a dismissed guide stays dismissed after a reload and a
+// (by its id in My games) in localStorage, so a dismissed guide stays dismissed after a reload and a
 // new game gets a fresh one. Storage can be missing or full; the guide then
 // simply forgets.
 
@@ -47,7 +47,9 @@ function write(s: Saved) {
 
 interface GuideState extends Saved {
   /** A new game from a starter: its guide opens. */
-  start: (preset: string | null, open?: boolean) => void;
+  start: (preset: string | null, open?: boolean, id?: string) => void;
+  /** Another game is open: its guide, if it has one. `adopt` gives it the guide that was current (a save moving into My games). */
+  select: (id: string, adopt?: boolean) => void;
   setOpen: (open: boolean) => void;
   complete: (step: GuideStep) => void;
 }
@@ -62,14 +64,21 @@ export const useGuide = create<GuideState>()((set, get) => {
   };
   return {
     ...read(),
-    start(preset, open = true) {
-      const id = `${preset ?? "file"}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    start(preset, open = true, id = `${preset ?? "file"}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`) {
       const next = { current: id, games: { ...get().games, [id]: { preset, open, done: [] } } };
       set(next);
       write(next);
     },
+    select(id, adopt = false) {
+      const { current, games } = get();
+      const was = current ? games[current] : undefined;
+      const next = { current: id, games: adopt && was && !games[id] ? { ...games, [id]: was } : games };
+      set(next);
+      write(next);
+    },
     setOpen(open) {
-      if (!get().current) get().start(null, open);
+      const { current, games } = get();
+      if (!current || !games[current]) get().start(null, open, current ?? undefined);
       else update((g) => ({ ...g, open }));
     },
     complete(step) {

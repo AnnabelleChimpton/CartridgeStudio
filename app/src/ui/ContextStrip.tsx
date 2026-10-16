@@ -1,6 +1,7 @@
 // The context strip: one line under the top bar for the one thing that
 // matters right now. Several parts of the app want that space; it shows a
-// single item, by priority: an error, then a guide step, then the jam theme,
+// single item, by priority: an error, then a note (something that changed
+// about your game), then a guide step, then the jam theme,
 // then offline status. See design/DIRECTION.md, Context strip.
 //
 // Anywhere in the app:
@@ -11,7 +12,7 @@
 import { useId, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Icon, type IconName } from "./Icon.tsx";
 
-export type ContextKind = "error" | "guide" | "jam" | "offline";
+export type ContextKind = "error" | "note" | "guide" | "jam" | "offline";
 
 export interface ContextItemProps {
   kind: ContextKind;
@@ -22,8 +23,8 @@ export interface ContextItemProps {
   onDismiss?: () => void;
 }
 
-const PRIORITY: ContextKind[] = ["error", "guide", "jam", "offline"];
-const ICONS: Record<ContextKind, IconName> = { error: "close", guide: "star", jam: "clip", offline: "system" };
+const PRIORITY: ContextKind[] = ["error", "note", "guide", "jam", "offline"];
+const ICONS: Record<ContextKind, IconName> = { error: "close", note: "code", guide: "star", jam: "clip", offline: "system" };
 
 let items = new Map<string, ContextItemProps>();
 let top: ContextItemProps | null = null;

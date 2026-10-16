@@ -1,16 +1,10 @@
-// "Make cartridge": the print PDF with box, labels and manual. pdf-lib and the
-// fonts load only when a creator downloads.
+// "Make cartridge": the print PDF with box, labels and manual, as the kit and
+// code editors' print panels show it. pdf-lib and the fonts load only when a
+// creator downloads.
 
 import { useState } from "react";
-import type { Template } from "../project/schema.ts";
-import { useProjectStore } from "../project/store.ts";
-import { draftManual } from "../print/manual.ts";
+import { slugify } from "../files/exports.ts";
 import type { Paper, PrintFonts, PrintSubject, Screenshot } from "../print/pdf.ts";
-import { templatePrintSubject } from "../print/subject.ts";
-import { checklist, slugify, sourceFiles } from "../files/exports.ts";
-import { packageZip } from "../files/package.ts";
-import { useRecentClip } from "../files/recent-clip.ts";
-import { APP_VERSION } from "../version.ts";
 
 const PAPER_KEY = "cartridge-studio:paper";
 
@@ -132,51 +126,4 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
 export async function printPdf(subject: PrintSubject, paper: Paper, screenshot: () => Promise<Screenshot | undefined>) {
   const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
   return buildPrintPdf({ subject, paper, fonts, screenshot: shot });
-}
-
-interface Props {
-  template: Template;
-  /** The preview's current picture, for the box back. */
-  screenshot: () => Promise<Screenshot | undefined>;
-  /** A signed build of the current project. */
-  buildSigned: () => Promise<{ a78: Uint8Array; bin: Uint8Array }>;
-  /** The current project as a .cartridge file. */
-  cartridgeFile: () => Promise<Uint8Array>;
-  onDownload: (bytes: Uint8Array, name: string) => void;
-}
-
-/** The template editor's Print tab. */
-export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, onDownload }: Props) {
-  const project = useProjectStore((s) => s.project);
-  const edit = useProjectStore((s) => s.edit);
-  return (
-    <section className="panel print" aria-labelledby="print-h">
-      <h2 id="print-h">Make cartridge</h2>
-      <PrintControls
-        title={project.title}
-        text={project.cartridge.manualText ?? draftManual(project, template)}
-        edited={project.cartridge.manualText !== null}
-        onText={(t) => edit((d) => void (d.cartridge.manualText = t), "manual")}
-        onReset={() => edit((d) => void (d.cartridge.manualText = null))}
-        makePdf={(paper) => printPdf(templatePrintSubject(project, template), paper, screenshot)}
-        makePackage={async (pdf) => {
-          const [rom, file, { buildPlayerHtml }] = await Promise.all([buildSigned(), cartridgeFile(), import("../player/player.ts")]);
-          const pkg = await packageZip({
-            kind: "submission",
-            title: project.title,
-            notes: { name: "CHECKLIST.txt", text: checklist(project, template) },
-            build: { app: APP_VERSION, runtime: `${template.manifest.id} template ${template.manifest.version}`, toolchain: template.manifest.toolchain },
-            source: sourceFiles(project, template),
-            ...rom,
-            pdf,
-            cartridgeFile: file,
-            player: await buildPlayerHtml(project.title, rom.a78),
-            clip: useRecentClip.getState().gif,
-          });
-          return pkg.zip;
-        }}
-        onDownload={onDownload}
-      />
-    </section>
-  );
 }

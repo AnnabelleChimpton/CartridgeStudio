@@ -158,10 +158,8 @@ test("a kit game survives a reload and round-trips through a game file", async (
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Rock Fall/ }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Rock Fall");
   await page.getByLabel("Open game file").setInputFiles({ name: download.suggestedFilename(), mimeType: "application/zip", buffer: file });
-  await page.getByRole("dialog").getByRole("button", { name: "Open “Moon Patrol-ish”" }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
 });

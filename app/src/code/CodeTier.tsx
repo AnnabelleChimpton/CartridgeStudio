@@ -1,4 +1,4 @@
-// The Code tab of the kit and template editors: the game as 7800basic, read
+// The Code tab of the kit editor: the game as 7800basic, read
 // only. On the left, the game's things and rules; picking one marks the lines
 // it becomes. Lines the last edit changed are marked too. Below: how full the
 // cartridge is, the ROM and source downloads, and the build log. "Edit as

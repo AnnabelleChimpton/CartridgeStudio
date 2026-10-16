@@ -1,9 +1,10 @@
-// M1 core loop: the sample project builds into a ROM that plays in the
-// preview, and every edit rebuilds and reloads it.
+// M1 core loop, on the kit's shooter starter (Cat vs. Vacuums): the game
+// builds into a ROM that plays in the preview, every edit rebuilds and reloads
+// it, and it leaves the editor as ROMs, a print PDF, source and game files.
 
 import { expect, test, type Page } from "@playwright/test";
 
-/** Switches the editor to one of its tabs (Graphics, Rules, Sounds, Settings, Print, Code). */
+/** Switches the editor to one of its tabs (Things, Room, Rules, Game, Code). */
 const openTab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true }).click();
 
 interface BuildRecord {
@@ -17,13 +18,47 @@ interface BuildRecord {
 
 async function open(page: Page, url = "/") {
   await page.goto(url);
-  // A first visit starts at the chooser; these tests are about the classic template editor.
-  const classic = page.getByRole("button", { name: /Classic shooter/ });
+  // A first visit starts at the chooser; a reload reopens the game from My games.
+  const starter = page.getByRole("button", { name: /^Cat vs\. Vacuums/ });
   const status = page.getByTestId("build-status");
-  await expect(classic.or(status)).toBeVisible({ timeout: 30_000 });
-  if (await classic.isVisible()) await classic.click();
+  await expect(starter.or(status)).toBeVisible({ timeout: 30_000 });
+  if (await starter.isVisible()) await starter.click();
   await expect(status).toContainText("Up to date", { timeout: 30_000 });
 }
+
+/** Sets the Lives slider on the Game tab. */
+async function setLives(page: Page, lives: number) {
+  await openTab(page, "Game");
+  const slider = page.getByRole("slider", { name: "Lives" });
+  await slider.focus();
+  await page.keyboard.press("Home");
+  for (let i = 1; i < lives; i++) await page.keyboard.press("ArrowRight");
+  await expect(slider).toHaveValue(String(lives));
+}
+
+/** Address of a game variable, from the last build's dasm symbols. */
+const symbol = (page: Page, name: string) =>
+  page.evaluate((name) => {
+    const last = window.__cs!.last!;
+    if (last.kind !== "built") throw new Error("no ROM");
+    const m = new RegExp(`^${name}\\s+([0-9a-f]{4})`, "im").exec(last.symbols);
+    return parseInt(m![1]!, 16);
+  }, name);
+
+/** Starts the game from its title screen and taps fire for a few seconds, in lockstep. */
+const playAndFire = (page: Page) =>
+  page.evaluate(async () => {
+    const e = window.__cs!.emulator!;
+    const idle = { up: false, down: false, left: false, right: false, fire: false };
+    e.pause(true);
+    for (let i = 0; i < 25; i++) {
+      e.setInput({ ...idle, fire: true });
+      await e.stepFrames(2);
+      e.setInput(idle);
+      await e.stepFrames(10);
+    }
+  });
+
 
 const buildCount = (page: Page) => page.evaluate(() => window.__cs!.builds.length);
 
@@ -54,7 +89,7 @@ const regionPixels = (page: Page, x: number, y: number, w: number, h: number) =>
     { x, y, w, h },
   );
 
-test("the sample game builds and plays", async ({ page }) => {
+test("the starter game builds and plays", async ({ page }) => {
   await open(page);
   const rom = await page.evaluate(() => {
     const last = window.__cs!.last!;
@@ -62,29 +97,24 @@ test("the sample game builds and plays", async ({ page }) => {
   });
   expect(rom).toEqual({ a78: 128 + 32768, bin: 32768 });
 
-  const animates = await page.evaluate(async () => {
+  // The vacuums alternate frames every 16 frames: sample across 48.
+  const pictures = await page.evaluate(async () => {
     const e = window.__cs!.emulator!;
-    const a = await e.framebufferHash();
-    await e.stepFrames(20);
-    return a !== (await e.framebufferHash());
-  });
-  expect(animates).toBe(true);
-
-  // Tap fire for a few seconds; enemies drift over the ship, so a shot lands
-  // and the score digits change. (Compare pixels, not counts: in this font
-  // "6" and "0" light the same number of pixels.)
-  const scoreBefore = await regionPixels(page, 0, 28, 70, 16);
-  await page.evaluate(async () => {
-    const e = window.__cs!.emulator!;
-    const idle = { up: false, down: false, left: false, right: false, fire: false };
-    for (let i = 0; i < 25; i++) {
-      e.setInput({ ...idle, fire: true });
-      await e.stepFrames(2);
-      e.setInput(idle);
-      await e.stepFrames(10);
+    const seen = new Set<string>();
+    for (let i = 0; i < 8; i++) {
+      seen.add(await e.framebufferHash());
+      await e.stepFrames(6);
     }
+    return seen.size;
   });
-  expect(await regionPixels(page, 0, 28, 70, 16)).not.toBe(scoreBefore);
+  expect(pictures).toBeGreaterThan(1);
+
+  // Tap fire for a few seconds; the vacuums march over the ship, so a shot
+  // lands and the score goes up.
+  const score0 = await symbol(page, "score0");
+  await playAndFire(page);
+  const score = await page.evaluate(async (a) => Array.from(await window.__cs!.emulator!.readMemory(a, 3)), score0);
+  expect(score.some((b) => b !== 0)).toBe(true);
 });
 
 test("changing a color rebuilds the preview, and undo is a cache hit", async ({ page }) => {
@@ -93,8 +123,9 @@ test("changing a color rebuilds the preview, and undo is a cache hit", async ({ 
   const green = "g>r+40 && g>b+40";
   expect(await litPixels(page, 0, 40, 320, 80, green)).toBe(0);
 
-  await page.getByRole("button", { name: "Enemy Color 1: $96" }).click();
-  await page.getByRole("option", { name: "$C8" }).click();
+  await page.getByRole("button", { name: /^Vacuum / }).click();
+  await page.getByRole("button", { name: /^Vacuum color 1: \$96/ }).click();
+  await page.getByRole("option", { name: /^\$C8,/ }).click();
   const edited = await waitForBuild(page, n + 1);
   expect(edited.kind).toBe("built");
   await expect.poll(() => litPixels(page, 0, 40, 320, 80, green)).toBeGreaterThan(50);
@@ -105,48 +136,26 @@ test("changing a color rebuilds the preview, and undo is a cache hit", async ({ 
   await expect.poll(() => litPixels(page, 0, 40, 320, 80, green)).toBe(0);
 });
 
-test("rules edit the generated code", async ({ page }) => {
-  await open(page);
-  const n = await buildCount(page);
-  await openTab(page, "Rules");
-  await page.getByRole("button", { name: "Add rule" }).click();
-  await page.getByLabel("Rule 5 trigger").selectOption({ label: "A shot hits an enemy" });
-  await page.getByLabel("Rule 5 action 1").selectOption({ label: "Lose a life" });
-  await waitForBuild(page, n + 1);
-  // The Code tab marks the new rule's lines.
-  await openTab(page, "Code");
-  await page.getByRole("button", { name: /^Rule 5/ }).click();
-  await expect(page.locator(".cm-marked").first()).toContainText("rem rule 5: shot.hits.enemy -> lives.lose");
-
-  // The code view only renders the lines on screen, so read the built source.
-  const generated = () => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
-  await openTab(page, "Rules");
-  await page.getByRole("button", { name: "Delete rule 5" }).click();
-  await waitForBuild(page, n + 2);
-  await expect.poll(generated).not.toContain("rem rule 5");
-});
-
-test("the project survives a reload", async ({ page }) => {
+test("the game survives a reload", async ({ page }) => {
   await open(page);
   const title = page.getByLabel("Game title");
   await title.fill("Moth Patrol");
-  await openTab(page, "Settings");
-  await page.getByLabel("Lives").fill("7");
+  await setLives(page, 7);
   await page.waitForTimeout(800); // autosave debounce
   await open(page);
   await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
-  await openTab(page, "Settings");
-  await expect(page.getByLabel("Lives")).toHaveValue("7");
+  await openTab(page, "Game");
+  await expect(page.getByRole("slider", { name: "Lives" })).toHaveValue("7");
 });
 
 test("a newer build cancels an older one, and a hung build times out", async ({ page }) => {
   await open(page);
   const result = await page.evaluate(async () => {
     const cs = window.__cs!;
-    const p1 = structuredClone(cs.store.getState().project);
+    const p1 = structuredClone(cs.kitStore!.getState().project);
     const p2 = structuredClone(p1);
-    p1.params.lives = 4;
-    p2.params.lives = 5;
+    p1.lives = 4;
+    p2.lives = 5;
     const [a, b] = await Promise.all([cs.service!.build(p1), cs.service!.build(p2)]);
     const quick = cs.createService!({ timeoutMs: 1 });
     const t = await quick.build(p1);
@@ -176,11 +185,11 @@ for (const rate of [1, 4, 6]) {
     await open(page, rate === 1 ? "/" : "/?builder=inline");
     const coldMs = Date.now() - t0;
 
-    // Each step is a new bombRate, so none of these builds hits the cache.
+    // Each step is a new number of lives (the starter has 3), so none of these builds hits the cache.
     const walls: number[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (const lives of [1, 2, 4, 5, 6, 7, 8, 9]) {
       const n = await buildCount(page);
-      await page.evaluate((v) => window.__cs!.store.getState().edit((d) => void (d.params.bombRate = v)), 10 + i);
+      await page.evaluate((v) => window.__cs!.kitStore!.getState().edit((d) => void (d.lives = v)), lives);
       const b = await waitForBuild(page, n + 1);
       expect(b.kind).toBe("built");
       expect(b.cached).toBe(false);
@@ -199,14 +208,14 @@ for (const rate of [1, 4, 6]) {
 test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => {
   await open(page);
   const enemyFrames = () =>
-    page.evaluate(() => window.__cs!.store.getState().project.sprites.find((s) => s.role === "enemy")!.frames);
+    page.evaluate(() => window.__cs!.kitStore!.getState().project.types.find((t) => t.id === "invader")!.frames);
   const enemy = async () => (await enemyFrames())[0]!;
-  const pastLength = () => page.evaluate(() => window.__cs!.store.getState().past.length);
-  // The formation's area of the preview canvas (scan lines ~24-80 of 192).
-  const formation = () => litPixels(page, 0, 45, 320, 70);
+  const pastLength = () => page.evaluate(() => window.__cs!.kitStore!.getState().past.length);
+  // The formation's area of the preview canvas, above the title screen's words (which stay put).
+  const formation = () => litPixels(page, 0, 50, 320, 40);
 
-  await page.getByRole("button", { name: /^Enemy \d/ }).click();
-  const canvas = page.getByLabel("Enemy frame 1 pixels");
+  await page.getByRole("button", { name: /^Vacuum / }).click();
+  const canvas = page.getByLabel("Vacuum frame 1 pixels");
   /** A cell's page position, measured afresh because clicks elsewhere can scroll the page. */
   const cell = async (x: number, y: number) => {
     await canvas.scrollIntoViewIfNeeded();
@@ -221,7 +230,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   await page.getByRole("button", { name: "Clear" }).click();
   // Both clicks may fall in one debounce window, so expect at least one build.
   await waitForBuild(page, n + 1);
-  await expect.poll(formation).toBeLessThan(40); // at most a falling bomb
+  await expect.poll(formation).toBeLessThan(40);
   n = await buildCount(page);
   await page.getByRole("tab", { name: "Frame 1" }).click();
 
@@ -236,7 +245,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   expect((await enemyFrames())[1]).toEqual(Array(8).fill("111111111111"));
   await waitForBuild(page, n + 1);
   await page.getByRole("tab", { name: "Frame 1" }).click();
-  await expect.poll(formation).toBeGreaterThan(3000);
+  await expect.poll(formation).toBeGreaterThan(1500); // ten solid 12×8 vacuums
 
   // A pencil stroke across the top row is one undo step.
   await page.getByRole("radio", { name: "Pencil" }).click();
@@ -260,13 +269,24 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   await page.getByRole("button", { name: "Undo" }).click();
   await page.getByRole("button", { name: "Undo" }).click();
   expect(await enemy()).toEqual(Array(8).fill("111111111111"));
+});
 
-  // Switching the sprite's palette recolors it in the game.
-  n = await buildCount(page);
-  await page.getByLabel("Sprite palette").selectOption("bomb");
+test("sounds: the shooting sound and each rule's sound reach the game", async ({ page }) => {
+  await open(page);
+  const generated = () => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
+  // What the Classic shooter's Sounds tab set is here too: shooting on the Game tab, the rest as rule actions.
+  expect(await generated()).toMatch(/gosub spawnobj\s+playsfx sfx_zap/);
+  expect(await generated()).toMatch(/r0_do[\s\S]*?playsfx sfx_boom/);
+  let n = await buildCount(page);
+  await openTab(page, "Game");
+  await page.getByLabel("Shooting sound").selectOption({ label: "Boom" });
   await waitForBuild(page, n + 1);
-  const pinkish = "r>g+40 && r>b";
-  await expect.poll(() => litPixels(page, 0, 45, 320, 70, pinkish)).toBeGreaterThan(3000);
+  expect(await generated()).toMatch(/gosub spawnobj\s+playsfx sfx_boom/);
+  n = await buildCount(page);
+  await page.getByLabel("Shooting sound").selectOption({ label: "None" });
+  await waitForBuild(page, n + 1);
+  expect(await generated()).toContain("rem no shooting sound");
+  expect(await generated()).not.toContain("sfx_zap");
 });
 
 test("previews are unsigned; downloads are signed", async ({ page }) => {
@@ -302,15 +322,6 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
   expect(a78.subarray(128).equals(bin)).toBe(true);
 });
 
-/** Address of a game variable, from the last build's dasm symbols. */
-const symbol = (page: Page, name: string) =>
-  page.evaluate((name) => {
-    const last = window.__cs!.last!;
-    if (last.kind !== "built") throw new Error("no ROM");
-    const m = new RegExp(`^${name}\\s+([0-9a-f]{4})`, "im").exec(last.symbols);
-    return parseInt(m![1]!, 16);
-  }, name);
-
 test("lockstep runs are repeatable and game variables are readable from RAM", async ({ page }) => {
   await open(page);
   const score0 = await symbol(page, "score0");
@@ -345,13 +356,14 @@ test("lockstep runs are repeatable and game variables are readable from RAM", as
 
 test("game keys only reach the game while it has focus", async ({ page }) => {
   await open(page);
-  const shotactive = await symbol(page, "shotactive");
-  const shotFired = () =>
+  // The runtime sets fireheld while the fire button is down.
+  const fireheld = await symbol(page, "fireheld");
+  const fireHeld = () =>
     page.evaluate(async (addr) => {
       const e = window.__cs!.emulator!;
       await e.stepFrames(3);
       return (await e.readMemory(addr, 1))[0] !== 0;
-    }, shotactive);
+    }, fireheld);
   // Start the game from the title screen, in lockstep.
   const startGame = () =>
     page.evaluate(async () => {
@@ -367,14 +379,14 @@ test("game keys only reach the game while it has focus", async ({ page }) => {
       await e.stepFrames(2);
     });
   await startGame();
-  expect(await shotFired()).toBe(false);
+  expect(await fireHeld()).toBe(false);
 
   const title = page.getByLabel("Game title");
   const builds = await page.evaluate(() => window.__cs!.builds.length);
   await title.click();
   await title.evaluate((el: HTMLInputElement) => el.setSelectionRange(el.value.length, el.value.length));
   await page.keyboard.down(" ");
-  expect(await shotFired()).toBe(false);
+  expect(await fireHeld()).toBe(false);
   await page.keyboard.up(" ");
   await expect(title).toHaveValue("Cat vs. Vacuums ");
   // The new title rebuilds and reloads the ROM (back to its title screen), so wait for that and start again.
@@ -386,13 +398,13 @@ test("game keys only reach the game while it has focus", async ({ page }) => {
   const sound = page.getByRole("button", { name: "Sound on" });
   await sound.focus();
   await page.keyboard.down(" ");
-  expect(await shotFired()).toBe(false);
+  expect(await fireHeld()).toBe(false);
   await page.keyboard.up(" ");
   await expect(page.getByRole("button", { name: "Sound off" })).toHaveAttribute("aria-pressed", "true");
 
   await page.getByLabel("Game preview").click();
   await page.keyboard.down(" ");
-  expect(await shotFired()).toBe(true);
+  expect(await fireHeld()).toBe(true);
   await page.keyboard.up(" ");
 });
 
@@ -417,22 +429,26 @@ test("the game keeps running while the main thread is busy", async ({ page }) =>
 
 test("makes the print PDF with an edited manual", async ({ page }) => {
   await open(page);
-  await openTab(page, "Print");
-  const manual = page.getByLabel("Manual text");
+  const printDialog = async () => {
+    await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
+    return page.getByRole("dialog", { name: "Print the box" });
+  };
+  let dialog = await printDialog();
+  const manual = dialog.getByLabel("Manual text");
   await expect(manual).toHaveValue(/You start with 3 lives\./);
+  await page.keyboard.press("Escape");
 
   // The draft follows the settings until the creator edits it.
-  await openTab(page, "Settings");
-  await page.getByLabel("Lives").fill("5");
-  await openTab(page, "Print");
+  await setLives(page, 5);
+  dialog = await printDialog();
   await expect(manual).toHaveValue(/You start with 5 lives\./);
   await manual.fill("# Story\nThe vacuums are back, and only one cat can stop them.");
-  await expect(page.getByRole("button", { name: "Reset to draft" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Reset to draft" })).toBeVisible();
 
-  await page.getByLabel(/^Paper/).selectOption("a4");
+  await dialog.getByLabel(/^Paper/).selectOption("a4");
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
-    page.getByRole("button", { name: "Download print PDF" }).click(),
+    dialog.getByRole("button", { name: "Download print PDF" }).click(),
   ]);
   expect(download.suggestedFilename()).toBe("cat-vs-vacuums-print.pdf");
   const chunks: Buffer[] = [];
@@ -445,13 +461,14 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
   expect(doc.getPageCount()).toBeGreaterThanOrEqual(4);
   expect(Math.round(doc.getPage(0).getWidth())).toBe(595); // A4
 
-  await page.getByRole("button", { name: "Reset to draft" }).click();
+  await dialog.getByRole("button", { name: "Reset to draft" }).click();
   await expect(manual).toHaveValue(/You start with 5 lives\./);
 });
 
 async function downloadBytes(page: Page, button: string) {
-  // Export source is in the Code tab; the other downloads are always on screen.
+  // Export source is in the Code tab, Download everything in Print the box; Save game file is always on screen.
   if (button === "Export source") await openTab(page, "Code");
+  if (button === "Download everything") await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
     page.getByRole("button", { name: button, exact: true }).click(),
@@ -464,8 +481,7 @@ async function downloadBytes(page: Page, button: string) {
 test("saves a game file and opens it again", async ({ page }) => {
   await open(page);
   await page.getByLabel("Game title").fill("Moth Patrol");
-  await openTab(page, "Settings");
-  await page.getByLabel("Lives").fill("6");
+  await setLives(page, 6);
   const saved = await downloadBytes(page, "Save game file");
   expect(saved.name).toBe("moth-patrol.cartridge");
 
@@ -473,11 +489,12 @@ test("saves a game file and opens it again", async ({ page }) => {
   expect(Object.keys(unzipSync(saved.bytes)).sort()).toEqual(["cartridge.json", "project.json", "thumbnail.png"]);
 
   await page.getByLabel("Game title").fill("Something Else");
-  await page.getByLabel("Lives").fill("2");
+  await setLives(page, 2);
+  // Opening a file adds it to My games: no asking, nothing replaced.
   await page.getByLabel("Open game file").setInputFiles({ name: saved.name, mimeType: "application/zip", buffer: saved.bytes });
-  await page.getByRole("dialog").getByRole("button", { name: /^Open “/ }).click();
   await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
-  await expect(page.getByLabel("Lives")).toHaveValue("6");
+  await openTab(page, "Game");
+  await expect(page.getByRole("slider", { name: "Lives" })).toHaveValue("6");
 
   // Something that isn't a game file is refused with a message.
   await page.getByLabel("Open game file").setInputFiles({ name: "notes.cartridge", mimeType: "text/plain", buffer: Buffer.from("hi") });
@@ -493,7 +510,6 @@ test("exports the source and the submission package", async ({ page }) => {
   expect(source.name).toBe("cat-vs-vacuums-source.zip");
   expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
 
-  await openTab(page, "Print");
   const pkg = await downloadBytes(page, "Download everything");
   expect(pkg.name).toBe("cat-vs-vacuums-submission.zip");
   const files = unzipSync(pkg.bytes);
