@@ -1,0 +1,191 @@
+{
+ "kit": 1,
+ "title": "Rock Fall",
+ "palettes": [
+  {
+   "id": "ship",
+   "colors": [
+    "$3A",
+    "$02",
+    "$0F"
+   ]
+  },
+  {
+   "id": "rock",
+   "colors": [
+    "$F4",
+    "$F8",
+    "$02"
+   ]
+  },
+  {
+   "id": "star",
+   "colors": [
+    "$1E",
+    "$0F",
+    "$00"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  }
+ ],
+ "background": "$80",
+ "wallPalette": "text",
+ "textPalette": "text",
+ "lives": 3,
+ "types": [
+  {
+   "id": "ship",
+   "label": "Ship",
+   "width": 16,
+   "height": 16,
+   "frames": [
+    [ "0000000110000000", "0000001111000000", "0000001221000000", "0000011221100000", "0000011111100000", "0000111111110000", "0001113333111000", "0011113333111100", "0111111111111110", "1111111111111111", "1111222222221111", "1110022222200111", "1100002222000011", "1000000330000001", "0000003333000000", "0000000330000000" ]
+   ],
+   "palette": "ship",
+   "behaviour": "player-lr",
+   "speed": 4
+  },
+  {
+   "id": "rock",
+   "label": "Rock",
+   "width": 8,
+   "height": 8,
+   "frames": [
+    [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
+   ],
+   "palette": "rock",
+   "behaviour": "fall",
+   "speed": 3
+  },
+  {
+   "id": "boulder",
+   "label": "Fast rock",
+   "width": 8,
+   "height": 8,
+   "frames": [
+    [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
+   ],
+   "palette": "rock",
+   "behaviour": "fall",
+   "speed": 4
+  },
+  {
+   "id": "star",
+   "label": "Star",
+   "width": 8,
+   "height": 8,
+   "frames": [
+    [ "00010000", "00111000", "11111110", "01111100", "00111000", "01101100", "11000110", "00000000" ]
+   ],
+   "palette": "star",
+   "behaviour": "fall",
+   "speed": 2
+  }
+ ],
+ "room": {
+  "rows": [
+   " r    b   r     r   ",
+   "    s        b      ",
+   "r        r       s  ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "                    ",
+   "         P          "
+  ],
+  "legend": {
+   "r": "rock",
+   "b": "boulder",
+   "s": "star",
+   "P": "ship"
+  }
+ },
+ "rules": [
+  {
+   "when": {
+    "touch": [
+     "ship",
+     "rock"
+    ]
+   },
+   "then": [
+    {
+     "loseLife": true
+    },
+    {
+     "respawn": "second"
+    },
+    {
+     "sound": "boom"
+    }
+   ]
+  },
+  {
+   "when": {
+    "touch": [
+     "ship",
+     "boulder"
+    ]
+   },
+   "then": [
+    {
+     "loseLife": true
+    },
+    {
+     "respawn": "second"
+    },
+    {
+     "sound": "boom"
+    }
+   ]
+  },
+  {
+   "when": {
+    "touch": [
+     "ship",
+     "star"
+    ]
+   },
+   "then": [
+    {
+     "score": 50
+    },
+    {
+     "respawn": "second"
+    },
+    {
+     "sound": "blip"
+    }
+   ]
+  },
+  {
+   "when": {
+    "timer": 30
+   },
+   "then": [
+    {
+     "sound": "chime"
+    },
+    {
+     "win": true
+    }
+   ]
+  }
+ ],
+ "text": {
+  "title": "Rock Fall",
+  "win": "You survived!",
+  "lose": "Game over"
+ },
+ "sounds": {}
+}

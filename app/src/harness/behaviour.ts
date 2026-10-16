@@ -10,7 +10,8 @@ import type { CoreHost, JoystickInput } from "../emulator/core-host.ts";
 import { parseSymbols } from "../emulator/core-host.ts";
 import type { Project, Template } from "../project/schema.ts";
 
-const Control = z.enum(["up", "down", "left", "right", "fire"]);
+/** Joystick 1, and the console's Pause, Reset and Select switches. */
+const Control = z.enum(["up", "down", "left", "right", "fire", "pause", "reset", "select"]);
 
 const Comparison = z.union([
   z.number(),
@@ -157,6 +158,9 @@ export async function runRomOnHost(
           left: held.has("left"),
           right: held.has("right"),
           fire: held.has("fire"),
+          pause: held.has("pause"),
+          reset: held.has("reset"),
+          select: held.has("select"),
         };
         host.setInput(input);
         host.step(step.frames);

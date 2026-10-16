@@ -33,6 +33,10 @@ export interface JoystickInput {
   left: boolean;
   right: boolean;
   fire: boolean;
+  /** Console switches (momentary while held). */
+  pause?: boolean;
+  reset?: boolean;
+  select?: boolean;
 }
 
 export const WIDTH = 320;
@@ -48,6 +52,9 @@ const LEFT = 1;
 const DOWN = 2;
 const UP = 3;
 const BUTTON1 = 4;
+const RESET = 12;
+const SELECT = 13;
+const PAUSE = 14;
 const LEFT_DIFFICULTY = 15;
 const RIGHT_DIFFICULTY = 16;
 
@@ -129,6 +136,9 @@ export class CoreHost {
     this.input[LEFT] = j.left;
     this.input[RIGHT] = j.right;
     this.input[BUTTON1] = j.fire;
+    this.input[RESET] = !!j.reset;
+    this.input[SELECT] = !!j.select;
+    this.input[PAUSE] = !!j.pause;
   }
 
   /** Runs `n` frames as fast as possible and collects their sound. */

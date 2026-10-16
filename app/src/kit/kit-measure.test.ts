@@ -176,6 +176,7 @@ describe.skipIf(!process.env.KIT_MEASURE)("model v2 spike: velocity movement", (
       return n;
     };
     const cases: { name: string; make: (fillers: number, movers: number) => KitGame; opts?: KitOptions }[] = [];
+    const interpreted: KitOptions = { interpretVelocity: true };
     for (const walls of [true, false]) {
       const room = walls ? "walled room" : "open room";
       for (const [speed, v] of [
@@ -183,17 +184,27 @@ describe.skipIf(!process.env.KIT_MEASURE)("model v2 spike: velocity movement", (
         [3, 4],
       ] as const) {
         const px = v / 4;
+        const diag = (f: number, m: number) => velocityBase(f, m, { vx: v, vy: v, react: "bounce" }, speed, walls);
         cases.push({ name: `bounce behaviour, ${px} px/frame, ${room}`, make: (f, m) => velocityBase(f, m, null, speed, walls) });
-        cases.push({ name: `velocity + bounce, ${px} px/frame, time-sliced, ${room}`, make: (f, m) => velocityBase(f, m, { vx: v, vy: v, react: "bounce" }, speed, walls) });
-        cases.push({
-          name: `velocity + bounce, ${px} px/frame, every frame, ${room}`,
-          make: (f, m) => velocityBase(f, m, { vx: v, vy: v, react: "bounce" }, speed, walls),
-          opts: { velocityEveryFrame: true },
-        });
+        cases.push({ name: `velocity + bounce, interpreted, ${px} px/frame, time-sliced, ${room}`, make: diag, opts: interpreted });
+        cases.push({ name: `velocity + bounce, compiled, ${px} px/frame, time-sliced, ${room}`, make: diag });
+        cases.push({ name: `velocity + bounce, interpreted, ${px} px/frame, every frame, ${room}`, make: diag, opts: { ...interpreted, velocityEveryFrame: true } });
+        cases.push({ name: `velocity + bounce, compiled, ${px} px/frame, every frame, ${room}`, make: diag, opts: { velocityEveryFrame: true } });
+        cases.push({ name: `velocity + bounce, compiled 8.8, ${px} px/frame, time-sliced, ${room}`, make: diag, opts: { fixed88: true } });
+        cases.push({ name: `velocity + bounce, compiled 8.8, ${px} px/frame, every frame, ${room}`, make: diag, opts: { fixed88: true, velocityEveryFrame: true } });
       }
     }
-    cases.push({ name: "velocity + wrap, 1 px/frame, time-sliced, open room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 4, react: "wrap" }, 3, false) });
-    cases.push({ name: "velocity + turn, 1 px/frame, time-sliced, walled room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 0, react: "turn" }, 3, true) });
+    // One axis: patrol-h against velocity (2, 0) + bounce, where the compiled loop leaves out the y axis.
+    const patrol = (f: number, m: number) => {
+      const g = velocityBase(f, m, null, 2, true);
+      g.types[1]!.behaviour = "patrol-h";
+      return g;
+    };
+    cases.push({ name: "patrol-h behaviour, 0.5 px/frame, walled room", make: patrol });
+    cases.push({ name: "velocity (2, 0) + bounce, interpreted, walled room", make: (f, m) => velocityBase(f, m, { vx: 2, vy: 0, react: "bounce" }, 2, true), opts: interpreted });
+    cases.push({ name: "velocity (2, 0) + bounce, compiled, walled room", make: (f, m) => velocityBase(f, m, { vx: 2, vy: 0, react: "bounce" }, 2, true) });
+    cases.push({ name: "velocity + wrap, compiled, 1 px/frame, time-sliced, open room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 4, react: "wrap" }, 3, false) });
+    cases.push({ name: "velocity + turn, compiled, 1 px/frame, time-sliced, walled room", make: (f, m) => velocityBase(f, m, { vx: 4, vy: 0, react: "turn" }, 3, true) });
     // Points per mover: fillers displaced by 8 movers against 7, as in the batch 1 calibration (one filler ≈ 4.5 points).
     for (const c of cases) {
       const n = await most((m) => c.make(0, m), c.opts);

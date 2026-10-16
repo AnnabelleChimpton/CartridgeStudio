@@ -39,6 +39,8 @@ for _, port in pairs(machine.ioport.ports) do
 end
 local CONTROLS = {
   up = "P1 Up", down = "P1 Down", left = "P1 Left", right = "P1 Right", fire = "P1 Button 1",
+  -- the console switches
+  pause = "Pause", reset = "Reset", select = "Select",
 }
 for control, name in pairs(CONTROLS) do
   if not fields[name] then

@@ -26,7 +26,7 @@ import {
 import { fontRows } from "./font.ts";
 import kitEngine from "@cartridge-studio/templates/kit/engine.bas.hbs?raw";
 
-export const KIT_RUNTIME_VERSION = "0.2.0";
+export const KIT_RUNTIME_VERSION = "0.3.0";
 const ROOMTOP = 16;
 /** Pixels per frame for speed 1-4, by frame phase (frame & 3). */
 const SPEED_STEPS = [
@@ -85,7 +85,8 @@ const HUD_NUMBER_COST = 7;
 /**
  * Model v2 spike: a thing moving by its own velocity, with a wall reaction.
  * Measured in a walled room against bounce (src/kit/kit-measure.test.ts,
- * docs/kit-model-v2.md): time-sliced like bounce, it costs the same.
+ * docs/kit-model-v2.md): time-sliced like bounce, it costs the same, whether
+ * interpreted or compiled per type, in quarter pixels or 8.8 fixed point.
  */
 const VELOCITY_COST = 9;
 /** The behaviour index the runtime gives velocity movers (after the 13 behaviours). */
@@ -184,6 +185,10 @@ export interface KitOptions {
   ignoreBudget?: boolean;
   /** Velocity movers update every frame instead of on alternate frames (cost measurements only). */
   velocityEveryFrame?: boolean;
+  /** Velocity movers run through the interpreted path (b_velocity) instead of compiled per-type loops (cost measurements only). */
+  interpretVelocity?: boolean;
+  /** Compiled velocity movers keep velocity and position in 8.8 fixed point instead of quarter pixels (cost measurements only). */
+  fixed88?: boolean;
 }
 
 export function validateKit(
@@ -284,6 +289,28 @@ export function validateKit(
         if (turnFrom === turnInto) errors.push(`${where} turns something into itself.`);
       }
     }
+    // A touch or tile rule isn't latched: if it's already true when the room starts and it
+    // starts the room again, the room restarts forever.
+    const restarts = rule.then.some((a) => "restartRoom" in a || "nextLevel" in a);
+    if (restarts && spawns.length && ("touch" in w || "onTile" in w)) {
+      const placed = (id: string) => spawns.filter((s) => s.type === typeIndex.get(id));
+      const size = (s: Spawn) => g.types[s.type]!;
+      let why: string | null = null;
+      if ("onTile" in w) {
+        const on = placed(w.onTile[0]).find((s) => {
+          const r = Math.floor((s.y + Math.floor(size(s).height / 2) - ROOMTOP) / 16);
+          const c = Math.floor((s.x + Math.floor(size(s).width / 2)) / 8);
+          return g.room.legend[g.room.rows[r]?.[c] ?? " "] === w.onTile[1];
+        });
+        if (on) why = `a ${g.types[on.type]!.label} starts on a ${w.onTile[1]} tile`;
+      } else {
+        const [as, bs] = [placed(w.touch[0]), placed(w.touch[1])];
+        const overlap = (a: Spawn, b: Spawn) =>
+          a !== b && a.x < b.x + size(b).width && b.x < a.x + size(a).width && a.y < b.y + size(b).height && b.y < a.y + size(a).height;
+        if (as.some((a) => bs.some((b) => overlap(a, b)))) why = `a ${w.touch[0]} and a ${w.touch[1]} start touching`;
+      }
+      if (why) errors.push(`${where} starts the room again, but it's already true when the room starts (${why}), so the room would restart forever.`);
+    }
     if ("reachesBottom" in w) {
       const settles = rule.then.some((a) => "remove" in a || "respawn" in a || "win" in a || "lose" in a || "restartRoom" in a);
       if (!settles) errors.push(`${where}: something reaching the bottom must be removed or moved back, or end the game.`);
@@ -380,7 +407,7 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
     .join("\n\n");
 
   // Rules.
-  const ruleCode: string[] = [" ruleexit = 0", " rnd = frame & 1"];
+  const ruleCode: string[] = [" ruleexit = 0", " oddframe = frame & 1"];
   /** Which loop variable holds each rule's first and second thing. */
   const roles = new Map<number, { first: string; second: string }>();
   /** Most objects of a type there can be: placed ones, or one if something shoots or drops it. */
@@ -471,7 +498,7 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
       roles.set(n, { first: "oi", second: "oj" });
       // Checked at the thing's middle, on odd frames like the other event rules.
       out.push(
-        ` if rnd = 0 then goto ${L}_end`,
+        ` if oddframe = 0 then goto ${L}_end`,
         ` for oi = ${as} to ${ae}`,
         ` if otype[oi] <> ${a} then goto ${L}_ni`,
         ` px = ox[oi] + ${Math.floor(t.width / 2)} : py = oy[oi] + ${Math.floor(t.height / 2)}`,
@@ -487,7 +514,7 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
       const [as, ae] = slots(a);
       // Event rules run on odd frames only: a frame's delay doesn't show, and it halves their cost.
       out.push(
-        ` if rnd = 0 then goto ${L}_ni2`,
+        ` if oddframe = 0 then goto ${L}_ni2`,
         ` for oi = ${as} to ${Math.max(as, ae)}`,
         ` if otype[oi] <> ${a} then goto ${L}_ni`,
         ` y1 = oy[oi] + ${g.types[a]!.height}`,
@@ -502,7 +529,7 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
       const bit = latch++;
       const reg = bit < 8 ? "latches" : "latches2";
       const flag = `${reg}{${bit % 8}}`;
-      out.push(` if rnd = 0 then goto ${L}_end`);
+      out.push(` if oddframe = 0 then goto ${L}_end`);
       out.push(...conditionGate(rule.if, `${flag} = 0 : goto ${L}_end`));
       if ("allGone" in w) {
         const a = typeIndex.get(w.allGone)!;
@@ -524,10 +551,17 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
     out.push(`${L}_end`, ` if gamestate <> STATE_PLAY then return`);
     ruleCode.push(out.join("\n"));
   });
-  const turnLines = (x: string, into: string, seconds: number | undefined) => {
+  const turnLines = (x: string, from: string | null, into: string, seconds: number | undefined) => {
     const t = typeIndex.get(into)!;
-    if (seconds) return [` if otimer[${x}] = 0 then oback[${x}] = otype[${x}]`, ` otimer[${x}] = ${seconds}`, ` otype[${x}] = ${t}`];
-    return [...(timedTurns ? [` otimer[${x}] = 0`] : []), ` otype[${x}] = ${t}`];
+    const to = g.types[t]!;
+    const was = from === null ? undefined : g.types[typeIndex.get(from)!];
+    // Something turning into a bigger thing could end up past the screen edge, where it could never move again.
+    const clamp = [
+      ...(!was || to.width > was.width ? [` if ox[${x}] > ${160 - to.width} then ox[${x}] = ${160 - to.width}`] : []),
+      ...(!was || to.height > was.height ? [` if oy[${x}] > ${192 - to.height} then oy[${x}] = ${192 - to.height}`] : []),
+    ];
+    if (seconds) return [` if otimer[${x}] = 0 then oback[${x}] = otype[${x}]`, ` otimer[${x}] = ${seconds}`, ` otype[${x}] = ${t}`, ...clamp];
+    return [...(timedTurns ? [` otimer[${x}] = 0`] : []), ` otype[${x}] = ${t}`, ...clamp];
   };
   const ruleBodies = g.rules.map((rule: KitRule, n) => {
     const role = roles.get(n) ?? { first: "oi", second: "oj" };
@@ -541,13 +575,13 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
         return ` if ${v} < ${a.take[1]} then ${v} = 0 else ${v} = ${v} - ${a.take[1]}`;
       }
       if ("set" in a) return ` ${counterVar(a.set[0])} = ${a.set[1]}`;
-      if ("turn" in a) return turnLines(role[a.turn.who], a.turn.into, a.turn.seconds).join("\n");
+      if ("turn" in a) return turnLines(role[a.turn.who], ruleThing(rule.when, a.turn.who), a.turn.into, a.turn.seconds).join("\n");
       if ("turnAll" in a) {
         const from = typeIndex.get(a.turnAll.type)!;
         const [fs, fe] = slots(from);
         if (fe < fs) return ` rem (no ${a.turnAll.type} can exist)`;
         const skip = `r${n}_t${j}`;
-        return [` for tk = ${fs} to ${fe}`, ` if otype[tk] <> ${from} then goto ${skip}`, ...turnLines("tk", a.turnAll.into, a.turnAll.seconds), skip, ` next`].join("\n");
+        return [` for tk = ${fs} to ${fe}`, ` if otype[tk] <> ${from} then goto ${skip}`, ...turnLines("tk", a.turnAll.type, a.turnAll.into, a.turnAll.seconds), skip, ` next`].join("\n");
       }
       if ("nextLevel" in a) return ` if levelnum < 99 then levelnum = levelnum + 1\n gosub startroom : ruleexit = 1`;
       if ("remove" in a) return ` otype[${role[a.remove]}] = EMPTY`;
@@ -584,14 +618,23 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
   });
   const hasLevels = g.rules.some((r) => r.then.some((a) => "nextLevel" in a));
   const hasVelocity = g.types.some((t) => t.move);
+  const compiledVelocity = hasVelocity && !opts.interpretVelocity;
+  const fixed88 = compiledVelocity && !!opts.fixed88;
   const data = [
     dataTable("typew", g.types.map((t) => t.width)),
     dataTable("typeh", g.types.map((t) => t.height)),
     dataTable("typebeh", g.types.map((t) => (t.move ? VELOCITY_BEH : BEHAVIOURS.indexOf(t.behaviour)))),
     ...(hasVelocity
       ? [
-          dataTable("typevx", g.types.map((t) => (t.move?.vx ?? 0) & 255)),
-          dataTable("typevy", g.types.map((t) => (t.move?.vy ?? 0) & 255)),
+          // Quarter pixels, or in 8.8 fixed point the whole pixels (floored) and the 1/256ths.
+          dataTable("typevx", g.types.map((t) => (fixed88 ? Math.floor((t.move?.vx ?? 0) / 4) : (t.move?.vx ?? 0)) & 255)),
+          dataTable("typevy", g.types.map((t) => (fixed88 ? Math.floor((t.move?.vy ?? 0) / 4) : (t.move?.vy ?? 0)) & 255)),
+          ...(fixed88
+            ? [
+                dataTable("typevxl", g.types.map((t) => ((t.move?.vx ?? 0) & 3) * 64)),
+                dataTable("typevyl", g.types.map((t) => ((t.move?.vy ?? 0) & 3) * 64)),
+              ]
+            : []),
           dataTable("typereact", g.types.map((t) => REACTIONS.indexOf(t.move?.react ?? "stop"))),
         ]
       : []),
@@ -608,6 +651,95 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
     dataTable("spawny", spawns.map((s) => s.y)),
     ` alphadata roommap font\n${mapLines.map((l) => ` '${l}'`).join("\n")}\nend`,
   ].join("\n\n");
+
+  // Model v2 spike, compiled movement: each velocity type gets its own loop over
+  // its slot range, with its size, reaction and time-slicing written in, and an
+  // axis left out when its velocity can never be anything but 0.
+  const slice = !opts.velocityEveryFrame;
+  const compiledMovement = !compiledVelocity
+    ? ""
+    : g.types
+        .map((t, k) => {
+          if (!t.move) return "";
+          const [s0, s1] = slots(k);
+          if (s1 < s0) return ` rem ${t.label}: none can exist`;
+          const L = `cv${k}`;
+          const react = t.move.react;
+          const axis = (a: "x" | "y") => {
+            const [v, f, o, next] = a === "x" ? ["ovx", "ofx", "ox", `${L}_y`] : ["ovy", "ofy", "oy", `${L}_next`];
+            const start = a === "x" ? t.move!.vx : t.move!.vy;
+            if (start === 0 && react !== "turn") return [` rem ${a}: always still`];
+            if (fixed88) return axis88(a, v, f, o, next);
+            const hit: Record<typeof react, string[]> = {
+              stop: [` ${v}[oi] = 0`],
+              bounce: [` tmp = ${v}[oi] : ${v}[oi] = 0 - tmp`],
+              wrap: [` gosub hit${a === "x" ? "wrapx" : "wrapy"}`],
+              turn: [` gosub hitturn`],
+              destroy: [` otype[oi] = EMPTY`, ` goto ${L}_next`],
+            };
+            return [
+              ` tmp = ${v}[oi]`,
+              ` if tmp = 0 then goto ${next}`,
+              ...(slice ? [` tmp = tmp + tmp`] : []),
+              ` tmp = tmp + ${f}[oi]`,
+              ` ${f}[oi] = tmp & 3`,
+              ` cell = tmp / 4`,
+              ` if tmp >= 128 then cell = cell | 192`,
+              ` if cell = 0 then goto ${next}`,
+              a === "x" ? ` nx = ${o}[oi] + cell : ny = oy[oi]` : ` nx = ox[oi] : ny = ${o}[oi] + cell`,
+              ` wid = ${t.width} : hgt = ${t.height}`,
+              ` gosub trymovesized`,
+              ` if !blocked then goto ${next}`,
+              ...hit[react],
+            ];
+          };
+          /** The same in 8.8 fixed point: `v` holds whole pixels (signed), `vl` the 1/256ths. */
+          const axis88 = (a: "x" | "y", v: string, f: string, o: string, next: string) => {
+            const vl = `${v}l`;
+            const negate = (hi: string, lo: string) => [
+              ` tmp = ${lo}[oi] : px = ${hi}[oi]`,
+              ` if tmp = 0 then ${hi}[oi] = 0 - px`,
+              ` if tmp <> 0 then ${lo}[oi] = 0 - tmp : ${hi}[oi] = 255 - px`,
+            ];
+            const edge = a === "x" ? 160 - t.width : 192 - t.height;
+            const hit: Record<typeof react, string[]> = {
+              stop: [` ${v}[oi] = 0 : ${vl}[oi] = 0`],
+              bounce: negate(v, vl),
+              wrap:
+                a === "x"
+                  ? [` px = nx + ${t.width - 1}`, ` if nx < 160 && px < 160 then ${v}[oi] = 0 : ${vl}[oi] = 0 : goto ${next}`, ` tmp = ${v}[oi]`, ` if tmp < 128 then ox[oi] = 0 else ox[oi] = ${edge}`]
+                  : [` py = ny + ${t.height - 1}`, ` if ny >= ROOMTOP && py < 192 then ${v}[oi] = 0 : ${vl}[oi] = 0 : goto ${next}`, ` tmp = ${v}[oi]`, ` if tmp < 128 then oy[oi] = ROOMTOP else oy[oi] = ${edge}`],
+              // A quarter turn clockwise: (vx, vy) becomes (-vy, vx).
+              turn: [` cell = ovx[oi] : amt = ovxl[oi]`, ...negate("ovy", "ovyl"), ` ovx[oi] = ovy[oi] : ovxl[oi] = ovyl[oi]`, ` ovy[oi] = cell : ovyl[oi] = amt`],
+              destroy: [` otype[oi] = EMPTY`, ` goto ${L}_next`],
+            };
+            return [
+              ` tmp = ${f}[oi] + ${vl}[oi] : cell = ${v}[oi]`,
+              ` if tmp < ${f}[oi] then cell = cell + 1`,
+              ...(slice ? [` amt = tmp + ${vl}[oi] : cell = cell + ${v}[oi]`, ` if amt < tmp then cell = cell + 1`, ` tmp = amt`] : []),
+              ` ${f}[oi] = tmp`,
+              ` if cell = 0 then goto ${next}`,
+              a === "x" ? ` nx = ${o}[oi] + cell : ny = oy[oi]` : ` nx = ox[oi] : ny = ${o}[oi] + cell`,
+              ` wid = ${t.width} : hgt = ${t.height}`,
+              ` gosub trymovesized`,
+              ` if !blocked then goto ${next}`,
+              ...hit[react],
+            ];
+          };
+          return [
+            ` rem ${t.label}: velocity, ${react} (compiled${fixed88 ? ", 8.8 fixed point" : ""})`,
+            ` for oi = ${s0} to ${s1}`,
+            ` if otype[oi] <> ${k} then goto ${L}_next`,
+            ...(slice ? [` tmp = oi ^ frame`, ` tmp = tmp & 1`, ` if tmp then goto ${L}_next`] : []),
+            ...axis("x"),
+            `${L}_y`,
+            ...axis("y"),
+            `${L}_next`,
+            ` next`,
+          ].join("\n");
+        })
+        .filter(Boolean)
+        .join("\n");
 
   const shootSound = g.sounds.shoot ? sound(g.sounds.shoot) : "rem no shooting sound";
   const soundBlocks = [...usedSounds].map(([id, sfx]) => soundData(`sfx_${id.replace(/-/g, "_")}`, sfx)).join("\n\n");
@@ -632,7 +764,10 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
       hudCounter: g.counters.some((c) => c.show) ? `cnt${g.counters.findIndex((c) => c.show)}` : "",
       hasDrops: g.types.some((t) => t.drops),
       hasVelocity,
-      velocitySlice: !opts.velocityEveryFrame,
+      velocitySlice: slice,
+      compiledVelocity,
+      fixed88,
+      compiledMovement: compiledMovement || " rem no compiled movement",
       graphics: graphics.join("\n"),
       alphachars: FONT_CHARS,
       palettes,

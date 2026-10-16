@@ -1,7 +1,8 @@
 // Kit starter games (templates/kit/games/*.json). Each is a complete game a
 // creator can change in any way; together they show what the kit can do.
 
-import { KitGameSchema, type KitGame } from "./schema.ts";
+import { loadKit } from "./migrations.ts";
+import type { KitGame } from "./schema.ts";
 
 const files = import.meta.glob<unknown>("../../../templates/kit/games/*.json", { import: "default", eager: true });
 
@@ -24,6 +25,9 @@ export const KIT_PRESETS: KitPreset[] = Object.entries(files)
   .map(([path, json]) => {
     const id = path.split("/").pop()!.replace(/\.json$/, "");
     const [name, description] = DESCRIPTIONS[id] ?? [id, ""];
-    return { id, name, description, game: KitGameSchema.parse(json) };
+    // Presets go through the same migrations as saves, so an old preset file still loads.
+    const loaded = loadKit(json);
+    if (!loaded.ok) throw new Error(`The ${id} preset doesn't load: ${loaded.errors.join(" ")}`);
+    return { id, name, description, game: loaded.game };
   })
   .sort((a, b) => Object.keys(DESCRIPTIONS).indexOf(a.id) - Object.keys(DESCRIPTIONS).indexOf(b.id));

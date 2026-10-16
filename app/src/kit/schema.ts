@@ -138,8 +138,11 @@ export const KitRuleSchema = z.object({
 });
 export type KitRule = z.infer<typeof KitRuleSchema>;
 
+/** The game file's format version; kit/migrations.ts brings older files up to it. */
+export const KIT_VERSION = 1;
+
 export const KitGameSchema = z.object({
-  kit: z.literal(1),
+  kit: z.literal(KIT_VERSION),
   title: z.string().max(60),
   palettes: z.array(PaletteSchema).min(1).max(8),
   background: ColorSchema,
