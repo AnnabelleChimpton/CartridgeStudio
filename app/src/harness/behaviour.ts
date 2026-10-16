@@ -94,6 +94,15 @@ export async function runBehaviourTest(
 /** Game variables by name: a symbol (plus `offset` bytes, e.g. one slot of an object table). */
 export type WatchMap = Record<string, { symbol: string; offset?: number; bytes?: number; bcd?: boolean }>;
 
+const WANT_WORDS: Record<string, string> = { eq: "", ne: "anything but ", gt: "more than ", gte: "at least ", lt: "less than ", lte: "at most ", multipleOf: "a multiple of " };
+
+/** A comparison in words: "at least 10 and at most 20". */
+export const expectedWords = (want: Record<string, number | undefined>) =>
+  Object.entries(want)
+    .filter(([, n]) => n !== undefined)
+    .map(([op, n]) => `${WANT_WORDS[op] ?? `${op} `}${n}`)
+    .join(" and ");
+
 /** A variable's bytes as a number: little-endian, or BCD digits in memory order (the score). */
 export function decodeValue(bytes: Uint8Array, bcd = false): number {
   if (bcd) return Number([...bytes].map((b) => b.toString(16).padStart(2, "0")).join(""));
@@ -132,7 +141,7 @@ export async function runRomOnHost(
         (want.lt !== undefined && !(v < want.lt)) ||
         (want.lte !== undefined && !(v <= want.lte)) ||
         (want.multipleOf !== undefined && v % want.multipleOf !== 0);
-      if (bad) out.push(`${name} is ${v}, expected ${JSON.stringify(c)}`);
+      if (bad) out.push(`${name} is ${v}, expected ${expectedWords(want)}`);
     }
     return out;
   };

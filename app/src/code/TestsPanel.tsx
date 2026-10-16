@@ -77,6 +77,14 @@ export function TestsPanel({ preview, tests, known }: Props) {
     };
   }, [mode, target, symbols, emulator]);
 
+  // Focus follows the flow: into the new check, then back to Record a check once it's saved or discarded.
+  const wasChecking = useRef(false);
+  useEffect(() => {
+    if (mode.kind === "checking") nameField.current?.focus();
+    else if (wasChecking.current) recordButton.current?.focus();
+    wasChecking.current = mode.kind === "checking";
+  }, [mode.kind]);
+
   // Frames recorded so far, a few times a second.
   useEffect(() => {
     const emu = emulator.current;
@@ -132,7 +140,6 @@ export function TestsPanel({ preview, tests, known }: Props) {
     setOp("eq");
     setMode({ kind: "checking", rec });
     setSaid(`Paused at frame ${rec.frames}. Say what should be true now.`);
-    requestAnimationFrame(() => nameField.current?.focus());
   };
 
   const save = () => {
@@ -149,7 +156,7 @@ export function TestsPanel({ preview, tests, known }: Props) {
       setError("");
       setMode({ kind: "idle" });
       setSaid(`Saved “${t.name}”: ${describeTest(t)} at frame ${mode.rec.frames}. It runs on every build.`);
-      requestAnimationFrame(() => recordButton.current?.focus());
+
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -163,7 +170,7 @@ export function TestsPanel({ preview, tests, known }: Props) {
       : run.status === "running"
         ? "Running the tests…"
         : run.status === "error"
-          ? `The tests couldn't run: ${run.message}`
+          ? `The test runner stopped: ${run.message}`
           : results
             ? failed
               ? `${failed} of ${results.length} ${results.length === 1 ? "test" : "tests"} failed.`
@@ -193,7 +200,7 @@ export function TestsPanel({ preview, tests, known }: Props) {
       {mode.kind === "recording" && (
         <div className="recording" role="group" aria-label="Recording">
           <p className="small">
-            <span className="rec-dot" aria-hidden="true" /> Recording from power-on: <span data-testid="recorded-frames">{frames}</span> frames. Play, then:
+            Recording from power-on: <span data-testid="recorded-frames">{frames}</span> frames. Play, then:
           </p>
           <div className="toolbar">
             <button type="button" onClick={() => void stopRecording(true)}>
@@ -303,7 +310,7 @@ export function TestsPanel({ preview, tests, known }: Props) {
                     {r && !r.passed && (
                       <span className="test-failure">
                         {" "}
-                        Failed at frame {r.frames}. {r.failure?.replace(/^At frame \d+: /, "")}
+                        Failed at frame {r.frames}. {r.failure?.replace(/^At frame \d+: /, "")}.
                       </span>
                     )}
                   </span>

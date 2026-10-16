@@ -53,7 +53,7 @@ export class TestsRunner {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         if (this.inFlight?.id !== id) return;
-        this.finish({ kind: "error", message: `The tests took longer than ${this.timeoutMs / 1000} s, so they were stopped. Does one wait for something that never happens?` });
+        this.finish({ kind: "error", message: `The test run passed ${this.timeoutMs / 1000} s and was stopped. Your tests are saved; one may wait on a value that never comes.` });
         worker.terminate();
         if (this.worker === worker) this.worker = null;
       }, this.timeoutMs);

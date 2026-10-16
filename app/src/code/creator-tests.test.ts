@@ -168,7 +168,7 @@ describe("running creator tests on a headless core", () => {
     if (!brokenRom.ok) throw new Error(brokenRom.failure);
     const [r] = await runCreatorTests(host, brokenRom.a78, brokenRom.symbols, file);
     expect(r).toMatchObject({ name: "Eats the yarn", passed: false, frames: 69 });
-    expect(r!.failure).toMatch(/score is 0/);
+    expect(r!.failure).toBe("At frame 69: score is 0, expected at least 10");
   }, 60_000);
 
   it("a recording made while playing replays to the same moment", async () => {

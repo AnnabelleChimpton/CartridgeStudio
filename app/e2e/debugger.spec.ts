@@ -62,8 +62,14 @@ test("eject Ghost Panic, pause, step 10 frames, watch score change", async ({ pa
   await expect(drawer.getByRole("button", { name: "Resume" })).toBeVisible();
   await expect(page.getByTestId("build-status").locator("..").getByRole("button", { name: "Resume" })).toBeVisible();
   // Settled on the frame it paused at.
-  let frame = await frameOf(drawer);
-  await expect.poll(async () => (frame = await frameOf(drawer)), { intervals: [300, 300, 300] }).toBe(frame);
+  let frame = -1;
+  await expect
+    .poll(async () => {
+      const was = frame;
+      frame = await frameOf(drawer);
+      return frame === was;
+    }, { intervals: [300] })
+    .toBe(true);
   // Hold right (from code, so focus can stay on the step button) and step until the cat eats the yarn.
   await page.evaluate(() => window.__cs!.emulator!.setInput({ up: false, down: false, left: false, right: true, fire: false }));
   const step10 = drawer.getByRole("button", { name: "Step 10 frames" });
@@ -143,7 +149,7 @@ test("record a check, break the game, see the check fail", async ({ page }) => {
     }),
   );
   await expect(item.locator(".test-state")).toHaveText("Fail", { timeout: 60_000 });
-  await expect(item).toContainText(/Failed at frame \d+\. score is 0, expected/);
+  await expect(item).toContainText(/Failed at frame \d+\. score is 0, expected at least 10\./);
   await expect(tests.getByTestId("tests-summary")).toHaveText("1 of 1 test failed.");
   expect(await axe(page), "tests failing").toEqual([]);
 

@@ -10,6 +10,7 @@ import type { Screenshot } from "../print/pdf.ts";
 import type { useKitStore } from "../kit/store.ts";
 import type { useCodeStore } from "../code/store.ts";
 import { isCodeProject } from "../code/schema.ts";
+import { parseBuildLog } from "../code/build-log.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
 
@@ -172,7 +173,11 @@ export function usePreview(source: GameSource) {
       const r = await lister.build(sourceRef.current, { sign: false, listing: true });
       if (r.kind === "built" && r.listing !== undefined) return r.listing;
       if (r.kind === "invalid") throw new Error(r.errors.join(" "));
-      if (r.kind === "failed") throw new Error(`The game doesn't build (${r.stage}: ${r.message}), so there's no listing.`);
+      if (r.kind === "failed") {
+        const p = parseBuildLog(r.log).find((x) => x.severity === "error");
+        const where = p ? `${p.line !== undefined ? `, line ${p.line}` : ""}: ${p.message}` : `: ${r.message}`;
+        throw new Error(`No listing: ${r.stage} stopped${where}. Fix game.bas, then make the listing again.`);
+      }
       throw new Error("The listing build was cancelled. Try again.");
     } finally {
       lister.dispose();

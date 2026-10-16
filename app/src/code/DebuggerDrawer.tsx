@@ -68,6 +68,7 @@ export function DebuggerDrawer({ preview, title, known, typeNames, estimate }: P
   const [pickError, setPickError] = useState("");
   const [listing, setListing] = useState<Listing>({ status: "none" });
   const drawer = useRef<HTMLDivElement>(null);
+  const lastFrame = useRef<number | null>(null);
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
@@ -87,12 +88,16 @@ export function DebuggerDrawer({ preview, title, known, typeNames, estimate }: P
     const loopAt = lo !== undefined ? ranges.push([lo, 1], [hi ?? lo, hi === undefined ? 0 : 1]) - 2 : -1;
     const peek = await emu.peek(ranges);
     const before = valuesRef.current;
+    // Read again on the same frame (a step's own frame message): keep what the step marked as changed.
+    const sameFrame = peek.frame === lastFrame.current;
+    lastFrame.current = peek.frame;
     const next: Record<string, Shown> = {};
     list.forEach((w, i) => {
       if (watchAt[i]! < 0) return;
       const v = watchValue(w, peek.bytes[watchAt[i]!]!);
       const old = before[w.label];
-      next[w.label] = { ...v, changed: old !== undefined && old.value !== v.value, was: old?.value };
+      next[w.label] =
+        sameFrame && old?.value === v.value ? old : { ...v, changed: old !== undefined && old.value !== v.value, was: old?.value };
     });
     setValues(next);
     setFrame(peek.frame);
@@ -337,10 +342,10 @@ export function DebuggerDrawer({ preview, title, known, typeNames, estimate }: P
             )}
 
             <h4 className="debug-sub">Listing</h4>
-            <p className="muted small">dasm's assembly listing: every line of game.bas next to the 6502 code and addresses it became. It's a separate build, so it takes a few seconds.</p>
+            <p className="muted small">dasm's assembly listing: every line of game.bas next to the 6502 code and addresses it became. It comes from a separate build of the current game.</p>
             <div className="toolbar">
               <button type="button" className="secondary" disabled={listing.status === "making"} onClick={() => void makeListing()}>
-                {listing.status === "ready" ? "Make it again" : listing.status === "making" ? "Making the listing…" : "Make the listing"}
+                {listing.status === "ready" ? "Make the listing again" : listing.status === "making" ? "Making the listing…" : "Make the listing"}
               </button>
               {listing.status === "ready" && (
                 <button type="button" className="secondary" onClick={() => download(new TextEncoder().encode(listing.text), `${title.trim() ? title.trim().replace(/[^\w-]+/g, "-").toLowerCase() : "game"}.list.txt`)}>
@@ -351,7 +356,7 @@ export function DebuggerDrawer({ preview, title, known, typeNames, estimate }: P
             {listing.status === "error" && <p className="error small">{listing.message}</p>}
             {listing.status === "ready" && (
               <>
-                {listing.build !== lastGood && <p className="small">The game has changed since this listing was made. Make it again to match.</p>}
+                {listing.build !== lastGood && <p className="small">The game has changed since this listing was made. Press Make the listing again to match it.</p>}
                 <pre className="debug-listing" tabIndex={0} role="region" aria-label="dasm listing" data-testid="listing">
                   {listing.text}
                 </pre>
