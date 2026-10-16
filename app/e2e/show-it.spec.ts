@@ -34,7 +34,7 @@ test("Send to family makes one HTML file that plays the game offline", async ({ 
   await player.route("**/*", (route) => route.abort());
   await player.setContent(html);
   await expect(player.getByRole("heading", { name: "Ghost Panic" })).toBeVisible();
-  await player.getByRole("button", { name: "Press to play" }).click();
+  await player.getByRole("button", { name: /to play$/ }).click();
   await expect.poll(() => player.evaluate(() => (window as unknown as { __frames: number }).__frames ?? 0), { timeout: 10_000 }).toBeGreaterThan(60);
   // The picture isn't blank.
   const lit = await player.evaluate(() => {

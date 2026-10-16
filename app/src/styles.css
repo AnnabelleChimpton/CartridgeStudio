@@ -741,6 +741,8 @@ strong.ok, strong.near, strong.over { background: none; font-variant-numeric: ta
   padding: 0; border-radius: 0; box-shadow: none; margin: 0;
   background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: none;
 }
+/* The pointer hides only while the game plays: it's back when paused or when the mouse moves. */
+.tv-stage:fullscreen.tv-paused, .tv-stage:fullscreen.pointer-awake { cursor: auto; }
 .tv-stage:fullscreen .tv-title { display: block; margin: 0; color: #fff; font: 400 3.4vh / 1.3 var(--font-display); }
 .tv-stage:fullscreen .tv-hint { display: block; margin: 0; color: #b9afc4; font-size: 2.2vh; }
 .tv-stage:fullscreen .emu { width: min(100vw, calc(84vh * 4 / 3)); border-radius: 0; box-shadow: none; margin: 0; animation: none; }

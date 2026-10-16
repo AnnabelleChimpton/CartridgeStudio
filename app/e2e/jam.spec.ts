@@ -210,7 +210,7 @@ test("two entries become a gallery that plays with the network off", async ({ pa
 
   await site.getByRole("link", { name: "Play Haunt One" }).click();
   await expect(site.getByRole("heading", { name: "Haunt One" })).toBeVisible();
-  await site.getByRole("button", { name: "Press to play" }).click();
+  await site.getByRole("button", { name: /to play$/ }).click();
   await expect.poll(() => site.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0), { timeout: 15_000 }).toBeGreaterThan(60);
   await site.getByRole("link", { name: /All entries/ }).click();
   await expect(site.getByRole("heading", { level: 1, name: "Spooky Cartridge Jam" })).toBeVisible();
