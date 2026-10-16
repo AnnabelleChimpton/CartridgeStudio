@@ -7,6 +7,7 @@ import { writeCartridgeFile } from "../files/cartridge-file.ts";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { folderZip, kitSourceFiles, slugify } from "../files/exports.ts";
 import { encodeRgbaPng } from "../files/png.ts";
+import { JamEntryPanel } from "../jam/JamEntryPanel.tsx";
 import { saveKitGame } from "../project/persist.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
@@ -118,6 +119,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             title={game.title}
             print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} />}
           />
+          <JamEntryPanel preview={preview} gameTitle={game.title} cartridgeFile={cartridgeFile} />
         </div>
       </main>
     </div>

@@ -8,6 +8,10 @@ import { useEffect, useId, useState } from "react";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
+import { CLASSIC_PRESET, JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
+import { JamBanner, JamLinks } from "./jam/JamBanner.tsx";
+import { JamEntryPanel } from "./jam/JamEntryPanel.tsx";
+import { useJamStore } from "./jam/store.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
@@ -25,6 +29,7 @@ import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
+const STARTER_IDS = [...KIT_PRESETS.map((p) => p.id), CLASSIC_PRESET];
 
 const TEMPLATE_TABS = [
   { id: "graphics", label: "Graphics" },
@@ -39,6 +44,21 @@ export function App() {
   const [mode, setMode] = useState<EditorMode | null | "loading">("loading");
   const [choosing, setChoosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+  const jam = useJamStore((s) => s.brief);
+  const only = jam ? offeredPresets(jam, STARTER_IDS) : undefined;
+
+  // A jam link (?jam=…) joins that jam, then tidies the address bar.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get(JAM_PARAM);
+    if (raw === null) return;
+    const r = decodeBriefParam(raw);
+    if (r.ok) useJamStore.getState().join(r.brief);
+    else setOpenError(r.errors.join(" "));
+    params.delete(JAM_PARAM);
+    const rest = params.toString();
+    history.replaceState(null, "", `${location.pathname}${rest ? `?${rest}` : ""}${location.hash}`);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,7 +89,18 @@ export function App() {
     }
   };
 
+  const openBrief = async (file: File) => {
+    const r = readBriefText(await file.text());
+    if (!r.ok) {
+      setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")}`);
+      return;
+    }
+    setOpenError(null);
+    useJamStore.getState().join(r.brief);
+  };
+
   const open = async (file: File) => {
+    if (file.name.endsWith(JAM_EXTENSION)) return openBrief(file);
     const opened = readCartridgeFile(new Uint8Array(await file.arrayBuffer()), TEMPLATES);
     const r = opened.result;
     if (!r.ok) {
@@ -91,18 +122,30 @@ export function App() {
   const onNew = () => setChoosing(true);
 
   if (mode === "loading") return <div className="page loading">Loading…</div>;
-  if (mode === null) return <StartChooser onChoose={choose} />;
+  const error = openError && (
+    <p className="error banner" role="alert">
+      {openError}{" "}
+      <button type="button" className="link" onClick={() => setOpenError(null)}>
+        Dismiss
+      </button>
+    </p>
+  );
+
+  if (mode === null) {
+    return (
+      <>
+        {error}
+        <JamBanner />
+        <StartChooser onChoose={choose} only={only} />
+        <JamLinks onBrief={(f) => void openBrief(f)} />
+      </>
+    );
+  }
 
   return (
     <>
-      {openError && (
-        <p className="error banner" role="alert">
-          {openError}{" "}
-          <button type="button" className="link" onClick={() => setOpenError(null)}>
-            Dismiss
-          </button>
-        </p>
-      )}
+      {error}
+      <JamBanner onNewGame={onNew} />
       {mode === "kit" ? (
         <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
       ) : (
@@ -114,6 +157,7 @@ export function App() {
             if (confirm("Start a new game? The one you're editing will be replaced; save it first to keep it.")) choose(c);
           }}
           onCancel={() => setChoosing(false)}
+          only={only}
         />
       )}
     </>
@@ -218,6 +262,7 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
             }
           />
           <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
+          <JamEntryPanel preview={preview} gameTitle={project.title} cartridgeFile={cartridgeFile} />
         </div>
       </main>
     </div>

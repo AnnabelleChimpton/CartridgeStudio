@@ -1,0 +1,67 @@
+/* Jams: the banner, the entry form and the organizer pages. Uses the app's colour tokens (styles.css). */
+
+.jam-banner {
+  max-width: 1408px; margin: 12px max(16px, calc((100% - 1408px) / 2)) 0; padding: 10px 14px; display: flex; gap: 12px 20px; align-items: center; flex-wrap: wrap;
+  background: linear-gradient(90deg, #2a2214, var(--panel)); border: 1px solid #5a4422; border-radius: 8px;
+}
+.jam-banner p { margin: 0; }
+.jam-banner-main { flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.jam-banner-name strong { font-size: 16px; }
+.jam-banner-theme strong { color: var(--accent); }
+.jam-banner-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+.jam-banner a, .jam-page a, .jam-entry a, .jam-links a { color: var(--accent); }
+.jam-tag {
+  display: inline-block; background: var(--accent); color: #1a1205; font-weight: 700; font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; border-radius: 4px; padding: 1px 6px; vertical-align: 2px;
+}
+.jam-rules { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 2px 0 0; padding: 0; }
+.jam-rules li { border: 1px solid var(--field-line); border-radius: 999px; padding: 1px 10px; font-size: 13px; }
+
+.jam-links { max-width: 880px; margin: -24px auto 24px; padding: 0 16px; font-size: 14px; }
+.jam-file-link { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.jam-file-link:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.jam-entry { margin-top: 12px; }
+.jam-entry > p { margin: 0 0 8px; }
+.jam-field { display: flex; flex-direction: column; gap: 3px; margin: 8px 0; font-size: 13px; }
+.jam-field input, .jam-field textarea {
+  background: #0f1115; color: var(--text); border: 1px solid var(--field-line); border-radius: 6px; padding: 6px 8px;
+  font: 14px/1.4 system-ui, sans-serif; width: 100%;
+}
+.jam-field textarea { resize: vertical; }
+.jam-clip { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 13px; margin: 10px 0; }
+.ok-text { color: var(--ok); }
+.jam-done { color: var(--ok); font-size: 13px; }
+
+.jam-page { max-width: 960px; }
+.jam-page h1 { font-size: 30px; color: var(--text); margin: 18px 0 12px; }
+.jam-page h2 { font-size: 20px; text-transform: none; letter-spacing: 0; color: var(--accent); margin: 32px 0 8px; }
+.jam-page p, .jam-page li { line-height: 1.55; }
+.jam-page code { background: #0f1115; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.jam-lede { font-size: 17px; }
+.jam-nav { display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.jam-footer { margin-top: 48px; border-top: 1px solid var(--line); padding-top: 12px; }
+.jam-maker { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+@media (max-width: 760px) { .jam-maker { grid-template-columns: 1fr; } }
+.jam-form { display: flex; flex-direction: column; }
+.jam-presets { border: 1px solid var(--line); border-radius: 6px; margin: 8px 0; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+.jam-presets legend { font-size: 13px; padding: 0 4px; }
+.jam-presets p { flex-basis: 100%; margin: 0; }
+.jam-presets input { accent-color: var(--accent); }
+.jam-output { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.jam-url { width: 100%; background: #0f1115; color: var(--text); border: 1px solid var(--field-line); border-radius: 6px; padding: 6px; font: 12px/1.4 ui-monospace, monospace; word-break: break-all; resize: vertical; }
+.jam-output .toolbar { flex-wrap: wrap; align-items: center; }
+.jam-themes { columns: 2; }
+
+.jam-drop {
+  display: flex; gap: 14px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 28px 16px;
+  border: 2px dashed var(--field-line); border-radius: 10px; background: var(--panel);
+}
+.jam-drop.over { border-color: var(--accent); }
+.button-like {
+  background: var(--accent); color: #1a1205; border-radius: 6px; padding: 8px 14px; font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.button-like:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+.jam-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+.jam-table th, .jam-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.jam-table thead th { color: var(--muted); font-weight: 600; font-size: 13px; }

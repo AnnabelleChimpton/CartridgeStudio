@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
+import { useJamStore } from "../jam/store.ts";
 import { Dialog } from "./Dialog.tsx";
 import { download, type Preview } from "./usePreview.ts";
 
@@ -151,7 +152,10 @@ function ClipRecorder({
       const { frames, palette } = await emu.stopClip();
       if (frames.length < 2) throw new Error("Play for a moment first: the clip was empty.");
       const { encodeClip } = await import("../files/clip.ts");
-      download(encodeClip(frames, { palette, delayMs: (1000 / 60) * CLIP_EVERY }), `${slug}-clip.gif`);
+      const gif = encodeClip(frames, { palette, delayMs: (1000 / 60) * CLIP_EVERY });
+      // A jam entry picks up the latest clip.
+      useJamStore.getState().setClip(gif);
+      download(gif, `${slug}-clip.gif`);
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
