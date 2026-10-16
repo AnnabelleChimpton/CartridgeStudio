@@ -1,9 +1,10 @@
 // Cartridge Studio: pick what to make, then edit it while it runs. Kit games
 // (things, rooms and rules on one runtime) and template projects (the classic
-// shooter) each have their own editor; both rebuild the ROM 300 ms after
-// every change and reload the preview.
+// shooter) each have their own editor, laid out the same way: one job at a
+// time in tabs on the left and the running game on the right. Both rebuild
+// the ROM 300 ms after every change and reload the preview.
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
@@ -14,6 +15,7 @@ import { loadSession, saveMode, saveProject, type EditorMode } from "./project/p
 import { useProjectStore } from "./project/store.ts";
 import { TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
+import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
 import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
@@ -22,6 +24,15 @@ import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
+
+const TEMPLATE_TABS = [
+  { id: "graphics", label: "Graphics" },
+  { id: "rules", label: "Rules" },
+  { id: "sounds", label: "Sounds" },
+  { id: "settings", label: "Settings" },
+  { id: "print", label: "Print" },
+] as const;
+type TemplateTab = (typeof TEMPLATE_TABS)[number]["id"];
 
 export function App() {
   const [mode, setMode] = useState<EditorMode | null | "loading">("loading");
@@ -118,6 +129,8 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
   const [selectedSprite, setSelectedSprite] = useState<string | null>(
     () => template.manifest.sprites.find((s) => s.editable)?.role ?? null,
   );
+  const [tab, setTab] = useState<TemplateTab>("graphics");
+  const ids = useId();
 
   useEffect(() => {
     window.__cs!.store = useProjectStore;
@@ -149,17 +162,45 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
         onNew={onNew}
       />
 
-      <main className="editor-layout">
-        <div className="column">
-          <GraphicsPanel template={template} selected={selectedSprite} onSelect={setSelectedSprite} />
-          <SettingsPanel template={template} />
-          <SoundsPanel template={template} />
+      <main className="workspace-layout">
+        <div className="workspace">
+          <div className="workspace-tabs" role="tablist" aria-label="Edit" onKeyDown={arrowKeys("tab")}>
+            {TEMPLATE_TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                {...tabProps(tab === t.id)}
+                id={`${ids}-${t.id}`}
+                aria-controls={`${ids}-panel`}
+                className={tab === t.id ? "active" : undefined}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="workspace-panel" role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${tab}`}>
+            {tab === "graphics" && (
+              <div className="graphics-layout">
+                <GraphicsPanel template={template} selected={selectedSprite} onSelect={setSelectedSprite} />
+                {selectedSprite && <SpriteEditor key={selectedSprite} template={template} role={selectedSprite} />}
+              </div>
+            )}
+            {tab === "rules" && <RulesPanel template={template} />}
+            {tab === "sounds" && <SoundsPanel template={template} />}
+            {tab === "settings" && <SettingsPanel template={template} />}
+            {tab === "print" && (
+              <PrintPanel
+                template={template}
+                screenshot={preview.screenshot}
+                buildSigned={preview.buildSigned}
+                cartridgeFile={cartridgeFile}
+                onDownload={download}
+              />
+            )}
+          </div>
         </div>
-        <div className="column">
-          {selectedSprite && <SpriteEditor key={selectedSprite} template={template} role={selectedSprite} />}
-          <RulesPanel template={template} />
-        </div>
-        <div className="column preview-column">
+        <div className="play-column">
           <PreviewPanel
             preview={preview}
             title={project.title}
@@ -174,13 +215,6 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
                 Export source
               </button>
             }
-          />
-          <PrintPanel
-            template={template}
-            screenshot={preview.screenshot}
-            buildSigned={preview.buildSigned}
-            cartridgeFile={cartridgeFile}
-            onDownload={download}
           />
         </div>
       </main>

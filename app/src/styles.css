@@ -43,11 +43,6 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 }
 .title-input:hover, .title-input:focus { background: #0f1115; }
 
-.editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 660px); gap: 14px; align-items: start; }
-@media (max-width: 1200px) { .editor-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .preview-column { grid-column: 1 / -1; grid-row: 1; } }
-@media (max-width: 760px) { .editor-layout { grid-template-columns: minmax(0, 1fr); } }
-.column { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
 
 button {
@@ -203,7 +198,7 @@ input.num { width: 56px; background: #0f1115; color: var(--text); border: 1px so
 .cpu-bar .over, strong.over { background-color: var(--error); color: var(--error); }
 strong.ok, strong.near, strong.over { background: none; }
 
-/* Kit editor layout: one job at a time beside the running game. */
+/* Editor layout: one job at a time beside the running game. */
 .workspace-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 480px); gap: 16px; align-items: start; }
 @media (max-width: 1000px) { .workspace-layout { grid-template-columns: minmax(0, 1fr); } .play-column { grid-row: 1; } }
 .play-column { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -224,6 +219,15 @@ strong.ok, strong.near, strong.over { background: none; }
 .workspace-panel .field-grid { font-size: 14px; }
 .workspace-panel .field-grid > label, .workspace-panel .color-row { grid-template-columns: 120px minmax(0, 320px); }
 .lead { margin: 0 0 12px; }
+
+/* Template editor's Graphics tab: the sprite list beside the chosen sprite, drawn large. */
+.graphics-layout { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.workspace-panel { container-type: inline-size; }
+@container (max-width: 600px) { .graphics-layout { grid-template-columns: minmax(0, 1fr); } }
+.graphics-layout > .panel { background: transparent; border: 0; padding: 0; }
+.graphics-layout > .panel:first-child > h2 {
+  position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
 
 .things-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
 @media (max-width: 700px) { .things-layout { grid-template-columns: minmax(0, 1fr); } }

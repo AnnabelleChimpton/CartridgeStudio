@@ -6,6 +6,9 @@ import { expect, test, type Page } from "@playwright/test";
 /** Opens the Play panel's "For developers" section (ROM downloads, timings, code). */
 const openDev = (page: Page) => page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
 
+/** Switches the editor to one of its tabs (Graphics, Rules, Sounds, Settings, Print). */
+const openTab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true }).click();
+
 interface BuildRecord {
   n: number;
   kind: string;
@@ -108,6 +111,7 @@ test("changing a color rebuilds the preview, and undo is a cache hit", async ({ 
 test("rules edit the generated code", async ({ page }) => {
   await open(page);
   const n = await buildCount(page);
+  await openTab(page, "Rules");
   await page.getByRole("button", { name: "Add rule" }).click();
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "A shot hits an enemy" });
   await page.getByLabel("Rule 5 action 1").selectOption({ label: "Lose a life" });
@@ -125,10 +129,12 @@ test("the project survives a reload", async ({ page }) => {
   await open(page);
   const title = page.getByLabel("Game title");
   await title.fill("Moth Patrol");
+  await openTab(page, "Settings");
   await page.getByLabel("Lives").fill("7");
   await page.waitForTimeout(800); // autosave debounce
   await open(page);
   await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
+  await openTab(page, "Settings");
   await expect(page.getByLabel("Lives")).toHaveValue("7");
 });
 
@@ -200,8 +206,12 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
 
   await page.getByRole("button", { name: /^Enemy \d/ }).click();
   const canvas = page.getByLabel("Enemy frame 1 pixels");
-  const box = (await canvas.boundingBox())!;
-  const cell = (x: number, y: number) => ({ x: box.x + ((x + 0.5) * box.width) / 12, y: box.y + ((y + 0.5) * box.height) / 8 });
+  /** A cell's page position, measured afresh because clicks elsewhere can scroll the page. */
+  const cell = async (x: number, y: number) => {
+    await canvas.scrollIntoViewIfNeeded();
+    const box = (await canvas.boundingBox())!;
+    return { x: box.x + ((x + 0.5) * box.width) / 12, y: box.y + ((y + 0.5) * box.height) / 8 };
+  };
 
   // Clear both animation frames: the enemies disappear from the game.
   let n = await buildCount(page);
@@ -217,7 +227,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   // Fill with color 1: every enemy becomes a solid block.
   await page.getByRole("radio", { name: "Fill" }).click();
   await page.getByRole("radio", { name: "Color 1" }).click();
-  await canvas.click({ position: { x: box.width / 2, y: box.height / 2 } });
+  await canvas.click(); // the middle
   expect(await enemy()).toEqual(Array(8).fill("111111111111"));
   // "Copy frame 1" makes frame 2 match, so the animation keeps the solid block.
   await page.getByRole("tab", { name: "Frame 2" }).click();
@@ -231,8 +241,8 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   await page.getByRole("radio", { name: "Pencil" }).click();
   await page.getByRole("radio", { name: "Color 2" }).click();
   const before = await pastLength();
-  const a = cell(0, 0);
-  const b = cell(11, 0);
+  const a = await cell(0, 0);
+  const b = await cell(11, 0);
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 3 });
@@ -241,7 +251,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   expect(await pastLength()).toBe(before + 1);
 
   // Right-click erases.
-  const c = cell(5, 4);
+  const c = await cell(5, 4);
   await page.mouse.click(c.x, c.y, { button: "right" });
   expect((await enemy())[4]).toBe("111110111111");
 
@@ -396,11 +406,14 @@ test("the game keeps running while the main thread is busy", async ({ page }) =>
 
 test("makes the print PDF with an edited manual", async ({ page }) => {
   await open(page);
+  await openTab(page, "Print");
   const manual = page.getByLabel("Manual text");
   await expect(manual).toHaveValue(/You start with 3 lives\./);
 
   // The draft follows the settings until the creator edits it.
+  await openTab(page, "Settings");
   await page.getByLabel("Lives").fill("5");
+  await openTab(page, "Print");
   await expect(manual).toHaveValue(/You start with 5 lives\./);
   await manual.fill("# Story\nThe vacuums are back, and only one cat can stop them.");
   await expect(page.getByRole("button", { name: "Reset to draft" })).toBeVisible();
@@ -439,6 +452,7 @@ async function downloadBytes(page: Page, button: string) {
 test("saves a game file and opens it again", async ({ page }) => {
   await open(page);
   await page.getByLabel("Game title").fill("Moth Patrol");
+  await openTab(page, "Settings");
   await page.getByLabel("Lives").fill("6");
   const saved = await downloadBytes(page, "Save game file");
   expect(saved.name).toBe("moth-patrol.cartridge");
@@ -467,6 +481,7 @@ test("exports the source and the submission package", async ({ page }) => {
   expect(source.name).toBe("cat-vs-vacuums-source.zip");
   expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
 
+  await openTab(page, "Print");
   const pkg = await downloadBytes(page, "Download submission package");
   expect(pkg.name).toBe("cat-vs-vacuums-submission.zip");
   const files = unzipSync(pkg.bytes);

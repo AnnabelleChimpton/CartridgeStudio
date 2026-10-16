@@ -25,6 +25,7 @@ export function SpriteEditor({ template, role }: { template: Template; role: str
         height={def.height}
         frames={sprite.frames}
         colors={palette?.colors ?? []}
+        maxWidth={480}
         onFrame={(i, next, key) =>
           edit((d) => {
             const s = d.sprites[spriteIndex]!;

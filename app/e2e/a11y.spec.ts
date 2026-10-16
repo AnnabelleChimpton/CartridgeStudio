@@ -38,6 +38,10 @@ test("the start screen and both editors pass axe", async ({ page }) => {
   await page.getByRole("button", { name: "Classic shooter" }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
   expect(await axe(page)).toEqual([]);
+  for (const name of ["Rules", "Sounds", "Settings", "Print"]) {
+    await openTab(page, name);
+    expect(await axe(page), name).toEqual([]);
+  }
 });
 
 test("the room can be painted from the keyboard, and Shift+arrows is one undo step", async ({ page }) => {
