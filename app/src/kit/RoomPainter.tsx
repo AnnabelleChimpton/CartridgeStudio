@@ -7,12 +7,16 @@ import { linePoints } from "../sprite/pixels.ts";
 import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
+import { TILE_GLYPHS } from "./font.ts";
 import { cellAt, isPlayer, paintCell, placements, type Brush } from "./edit.ts";
 import { ZONE_BUDGET } from "./generate.ts";
 import { ROOM_COLS, ROOM_ROWS, type KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
-const CELL = 22;
+const CELL = 32;
+/** One 160A pixel across, and one line down, in canvas pixels. */
+const PX = CELL / 8;
+const LINE = CELL / 16;
 let strokeCounter = 0;
 
 const css = (color: string) => {
@@ -29,25 +33,16 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, 
       const c = cellAt(g, col, row);
       const x = col * CELL;
       const y = row * CELL;
-      if (c === "wall") {
-        ctx.fillStyle = wallColors[0]!;
-        ctx.fillRect(x, y, CELL, CELL);
-      } else if (c === "hazard") {
-        // Spikes, in the walls' third color.
-        ctx.fillStyle = wallColors[2]!;
-        for (let k = 0; k < 3; k++) {
-          ctx.beginPath();
-          ctx.moveTo(x + 2 + k * 6, y + CELL - 3);
-          ctx.lineTo(x + 5 + k * 6, y + 5);
-          ctx.lineTo(x + 8 + k * 6, y + CELL - 3);
-          ctx.fill();
+      // Tiles as the ROM draws them: each cell is its glyph repeated 2×2 (8 pixels × 16 lines).
+      const glyph = c === "wall" ? TILE_GLYPHS["#"] : c === "hazard" ? TILE_GLYPHS["~"] : c === "goal" ? TILE_GLYPHS["*"] : undefined;
+      if (!glyph) continue;
+      for (let gy = 0; gy < 16; gy++) {
+        for (let gx = 0; gx < 8; gx++) {
+          const v = glyph[gy % 8]!.charCodeAt(gx % 4) - 48;
+          if (v <= 0) continue;
+          ctx.fillStyle = wallColors[v - 1]!;
+          ctx.fillRect(x + gx * PX, y + gy * LINE, PX, LINE);
         }
-      } else if (c === "goal") {
-        ctx.strokeStyle = wallColors[1]!;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([3, 3]);
-        ctx.strokeRect(x + 3, y + 3, CELL - 6, CELL - 6);
-        ctx.setLineDash([]);
       }
     }
   }

@@ -92,7 +92,8 @@ test("kit games print a box and manual, and pack a submission with source", asyn
 test("Play on a TV fills the screen with the game, its title and a prompt", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Headless full screen is only reliable in Chromium");
   await start(page);
-  await showIt(page).getByRole("button", { name: /^Play on a TV/ }).click();
+  // One control for TV mode and full screen, beside the game.
+  await page.getByRole("region", { name: "Play", exact: true }).getByRole("button", { name: "Play on a TV" }).click();
   await expect.poll(() => page.evaluate(() => document.fullscreenElement?.className ?? "")).toContain("tv-stage");
   await expect(page.locator(".tv-stage .tv-title")).toHaveText("Ghost Panic");
   await expect(page.getByLabel("Game preview")).toBeFocused();

@@ -29,11 +29,13 @@ import { SOUND_LIBRARY, TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
+import { ContextItem } from "./ui/ContextStrip.tsx";
 import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
 import { ShowItPanel } from "./ui/ShowItPanel.tsx";
 import { ConfirmDialog } from "./ui/Dialog.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
+import { toast } from "./ui/Toaster.tsx";
 import { TopBar } from "./ui/TopBar.tsx";
 import { download, usePreview } from "./ui/usePreview.ts";
 
@@ -139,6 +141,7 @@ export function App() {
       message: "The game you're editing now will be replaced. Save it first if you want to keep it.",
       yes: `Open “${title}”`,
       onYes: () => {
+        toast(`Opened “${title}”`);
         if ("kit" in r) {
           useKitStore.getState().load(r.kit);
           useGuide.getState().start(null, false);
@@ -202,14 +205,8 @@ export function App() {
   };
 
   if (mode === "loading") return <div className="page loading">Loading…</div>;
-  const banner = openError && (
-    <p className="error banner" role="alert">
-      {openError}{" "}
-      <button type="button" className="link" onClick={() => setOpenError(null)}>
-        Dismiss
-      </button>
-    </p>
-  );
+  // Errors go in the context strip under the top bar (design/DIRECTION.md).
+  const banner = openError && <ContextItem kind="error" message={openError} onDismiss={() => setOpenError(null)} />;
 
   if (mode === null) {
     return (

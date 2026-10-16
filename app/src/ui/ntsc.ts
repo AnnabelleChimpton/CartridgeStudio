@@ -32,3 +32,17 @@ export function ntscCss(color: string): string {
 }
 
 export const toColor = (value: number) => `$${value.toString(16).toUpperCase().padStart(2, "0")}`;
+
+/** Hue names for the 16 hue nibbles, chosen from where each one lands on screen. */
+const HUES = ["gray", "yellow", "gold", "orange", "red", "pink", "purple", "violet", "indigo", "blue", "azure", "teal", "sea green", "green", "lime", "olive"];
+
+/** A plain name for a palette value: "$C8" is "green", "$1E" is "pale yellow", "$00" is "black". */
+export function colorName(color: string): string {
+  const value = parseInt(color.slice(1), 16);
+  const hue = (value >> 4) & 15;
+  const luma = value & 15;
+  if (hue === 0 && luma === 0) return "black";
+  if (hue === 0 && luma === 15) return "white";
+  const shade = luma <= 2 ? "very dark " : luma <= 5 ? "dark " : luma <= 9 ? "" : luma <= 12 ? "light " : "pale ";
+  return shade + HUES[hue]!;
+}

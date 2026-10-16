@@ -155,6 +155,7 @@ test("a kit game survives a reload and round-trips through a game file", async (
   const file = Buffer.concat(chunks);
 
   // Switch to another game, then open the file again.
+  await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Rock Fall/ }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Start the new game" }).click();

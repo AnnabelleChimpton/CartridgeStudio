@@ -1,11 +1,13 @@
-// "Show it": every way a game leaves the editor, in plain words. Play it big
-// on a TV, send a one-file player to family, record a clip to post, put it on
-// a real console, or print a box and manual.
+// "Show it": every way a game leaves the editor, in plain words, in two
+// groups. Make it real: put it on a real console, print a box and manual.
+// Share it: send a one-file player to family, record a clip to post.
+// Playing it big on a TV is the game's own control, beside the game.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { useRecentClip } from "../files/recent-clip.ts";
 import { Dialog } from "./Dialog.tsx";
+import { Icon, type IconName } from "./Icon.tsx";
 import { download, type Preview } from "./usePreview.ts";
 
 /** Clips: 20 frames a second (every 3rd frame), up to 10 seconds. */
@@ -57,22 +59,31 @@ export function ShowItPanel({ preview, title, print }: Props) {
   return (
     <section className="panel show-it" aria-labelledby="show-it-h">
       <h2 id="show-it-h">Show it</h2>
-      <div className="show-grid">
-        <ShowButton title="Play on a TV" detail="Big screen, ready for a gamepad" disabled={!ready} onClick={preview.enterTv} />
+      <h3 className="show-h" id="show-real-h">
+        Make it real
+      </h3>
+      <div className="show-grid real" role="group" aria-labelledby="show-real-h">
+        <ShowButton icon="cartridge" title="Put it on a console" detail="With a 7800 flash cartridge" disabled={!ready} onClick={openFrom("console")} />
         <ShowButton
+          icon="print"
+          title="Print the box"
+          detail="Box, labels and manual, and everything in one package"
+          disabled={!ready}
+          onClick={(e) => (typeof print === "function" ? print() : openFrom("print")(e))}
+        />
+      </div>
+      <h3 className="show-h" id="show-share-h">
+        Share it
+      </h3>
+      <div className="show-grid" role="group" aria-labelledby="show-share-h">
+        <ShowButton
+          icon="send"
           title={busy === "player" ? "Making the file…" : "Send to family"}
           detail="One file that plays in a laptop or desktop web browser"
           disabled={!ready || busy !== null}
           onClick={() => void sendToFamily()}
         />
         <ClipRecorder preview={preview} slug={slug} disabled={!ready || busy === "player"} onBusy={(b) => setBusy(b ? "clip" : null)} onError={setError} onSaved={setSaved} />
-        <ShowButton title="Put it on a console" detail="With a 7800 flash cartridge" disabled={!ready} onClick={openFrom("console")} />
-        <ShowButton
-          title="Print the box"
-          detail="Box, cartridge labels and manual"
-          disabled={!ready}
-          onClick={(e) => (typeof print === "function" ? print() : openFrom("print")(e))}
-        />
       </div>
       {!ready && <p className="muted small">These light up once your game is ready to play.</p>}
       <p className="muted small">
@@ -110,11 +121,13 @@ export function ShowItPanel({ preview, title, print }: Props) {
 }
 
 function ShowButton({
+  icon,
   title,
   detail,
   disabled,
   onClick,
 }: {
+  icon?: IconName;
   title: string;
   detail: string;
   disabled?: boolean;
@@ -122,7 +135,10 @@ function ShowButton({
 }) {
   return (
     <button type="button" className="show-button" disabled={disabled} onClick={onClick}>
-      <strong>{title}</strong>
+      <strong>
+        {icon && <Icon name={icon} />}
+        {title}
+      </strong>
       <span>{detail}</span>
     </button>
   );
@@ -201,6 +217,7 @@ function ClipRecorder({
   }
   return (
     <ShowButton
+      icon="clip"
       title={state === "saving" ? "Saving the clip…" : "Make a clip"}
       detail={`Up to ${CLIP_SECONDS} seconds, as a GIF to post`}
       disabled={disabled || state === "saving"}

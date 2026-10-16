@@ -19,6 +19,7 @@ import { SOUND_LIBRARY } from "../project/templates.ts";
 import { arrowKeys, tabProps } from "../ui/a11y.ts";
 import { PreviewPanel } from "../ui/PreviewPanel.tsx";
 import { ShowItPanel } from "../ui/ShowItPanel.tsx";
+import { useTier } from "../ui/prefs.ts";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
@@ -72,7 +73,11 @@ export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
   const { edit, undo, redo } = useKitStore.getState();
   const preview = usePreview(game);
   const [selected, setSelected] = useState<string | null>(() => (game.types.find(isPlayer) ?? game.types[0])?.id ?? null);
-  const [tab, setTab] = useState<Tab>("things");
+  const [chosenTab, setTab] = useState<Tab>("things");
+  // The Code tab is for the Coder tier (design/DIRECTION.md, Three tiers); Starter and Maker see the rest.
+  const tier = useTier();
+  const tabs = TABS.filter((t) => tier === "coder" || t.id !== "code");
+  const tab = tabs.some((t) => t.id === chosenTab) ? chosenTab : "things";
   const [brush, setBrush] = useState<Brush>("wall");
   const ids = useId();
   /** What the Code tab marks: the chosen thing, or the rule last clicked or focused (`thing:<id>`, `rule:<n>`). */
@@ -247,12 +252,13 @@ export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
             />
           )}
           <div className="workspace-tabs" role="tablist" aria-label="Edit" onKeyDown={arrowKeys("tab")}>
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 {...tabProps(tab === t.id)}
                 id={`${ids}-${t.id}`}
+                data-tab={t.id}
                 aria-controls={`${ids}-panel`}
                 className={[tab === t.id && "active", guideOpen && current && GUIDE_TAB[current] === t.id && "guide-target"].filter(Boolean).join(" ") || undefined}
                 onClick={() => setTab(t.id)}

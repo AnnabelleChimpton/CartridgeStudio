@@ -3,6 +3,7 @@
 // Code tab.
 
 import { useState, type ReactNode } from "react";
+import { Icon } from "./Icon.tsx";
 import type { Preview } from "./usePreview.ts";
 
 /** How to play, in the editor and on the TV alike. */
@@ -45,9 +46,11 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
             setPaused(!paused);
           }}
         >
+          <Icon name={paused ? "play" : "pause"} />
           {paused ? "Resume" : "Pause"}
         </button>
         <button type="button" className="secondary" onClick={() => emulator.current?.reset()}>
+          <Icon name="restart" />
           Restart
         </button>
         <button
@@ -59,10 +62,12 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
             setMuted(!muted);
           }}
         >
+          <Icon name={muted ? "mute" : "sound"} />
           {muted ? "Sound off" : "Sound on"}
         </button>
-        <button type="button" className="secondary" onClick={enterTv}>
-          Full screen
+        <button type="button" className="secondary" onClick={enterTv} disabled={!lastGood} title="Full screen, with the title and a gamepad prompt">
+          <Icon name="tv" />
+          Play on a TV
         </button>
         <span className="hint" id="emu-hint">
           {PLAY_HINT}
