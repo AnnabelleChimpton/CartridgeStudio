@@ -89,24 +89,24 @@ export function KitSettingsPanel() {
               />
             )}
           </span>
+          <ContrastNotes warnings={gameContrast(game)} id="game-contrast" />
+          {dimThings.length > 0 && (
+            <p className="muted small" data-testid="things-contrast-summary">
+              On this background, {dimThings.map((t) => t.label).join(", ")} may be hard to see. The Things tab suggests clearer colors.
+            </p>
+          )}
         </div>
-        <ContrastNotes warnings={gameContrast(game)} id="game-contrast" />
-        {dimThings.length > 0 && (
-          <p className="muted small" data-testid="things-contrast-summary">
-            On this background, {dimThings.map((t) => t.label).join(", ")} may be hard to see. The Things tab suggests clearer colors.
-          </p>
-        )}
-        <label>
-          <span>Difficulty</span>
-          <span className="check">
+        <div className="field" role="group" aria-labelledby="difficulty-h">
+          <span id="difficulty-h">Difficulty</span>
+          <label className="check">
             <input type="checkbox" checked={easierOn(game)} onChange={(e) => edit((d) => setEasier(d, e.target.checked))} aria-describedby="easier-hint" />{" "}
             Easier for younger players
-          </span>
-        </label>
-        <p className="muted small" id="easier-hint">
-          With this on, the console's left difficulty switch picks how hard the game is. At B, the usual setting, everything but the player moves at half speed and you start with{" "}
-          {EASIER_EXTRA_LIVES} extra lives. Flip it to A to play the game as you made it.
-        </p>
+          </label>
+          <p className="muted small" id="easier-hint">
+            With this on, the console's left difficulty switch picks how hard the game is. At B, the usual setting, everything but the player moves at half speed
+            and you start with {EASIER_EXTRA_LIVES} extra lives. Flip it to A to play the game as you made it.
+          </p>
+        </div>
         {TEXTS.map(({ key, label }) => (
           <Fragment key={key}>
             <label>

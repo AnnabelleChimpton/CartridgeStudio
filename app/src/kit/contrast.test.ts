@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toColor } from "../ui/ntsc.ts";
 import { assistData, easierLives, easierOn, easierSpeed, setEasier } from "./assist.ts";
-import { allContrast, clearerColor, contrastMessage, contrastRatio, gameContrast, luminance, SHAPE_RATIO, TEXT_RATIO, thingContrast } from "./contrast.ts";
+import { allContrast, clearerColor, contrastFix, contrastMessage, contrastRatio, gameContrast, luminance, SHAPE_RATIO, TEXT_RATIO, thingContrast } from "./contrast.ts";
 import { loadKit } from "./migrations.ts";
 import { KIT_PRESETS } from "./presets.ts";
 import type { KitGame } from "./schema.ts";
@@ -61,7 +61,8 @@ describe("contrast warnings", () => {
     expect(ws.map((w) => w.id)).toEqual(["text", "walls", "spikes"]);
     expect(ws[0]!.target).toBe(TEXT_RATIO);
     expect(ws[1]!.target).toBe(SHAPE_RATIO);
-    expect(contrastMessage(ws[2]!, g.background)).toBe("The spikes may be hard to see: black on black is 1.0 to 1, and 2 to 1 or more reads well.");
+    expect(contrastMessage(ws[2]!, g.background)).toBe("The spikes: $00 black on $00 black, 1.0 to 1. Aim for 2 to 1 or more.");
+    expect(contrastFix(ws[2]!, g.background)).toMatch(/^Use \$0[0-9A-F] [a-z ]+ for the spikes: \d+\.\d to 1$/);
     for (const w of ws) colors(g, w.slot.palette)[w.slot.index] = w.suggestion;
     expect(gameContrast(g)).toEqual([]);
   });

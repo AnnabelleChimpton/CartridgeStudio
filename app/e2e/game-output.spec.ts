@@ -30,13 +30,13 @@ test("a hard-to-read text color gets a note, and its suggestion fixes it", async
   const bg = (await game(page)).background;
   await pick(page, /^Text color/, "$02");
   const note = page.getByTestId("contrast-text");
-  await expect(note).toContainText("The score and title text may be hard to see");
+  await expect(note).toContainText(`The score and title text: $02 very dark gray on ${bg} black`);
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(axe.violations.map((v) => v.id)).toEqual([]);
   // Advice only: the game still builds.
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 
-  await note.getByRole("button", { name: /Use a clearer color for the score and title text/ }).click();
+  await note.getByRole("button", { name: /^Use \$0. [a-z ]+ for the score and title text: \d+\.\d to 1$/ }).click();
   await expect(notes).toBeEmpty();
   const g = await game(page);
   const text = g.palettes.find((p) => p.id === g.textPalette)!.colors[0];
@@ -52,8 +52,8 @@ test("the spike color is on the Game tab, and dim spikes get a note", async ({ p
   let g = await game(page);
   expect(g.palettes.find((p) => p.id === g.wallPalette)!.colors[2]).toBe("$00");
   const note = page.getByTestId("contrast-spikes");
-  await expect(note).toContainText("The spikes may be hard to see");
-  await note.getByRole("button", { name: /Use a clearer color/ }).click();
+  await expect(note).toContainText("The spikes: $00 black on $00 black");
+  await note.getByRole("button", { name: /^Use \$/ }).click();
   await expect(note).toHaveCount(0);
   g = await game(page);
   expect(contrastRatio(g.palettes.find((p) => p.id === g.wallPalette)!.colors[2], g.background)).toBeGreaterThanOrEqual(SHAPE_RATIO);
@@ -74,8 +74,8 @@ test("a thing that disappears into the background gets a note on the Things tab"
   await openTab(page, "Things");
   await page.getByRole("button", { name: new RegExp(`^${t.label}`) }).first().click();
   const note = page.getByTestId(`contrast-thing:${t.id}`);
-  await expect(note).toContainText(`${t.label} may be hard to see`);
-  await note.getByRole("button", { name: /Use a clearer color/ }).click();
+  await expect(note).toContainText(`${t.label}: `);
+  await note.getByRole("button", { name: /^Use \$/ }).click();
   await expect(note).toHaveCount(0);
 });
 

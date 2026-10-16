@@ -815,7 +815,8 @@ button.danger-solid { background: var(--error); color: #2a0806; }
 }
 
 /* Contrast notes on game colors: advice, so teal rather than error red. */
+.color-row > .contrast-notes { grid-column: 2; }
 /* Kept in the layout while empty (a live region must exist before it speaks), without adding a gap. */
-.field-grid > .contrast-notes:empty { margin-top: calc(-1 * var(--s-3)); }
+.color-row > .contrast-notes:empty { margin-top: calc(-1 * var(--s-3)); }
 .contrast-note { margin: 0 0 var(--s-2); padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); background: var(--teal-soft); color: var(--text); font-size: var(--fs-sm); }
 .contrast-note .picker-chip { display: inline-block; vertical-align: middle; }

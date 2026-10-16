@@ -61,6 +61,8 @@ export interface ContrastWarning {
   id: string;
   /** What is hard to see, in plain words: "The score and title text". */
   what: string;
+  /** The same, mid-sentence: "the score and title text", or a thing's name as written. */
+  object: string;
   color: string;
   slot: ColorSlot;
   ratio: number;
@@ -69,12 +71,12 @@ export interface ContrastWarning {
   suggestion: string;
 }
 
-const warn = (g: KitGame, id: string, what: string, slot: ColorSlot, target: number): ContrastWarning | null => {
+const warn = (g: KitGame, id: string, what: string, object: string, slot: ColorSlot, target: number): ContrastWarning | null => {
   const color = g.palettes.find((p) => p.id === slot.palette)?.colors[slot.index];
   if (!color) return null;
   const ratio = contrastRatio(color, g.background);
   if (ratio >= target) return null;
-  return { id, what, color, slot, ratio, target, suggestion: clearerColor(color, g.background, target) };
+  return { id, what, object, color, slot, ratio, target, suggestion: clearerColor(color, g.background, target) };
 };
 
 const roomHas = (g: KitGame, tile: string) => g.room.rows.some((r) => [...r].some((ch) => g.room.legend[ch] === tile));
@@ -83,10 +85,10 @@ const roomHas = (g: KitGame, tile: string) => g.room.rows.some((r) => [...r].som
 export function gameContrast(g: KitGame): ContrastWarning[] {
   const wall = g.wallPalette;
   return [
-    warn(g, "text", "The score and title text", { palette: g.textPalette, index: 0 }, TEXT_RATIO),
-    roomHas(g, "wall") ? warn(g, "walls", "The walls", { palette: wall, index: 0 }, SHAPE_RATIO) : null,
-    roomHas(g, "hazard") ? warn(g, "spikes", "The spikes", { palette: wall, index: 2 }, SHAPE_RATIO) : null,
-    roomHas(g, "goal") ? warn(g, "goals", "The goals (drawn in the wall shade)", { palette: wall, index: 1 }, SHAPE_RATIO) : null,
+    warn(g, "text", "The score and title text", "the score and title text", { palette: g.textPalette, index: 0 }, TEXT_RATIO),
+    roomHas(g, "wall") ? warn(g, "walls", "The walls", "the walls", { palette: wall, index: 0 }, SHAPE_RATIO) : null,
+    roomHas(g, "hazard") ? warn(g, "spikes", "The spikes", "the spikes", { palette: wall, index: 2 }, SHAPE_RATIO) : null,
+    roomHas(g, "goal") ? warn(g, "goals", "The goals (drawn in the wall shade)", "the goals", { palette: wall, index: 1 }, SHAPE_RATIO) : null,
   ].filter((w): w is ContrastWarning => w !== null);
 }
 
@@ -107,7 +109,7 @@ export function thingContrast(g: KitGame, t: KitType): ContrastWarning | null {
   const used = usedColors(t).filter((n) => palette?.colors[n - 1]);
   if (!palette || used.length === 0) return null;
   const clearest = used.reduce((a, b) => (contrastRatio(palette.colors[b - 1]!, g.background) > contrastRatio(palette.colors[a - 1]!, g.background) ? b : a));
-  return warn(g, `thing:${t.id}`, t.label, { palette: t.palette, index: clearest - 1 }, SHAPE_RATIO);
+  return warn(g, `thing:${t.id}`, t.label, t.label, { palette: t.palette, index: clearest - 1 }, SHAPE_RATIO);
 }
 
 /** Every warning in the game, game-wide colors first. */
@@ -115,7 +117,15 @@ export function allContrast(g: KitGame): ContrastWarning[] {
   return [...gameContrast(g), ...g.types.map((t) => thingContrast(g, t)).filter((w): w is ContrastWarning => w !== null)];
 }
 
-/** One sentence for a warning, for the editor and screen readers. */
+const ratioText = (r: number) => `${r.toFixed(1)} to 1`;
+const named = (c: string) => `${c} ${colorName(c)}`;
+
+/** The note: both colors and the measured ratio, e.g. "The spikes: $00 black on $00 black, 1.0 to 1. Aim for 2 to 1 or more." */
 export function contrastMessage(w: ContrastWarning, background: string): string {
-  return `${w.what} may be hard to see: ${colorName(w.color)} on ${colorName(background)} is ${w.ratio.toFixed(1)} to 1, and ${w.target} to 1 or more reads well.`;
+  return `${w.what}: ${named(w.color)} on ${named(background)}, ${ratioText(w.ratio)}. Aim for ${w.target} to 1 or more.`;
+}
+
+/** The fix, saying exactly what it changes: "Use $0F white for the score and title text: 17.4 to 1". */
+export function contrastFix(w: ContrastWarning, background: string): string {
+  return `Use ${named(w.suggestion)} for ${w.object}: ${ratioText(contrastRatio(w.suggestion, background))}`;
 }

@@ -1,8 +1,8 @@
 // Gentle notes when a color may be hard to see on the game's background, each
 // with a one-click fix. They never stop a build.
 
-import { colorName, ntscCss } from "../ui/ntsc.ts";
-import { contrastMessage, type ContrastWarning } from "./contrast.ts";
+import { ntscCss } from "../ui/ntsc.ts";
+import { contrastFix, contrastMessage, type ContrastWarning } from "./contrast.ts";
 import { useKitStore } from "./store.ts";
 
 export function ContrastNotes({ warnings, id }: { warnings: ContrastWarning[]; id: string }) {
@@ -19,8 +19,7 @@ export function ContrastNotes({ warnings, id }: { warnings: ContrastWarning[]; i
             className="link"
             onClick={() => edit((d) => void (d.palettes.find((p) => p.id === w.slot.palette)!.colors[w.slot.index] = w.suggestion))}
           >
-            <span className="picker-chip" style={{ background: ntscCss(w.suggestion) }} aria-hidden="true" /> Use a clearer color
-            <span className="visually-hidden"> for {w.what.toLowerCase()}</span>: {colorName(w.suggestion)}
+            <span className="picker-chip" style={{ background: ntscCss(w.suggestion) }} aria-hidden="true" /> {contrastFix(w, background)}
           </button>
         </p>
       ))}
