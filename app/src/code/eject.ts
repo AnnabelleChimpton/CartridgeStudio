@@ -7,6 +7,9 @@ import { KIT_RUNTIME_VERSION } from "../kit/generate.ts";
 import { kitSourceFiles, sourceFiles } from "../files/exports.ts";
 import type { KitGame } from "../kit/schema.ts";
 import type { Palette, Project, SoundEffect, Template } from "../project/schema.ts";
+import { manualText } from "../print/manual.ts";
+import { kitManualText } from "../print/subject.ts";
+import { yoursToEdit } from "./export.ts";
 import { decodeIndexedPng } from "./png-decode.ts";
 import { GRAPHIC_NAME, type CodeGraphic, type CodeProject } from "./schema.ts";
 
@@ -26,6 +29,7 @@ export function fromSourceFiles(
   palettes: Palette[],
   known: Known[],
   fallbackPalette: string,
+  manualText?: string,
 ): CodeProject {
   const graphics: CodeGraphic[] = [];
   for (const [file, data] of Object.entries(files)) {
@@ -35,11 +39,11 @@ export function fromSourceFiles(
     const match = known.find((k) => k.frames.some((f) => sameRows(f, rows)));
     graphics.push({ name, rows, palette: match?.palette ?? fallbackPalette });
   }
-  const source = strFromU8(files["game.bas"]!).replace(
-    /^ rem Do not edit; regenerate from the project\.$/m,
-    ` rem Ejected to a code project: this copy is yours to edit.`,
-  );
-  return { code: 1, title, source, palettes: structuredClone(palettes), graphics, origin };
+  const source = yoursToEdit(strFromU8(files["game.bas"]!));
+  const project: CodeProject = { code: 1, title, source, palettes: structuredClone(palettes), graphics, origin };
+  // The print kit keeps the game's manual, so an ejected game still boxes up the same.
+  if (manualText !== undefined) project.manualText = manualText;
+  return project;
 }
 
 export function ejectKit(game: KitGame, library: SoundEffect[]): CodeProject {
@@ -50,6 +54,7 @@ export function ejectKit(game: KitGame, library: SoundEffect[]): CodeProject {
     game.palettes,
     game.types.map((t) => ({ frames: t.frames, palette: t.palette })),
     game.textPalette,
+    kitManualText(game),
   );
 }
 
@@ -61,6 +66,7 @@ export function ejectTemplate(project: Project, template: Template): CodeProject
     project.palettes,
     project.sprites.map((s) => ({ frames: s.frames, palette: s.palette })),
     project.palettes[0]!.id,
+    manualText(project, template),
   );
 }
 

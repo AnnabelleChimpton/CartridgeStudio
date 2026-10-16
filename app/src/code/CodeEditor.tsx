@@ -14,9 +14,11 @@ import { ShowItPanel } from "../ui/ShowItPanel.tsx";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { AssetsPanel } from "./AssetsPanel.tsx";
-import type { BasicEditorHandle } from "./BasicEditor.tsx";
+import type { BasicEditorHandle, GraphicThumbs } from "./BasicEditor.tsx";
 import { codeSourceFiles } from "./code-files.ts";
-import { parseBuildLog, romSpace, type BuildProblem } from "./build-log.ts";
+import { parseBuildLog, type BuildProblem } from "./build-log.ts";
+import { CartridgeSpace } from "./CartridgeSpace.tsx";
+import { RomDownloads } from "./RomDownloads.tsx";
 import { CodePrint } from "./CodePrint.tsx";
 import { LazyBasicEditor } from "./LazyBasicEditor.tsx";
 import { ReferencePanel } from "./ReferencePanel.tsx";
@@ -72,11 +74,32 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
     return [];
   }, [result]);
   const errors = problems.filter((p) => p.severity === "error").length;
-  const space = useMemo(() => romSpace(preview.lastGood?.log ?? ""), [preview.lastGood]);
+  const thumbs = useMemo<GraphicThumbs>(
+    () =>
+      Object.fromEntries(
+        project.graphics.map((g) => [g.name.toLowerCase(), { rows: g.rows, colors: project.palettes.find((p) => p.id === g.palette)?.colors ?? [] }]),
+      ),
+    [project.graphics, project.palettes],
+  );
+  // Said once per build, politely: what the toolchain thought of game.bas.
+  const announcement =
+    !result || result.kind === "cancelled"
+      ? ""
+      : errors === 0
+        ? "game.bas builds."
+        : `${errors === 1 ? "1 error" : `${errors} errors`} in game.bas${problems[0]?.line !== undefined ? `, first on line ${problems[0].line}` : ""}.`;
 
   const cartridgeFile = async () => {
     const shot = await preview.screenshot().catch(() => undefined);
     return writeCartridgeFile(project, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
+  };
+
+  const exportSource = async () => {
+    const files = codeSourceFiles(project, {
+      symbols: preview.lastGood?.symbols,
+      cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
+    });
+    download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
   };
 
   const goToLine = (line: number) => {
@@ -138,7 +161,6 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
           <div className="workspace-panel code-panel" role="tabpanel" id={`${ids}-code-panel`} aria-labelledby={`${ids}-code`} hidden={tab !== "code"}>
             <div className="code-bar">
               <strong className="code-file">game.bas</strong>
-              <RomSpace space={space} />
               <span className="muted small code-keys" id={`${ids}-keys`}>
                 Tab indents; press Esc then Tab to leave the editor. {isMac() ? "⌘F" : "Ctrl+F"} finds, F8 goes to the next error.
               </span>
@@ -149,6 +171,7 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
               label="game.bas"
               describedBy={`${ids}-keys`}
               problems={problems}
+              graphics={thumbs}
               handle={editor}
               testId="code-editor"
             />
@@ -176,13 +199,25 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
                   ))}
                 </ul>
               )}
-              {result?.kind === "failed" && (
-                <details className="small">
-                  <summary>Full build log</summary>
-                  <pre className="log">{result.log}</pre>
-                </details>
-              )}
+              <p className="visually-hidden" aria-live="polite">
+                {announcement}
+              </p>
             </section>
+            <h3 className="section-h">Cartridge</h3>
+            <CartridgeSpace stats={preview.lastGood?.stats} source={preview.lastGood?.source} />
+            <div className="toolbar">
+              <RomDownloads preview={preview} title={project.title} />
+              <button type="button" className="secondary" title="game.bas, its graphics and build scripts, for 7800basic" onClick={() => void exportSource()}>
+                Export source
+              </button>
+            </div>
+            <details className="small code-log">
+              <summary>Build log</summary>
+              <p className="muted small" data-testid="build-timing">
+                {preview.timing}
+              </p>
+              <pre className="log">{result?.kind === "failed" ? result.log : (preview.lastGood?.log ?? "")}</pre>
+            </details>
           </div>
           {tab === "assets" && (
             <div className="workspace-panel" role="tabpanel" id={`${ids}-assets-panel`} aria-labelledby={`${ids}-assets`}>
@@ -199,7 +234,6 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
           <PreviewPanel
             preview={preview}
             title={project.title}
-            code={null}
             failure={
               <p className="error">
                 {errors === 1 ? "1 error" : `${errors} errors`} in game.bas.{" "}
@@ -207,16 +241,6 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
                   See the problems
                 </button>
               </p>
-            }
-            extraDownloads={
-              <button
-                type="button"
-                className="secondary"
-                title="game.bas and its graphics, for 7800basic"
-                onClick={() => download(folderZip(project.title, "source", codeSourceFiles(project)), `${slugify(project.title)}-source.zip`)}
-              >
-                Export source
-              </button>
             }
           />
           <ShowItPanel preview={preview} title={project.title} print={<CodePrint title={project.title} preview={preview} cartridgeFile={cartridgeFile} />} />
@@ -227,15 +251,3 @@ export function CodeEditor({ onOpen, onNew, back }: Props) {
 }
 
 const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
-
-function RomSpace({ space }: { space: ReturnType<typeof romSpace> }) {
-  if (!space.areas.length) return <span className="muted small rom-space" data-testid="rom-space" />;
-  const main = space.areas[0]!;
-  const over = space.areas.some((a) => a.bytes < 0);
-  return (
-    <span className={`small rom-space ${over ? "over" : ""}`} data-testid="rom-space">
-      {space.areas.map((a) => `${a.bytes.toLocaleString("en-US")} bytes of ROM left${space.areas.length > 1 || a !== main ? ` in ${a.name}` : ""}`).join(" · ")}
-      {space.graphics.map((g) => ` · graphics block ${g.block}: ${g.bytes.toLocaleString("en-US")} bytes left`).join("")}
-    </span>
-  );
-}

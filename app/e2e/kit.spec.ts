@@ -17,9 +17,8 @@ async function nextBuild(page: Page, after: number) {
 }
 const openTab = (page: Page, name: "Things" | "Room" | "Rules" | "Game") => page.getByRole("tab", { name }).click();
 async function viewCode(page: Page) {
-  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  await page.getByText("See the code").click();
-  await expect(page.locator(".see-code .cm-editor")).toBeVisible();
+  await page.getByRole("tab", { name: "Code" }).click();
+  await expect(page.locator(".code-tier .cm-editor")).toBeVisible();
 }
 /** The generated game.bas (the code view only renders the lines on screen). */
 const generated = (page: Page) => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));

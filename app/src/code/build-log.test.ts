@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBuildLog, romSpace } from "./build-log.ts";
+import { buildStats, parseBuildLog, romSpace } from "./build-log.ts";
 
 // Excerpts of real 7800basic 0.41 and dasm output (through 7800filter).
 const BASIC_ERROR = `$ 7800preprocess 
@@ -64,5 +64,15 @@ describe("build log parsing", () => {
   it("reads the ROM space left", () => {
     expect(romSpace(OK)).toEqual({ areas: [{ name: "the main area", bytes: 17204 }], graphics: [{ block: 0, bytes: 1552 }] });
     expect(romSpace("   -12 bytes of ROM space left in the main area.").areas[0]!.bytes).toBe(-12);
+  });
+
+  it("reads the zone, stack and reserved-area figures", () => {
+    expect(buildStats(`${DASM_ERROR}\n     $1880 to $1fff used as zone memory, allowing 15 display objects per zone.\n`)).toEqual({
+      areas: [{ name: "the main area", bytes: 17201 }],
+      graphics: [],
+      stackDepth: 30,
+      zoneObjects: 15,
+      reservedLeft: 2337,
+    });
   });
 });

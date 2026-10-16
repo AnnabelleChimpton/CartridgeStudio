@@ -3,6 +3,7 @@
 // .cartridge file. Also "See the code" in the kit editor.
 
 import AxeBuilder from "@axe-core/playwright";
+import { unzipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
 
 const status = (page: Page) => page.getByTestId("build-status");
@@ -17,9 +18,8 @@ async function ghostPanic(page: Page) {
 }
 
 async function seeTheCode(page: Page) {
-  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  await page.getByText("See the code").click();
-  await expect(page.locator(".see-code .cm-editor")).toBeVisible();
+  await page.getByRole("tab", { name: "Code" }).click();
+  await expect(page.locator(".code-tier .cm-editor")).toBeVisible();
 }
 
 async function eject(page: Page) {
@@ -56,7 +56,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await eject(page);
   // The same program, now yours.
   expect((await source(page)).split("\n").length).toBe((kitSource as string).split("\n").length);
-  await expect(page.getByTestId("rom-space")).toContainText(/bytes of ROM left/);
+  await expect(page.getByTestId("rom-space")).toContainText(/bytes free of 32 KB/);
 
   // Change a line: the preview rebuilds with it.
   let n = await buildCount(page);
@@ -137,15 +137,31 @@ test("a blank code project builds, and adding a graphic adds its incgraphic line
   expect(await source(page)).toContain(" x = rand & 15");
 });
 
-test("See the code marks the lines a rule or a thing becomes", async ({ page }) => {
+test("the Code tab marks the lines a rule or a thing becomes, and what an edit changed", async ({ page }) => {
   await ghostPanic(page);
   await seeTheCode(page);
-  // The first thing (the cat) is selected to start with.
-  await expect(page.locator(".see-code .cm-marked").first()).toContainText("rem Cat");
+  const tier = page.locator(".code-tier");
+  // The first thing (the cat) is selected to start with; its graphic shows in the gutter, its colors as swatches.
+  await expect(tier.locator(".cm-marked").first()).toContainText("rem Cat");
+  await expect(tier.locator(".cm-thumbs canvas").first()).toBeVisible();
+  await expect(tier.locator(".cm-swatch").first()).toBeVisible();
+  // Pick a rule in the split view.
+  await tier.getByRole("button", { name: /^Rule 3/ }).click();
+  await expect(tier.getByText(/^Rule 3: lines/)).toBeVisible();
+  await expect(tier.locator(".cm-marked").first()).toContainText("rem rule 3:");
+  // Selecting a rule in the Rules tab carries over.
   await page.getByRole("tab", { name: "Rules" }).click();
   await page.locator("ol.rules > li").nth(1).click({ position: { x: 5, y: 5 } });
-  await expect(page.locator(".see-code").getByText(/^Rule 2: lines/)).toBeVisible();
-  await expect(page.locator(".see-code .cm-marked").first()).toContainText("rem rule 2:");
+  await seeTheCode(page);
+  await expect(tier.locator(".cm-marked").first()).toContainText("rem rule 2:");
+  // An edit marks the lines it changed.
+  const n = await buildCount(page);
+  await page.getByRole("tab", { name: "Game" }).click();
+  await page.getByLabel("Lives").fill("5");
+  await expect.poll(() => buildCount(page), { timeout: 30_000 }).toBeGreaterThan(n);
+  await seeTheCode(page);
+  await expect(tier.getByText(/Your last change touched line/)).toBeVisible();
+  await expect(tier.getByTestId("rom-space")).toContainText("bytes free");
 });
 
 test("the code editor, See the code and the eject dialog pass axe", async ({ page }) => {
@@ -187,4 +203,41 @@ test("the keyboard can leave the code editor", async ({ page }) => {
   await page.keyboard.press("Escape");
   await page.keyboard.press("Tab");
   await expect(editor(page)).not.toBeFocused();
+});
+
+async function downloadOf(page: Page, click: () => Promise<unknown>) {
+  const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), click()]);
+  const chunks: Buffer[] = [];
+  for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
+  return { name: download.suggestedFilename(), bytes: new Uint8Array(Buffer.concat(chunks)) };
+}
+
+test("an ejected game still boxes up: print PDF, submission package and source folder", async ({ page }) => {
+  await ghostPanic(page);
+  await eject(page);
+  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Print the box" });
+  // The kit game's manual came along.
+  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip: remove the Catnip/);
+  const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
+  expect(pdf.name).toBe("ghost-panic-print.pdf");
+  expect(new TextDecoder().decode(pdf.bytes.subarray(0, 5))).toBe("%PDF-");
+  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download submission package" }).click());
+  const names = Object.keys(unzipSync(pkg.bytes)).map((n) => n.replace("ghost-panic-submission/", ""));
+  expect(names).toEqual(
+    expect.arrayContaining([
+      "CHECKLIST.txt", "rom/ghost-panic.a78", "rom/ghost-panic.bin", "print/ghost-panic-print.pdf", "project/ghost-panic.cartridge",
+      "source/game.bas", "source/build.sh", "source/RUNTIME.txt",
+    ]),
+  );
+  await dialog.getByRole("button", { name: "Close" }).click();
+
+  const src = await downloadOf(page, () => page.getByRole("button", { name: "Export source", exact: true }).click());
+  expect(src.name).toBe("ghost-panic-source.zip");
+  const files = unzipSync(src.bytes);
+  for (const f of ["game.bas", "build.sh", "build.bat", "PITFALLS.txt", "RUNTIME.txt", "README.txt", "ghost-panic.cartridge", "spr0.png"]) {
+    expect(files[`ghost-panic-source/${f}`], f).toBeDefined();
+  }
+  // RUNTIME.txt has addresses from the last build.
+  expect(new TextDecoder().decode(files["ghost-panic-source/RUNTIME.txt"])).toMatch(/\$2200 {2}otype/);
 });

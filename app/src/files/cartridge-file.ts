@@ -9,6 +9,15 @@ import { loadProject, type LoadResult } from "../project/load.ts";
 import type { Project, Template } from "../project/schema.ts";
 
 export const CARTRIDGE_EXTENSION = ".cartridge";
+/** Game files are a few hundred KB at most; anything much bigger isn't one. */
+export const MAX_CARTRIDGE_BYTES = 2 * 1024 * 1024;
+/** The only entries read, and the most each may unpack to. Anything else in the ZIP is ignored. */
+const ENTRY_LIMITS: Record<string, number> = {
+  "cartridge.json": 4 * 1024,
+  "project.json": 1536 * 1024,
+  "thumbnail.png": 512 * 1024,
+  "game.bas": 512 * 1024,
+};
 const FORMAT = "cartridge-studio";
 const FORMAT_VERSION = 1;
 
@@ -35,11 +44,17 @@ export interface OpenedCartridge {
 }
 
 export function readCartridgeFile(bytes: Uint8Array, templates: Record<string, Template>): OpenedCartridge {
+  // Files come from anywhere: bound what they can cost before reading them.
+  if (bytes.length > MAX_CARTRIDGE_BYTES) return { result: { ok: false, errors: ["This file is too big to be a Cartridge Studio game file."] } };
   let files: Record<string, Uint8Array>;
   try {
-    files = unzipSync(bytes);
+    files = unzipSync(bytes, { filter: (f) => f.name in ENTRY_LIMITS && f.originalSize <= ENTRY_LIMITS[f.name]! && f.size <= MAX_CARTRIDGE_BYTES });
   } catch {
     return { result: { ok: false, errors: ["This isn't a Cartridge Studio game file."] } };
+  }
+  // The sizes in a ZIP's headers can lie; check what actually came out.
+  if (Object.entries(files).some(([name, data]) => data.length > ENTRY_LIMITS[name]!)) {
+    return { result: { ok: false, errors: ["This game file is damaged."] } };
   }
   const marker = files["cartridge.json"];
   const project = files["project.json"];

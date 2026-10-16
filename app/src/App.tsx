@@ -9,10 +9,11 @@ import { useEffect, useId, useState } from "react";
 import { CodeEditor } from "./code/CodeEditor.tsx";
 import { EjectDialog } from "./code/EjectDialog.tsx";
 import { blankCodeProject, ejectKit, ejectTemplate } from "./code/eject.ts";
-import { SeeTheCode } from "./code/SeeTheCode.tsx";
+import { CodeTier } from "./code/CodeTier.tsx";
+import { useGeneratedDiff } from "./code/useGeneratedDiff.ts";
 import { useCodeStore } from "./code/store.ts";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
-import { slugify, sourceZip } from "./files/exports.ts";
+import { folderZip, slugify, sourceFiles } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
@@ -38,6 +39,7 @@ const TEMPLATE_TABS = [
   { id: "sounds", label: "Sounds" },
   { id: "settings", label: "Settings" },
   { id: "print", label: "Print" },
+  { id: "code", label: "Code" },
 ] as const;
 type TemplateTab = (typeof TEMPLATE_TABS)[number]["id"];
 
@@ -188,6 +190,8 @@ function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) 
   );
   const [tab, setTab] = useState<TemplateTab>("graphics");
   const ids = useId();
+  const [codeKey, setCodeKey] = useState<string | null>(null);
+  const changed = useGeneratedDiff(preview.lastGood?.source);
 
   useEffect(() => {
     window.__cs!.store = useProjectStore;
@@ -246,6 +250,29 @@ function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) 
             {tab === "rules" && <RulesPanel template={template} />}
             {tab === "sounds" && <SoundsPanel template={template} />}
             {tab === "settings" && <SettingsPanel template={template} />}
+            {tab === "code" && (
+              <CodeTier
+                preview={preview}
+                title={project.title}
+                jumps={[
+                  {
+                    heading: "Rules",
+                    items: project.rules.map((r, i) => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, detail: `${r.when} → ${r.then.join(", ")}`, ref: { rule: i + 1 } })),
+                  },
+                ]}
+                selected={codeKey}
+                onSelect={setCodeKey}
+                changed={changed}
+                onExportSource={async () => {
+                  const files = sourceFiles(project, template, {
+                    symbols: preview.lastGood?.symbols,
+                    cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
+                  });
+                  download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
+                }}
+                onEject={onEditAsCode}
+              />
+            )}
             {tab === "print" && (
               <PrintPanel
                 template={template}
@@ -261,18 +288,6 @@ function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) 
           <PreviewPanel
             preview={preview}
             title={project.title}
-            code={<SeeTheCode source={preview.lastGood?.source} onEject={onEditAsCode} />}
-            extraDownloads={
-              <button
-                type="button"
-                className="secondary"
-                title="game.bas and its graphics, for 7800basic"
-                onClick={() => download(sourceZip(project, template), `${slugify(project.title)}-source.zip`)}
-                disabled={preview.result?.kind === "invalid"}
-              >
-                Export source
-              </button>
-            }
           />
           <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
         </div>

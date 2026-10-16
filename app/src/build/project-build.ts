@@ -9,6 +9,7 @@ import type { KitGame } from "../kit/schema.ts";
 import { SOUND_LIBRARY, getTemplate } from "../project/templates.ts";
 import type { Project } from "../project/schema.ts";
 import { codeBuildInput } from "../code/build-input.ts";
+import { buildStats, type BuildStats } from "../code/build-log.ts";
 import { isCodeProject, type CodeProject } from "../code/schema.ts";
 
 /** Anything the app can build: a template project, a kit game or a code project. */
@@ -34,6 +35,8 @@ export type ProjectBuildResult =
       source: string;
       /** The toolchain's report (ROM space left and so on); absent for older cached ROMs. */
       log?: string;
+      /** ROM space, zones and stack, from the log (absent for older cached ROMs). */
+      stats?: BuildStats;
       cached: boolean;
     } & Timings)
   /** The project failed validation: creator-facing messages. */
@@ -66,7 +69,10 @@ export async function buildProject(
 
   const key = await cacheKey(input, builder.toolchainVersion);
   const hit = await cache?.get(key);
-  if (hit) return { kind: "built", ...hit, signed: sign, source: input.source, cached: true, ...timings(0) };
+  if (hit) {
+    const stats = hit.log === undefined ? undefined : buildStats(hit.log);
+    return { kind: "built", ...hit, stats, signed: sign, source: input.source, cached: true, ...timings(0) };
+  }
 
   const t1 = performance.now();
   const r = await builder.build(input);
@@ -84,6 +90,7 @@ export async function buildProject(
     symbols: r.symbols,
     source: input.source,
     log: r.log,
+    stats: buildStats(r.log),
     cached: false,
     ...timings(buildMs),
   };

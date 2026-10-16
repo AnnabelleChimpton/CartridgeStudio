@@ -1,40 +1,22 @@
 // The Play panel: the emulator, its controls and build status. ROM files,
-// build timings and the generated code are tucked under "For developers".
+// build timings, the log and the code are in each editor's Code tab.
 
 import { useState, type ReactNode } from "react";
-import { slugify } from "../files/exports.ts";
-import { download, type Preview } from "./usePreview.ts";
+import type { Preview } from "./usePreview.ts";
 
 interface Props {
   preview: Preview;
   title: string;
   /** Shown under the game, e.g. the console-time meter. */
   meter?: ReactNode;
-  extraDownloads?: ReactNode;
-  /** Replaces the plain code view under "For developers" (null hides it). */
-  code?: ReactNode;
-  /** Replaces the failed-build details (code projects: the creator's errors, not our bug). */
+  /** What to say when the build fails (default: our bug, details in the Code tab). */
   failure?: ReactNode;
 }
 
-export function PreviewPanel({ preview, title, meter, extraDownloads, code, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
+export function PreviewPanel({ preview, title, meter, failure }: Props) {
+  const { emuContainer, stage, enterTv, emulator, result, status, error } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [exporting, setExporting] = useState(false);
-
-  // Downloads are always signed, so they boot on a real console.
-  const exportRom = async (format: "a78" | "bin") => {
-    setExporting(true);
-    try {
-      const rom = await buildSigned();
-      download(format === "a78" ? rom.a78 : rom.bin, `${slugify(title)}.${format}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setExporting(false);
-    }
-  };
 
   return (
     <section className="panel preview" aria-labelledby="preview-h">
@@ -90,39 +72,10 @@ export function PreviewPanel({ preview, title, meter, extraDownloads, code, fail
           ))}
         </ul>
       )}
-      {result?.kind === "failed" && failure}
-      {result?.kind === "failed" && failure === undefined && (
-        <details className="small">
-          <summary>Details for the Cartridge Studio team</summary>
-          <pre className="log">{`${result.stage}: ${result.message}\n${result.log}`}</pre>
-        </details>
-      )}
+      {result?.kind === "failed" &&
+        (failure ?? <p className="muted small">That's a Cartridge Studio bug, not yours. The details are in the Code tab.</p>)}
       {error && <p className="error">{error}</p>}
       {meter}
-      <details className="dev">
-        <summary>For developers</summary>
-        <p className="muted small" data-testid="build-timing">
-          {timing}
-        </p>
-        <div className="toolbar">
-          <button type="button" className="secondary" disabled={!lastGood || exporting} onClick={() => void exportRom("a78")}>
-            Download .a78
-          </button>
-          <button type="button" className="secondary" disabled={!lastGood || exporting} onClick={() => void exportRom("bin")}>
-            Download .bin
-          </button>
-          {extraDownloads}
-          {exporting && <span className="muted small">Preparing download…</span>}
-        </div>
-        {code === undefined ? (
-          <details className="code">
-            <summary>View code</summary>
-            <pre data-testid="game-bas">{lastGood?.source ?? ""}</pre>
-          </details>
-        ) : (
-          code
-        )}
-      </details>
     </section>
   );
 }

@@ -15,9 +15,9 @@ export const CodeGraphicSchema = z
   .object({
     name: z.string().regex(GRAPHIC_NAME, "Graphic names are letters, digits and _, like enemy_1"),
     /** One row of `0`-`3` per line: `0` transparent, `1`-`3` the palette's colors (160A). */
-    rows: z.array(z.string().regex(/^[0-3]+$/)).min(1).max(256),
+    rows: z.array(z.string().max(256).regex(/^[0-3]+$/)).min(1).max(256),
     /** Which palette the editor shows it in; game.bas picks the real one at run time. */
-    palette: z.string(),
+    palette: z.string().max(32),
   })
   .refine((g) => g.rows.every((r) => r.length === g.rows[0]!.length), "Every row of a graphic is the same width")
   .refine((g) => g.rows[0]!.length <= 256, "Graphics are at most 256 pixels wide");

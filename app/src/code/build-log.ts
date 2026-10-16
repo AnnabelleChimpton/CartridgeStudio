@@ -59,6 +59,29 @@ export function parseBuildLog(log: string): BuildProblem[] {
   return out;
 }
 
+/** Everything 7800filter and 7800basic report about a built ROM. */
+export interface BuildStats extends RomSpace {
+  /** How deep gosubs can nest before the stack meets the canary. */
+  stackDepth?: number;
+  /** Display objects that fit in each zone. */
+  zoneObjects?: number;
+  /** Bytes left in 7800basic's reserved RAM area. */
+  reservedLeft?: number;
+}
+
+export function buildStats(log: string): BuildStats {
+  const n = (re: RegExp) => {
+    const m = re.exec(log);
+    return m ? Number(m[1]) : undefined;
+  };
+  return {
+    ...romSpace(log),
+    stackDepth: n(/stack allowance: (\d+) nested subroutines/),
+    zoneObjects: n(/allowing (\d+) display objects per zone/),
+    reservedLeft: n(/(-?\d+) bytes left in the 7800basic reserved area/),
+  };
+}
+
 export interface RomSpace {
   /** Bytes free in each ROM area dasm reports ("the main area", "bank 2"…). Negative means over. */
   areas: { name: string; bytes: number }[];

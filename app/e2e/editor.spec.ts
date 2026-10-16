@@ -3,10 +3,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-/** Opens the Play panel's "For developers" section (ROM downloads, timings, code). */
-const openDev = (page: Page) => page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-
-/** Switches the editor to one of its tabs (Graphics, Rules, Sounds, Settings, Print). */
+/** Switches the editor to one of its tabs (Graphics, Rules, Sounds, Settings, Print, Code). */
 const openTab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true }).click();
 
 interface BuildRecord {
@@ -116,13 +113,14 @@ test("rules edit the generated code", async ({ page }) => {
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "A shot hits an enemy" });
   await page.getByLabel("Rule 5 action 1").selectOption({ label: "Lose a life" });
   await waitForBuild(page, n + 1);
-  await openDev(page);
-  await page.getByText("See the code").click();
-  await expect(page.locator(".see-code .cm-editor")).toBeVisible();
+  // The Code tab marks the new rule's lines.
+  await openTab(page, "Code");
+  await page.getByRole("button", { name: /^Rule 5/ }).click();
+  await expect(page.locator(".cm-marked").first()).toContainText("rem rule 5: shot.hits.enemy -> lives.lose");
+
   // The code view only renders the lines on screen, so read the built source.
   const generated = () => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
-  await expect.poll(generated).toContain("rem rule 5: shot.hits.enemy -> lives.lose");
-
+  await openTab(page, "Rules");
   await page.getByRole("button", { name: "Delete rule 5" }).click();
   await waitForBuild(page, n + 2);
   await expect.poll(generated).not.toContain("rem rule 5");
@@ -279,7 +277,7 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
   });
   expect(preview?.signed).toBe(false);
 
-  await openDev(page);
+  await openTab(page, "Code");
   const fetchDownload = async (name: string) => {
     const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name }).click()]);
     expect(download.suggestedFilename()).toMatch(/^cat-vs-vacuums\.(a78|bin)$/);
@@ -452,7 +450,8 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
 });
 
 async function downloadBytes(page: Page, button: string) {
-  await openDev(page);
+  // Export source is in the Code tab; the other downloads are always on screen.
+  if (button === "Export source") await openTab(page, "Code");
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
     page.getByRole("button", { name: button, exact: true }).click(),

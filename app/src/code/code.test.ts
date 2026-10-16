@@ -3,6 +3,7 @@ import { encodeIndexedPng } from "@cartridge-studio/toolchain";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildProject } from "../build/project-build.ts";
 import { readCartridgeFile, writeCartridgeFile } from "../files/cartridge-file.ts";
+import { kitSourceFiles, sourceFiles } from "../files/exports.ts";
 import { nodeBuilder } from "../harness/node.ts";
 import { generateKit } from "../kit/generate.ts";
 import { KIT_PRESETS } from "../kit/presets.ts";
@@ -118,5 +119,28 @@ describe("generated-code markers", () => {
     expect(got).toContain(` rem palette ${ghost.palette}`);
     expect(got.some((l) => l.includes("plotsprite"))).toBe(true);
     expect(markedLines(gen.input.source, { thing: "Nobody" })).toEqual([]);
+  });
+});
+
+describe("the source folder", () => {
+  it("is yours to edit, with build scripts, pitfalls, a runtime map and the game file", async () => {
+    const game = ghostPanic();
+    const built = await buildProject(builder, game, undefined, { sign: false });
+    if (built.kind !== "built") throw new Error("build");
+    const files = kitSourceFiles(game, SOUND_LIBRARY, { symbols: built.symbols, cartridge: { name: "ghost-panic.cartridge", bytes: writeCartridgeFile(game) } });
+    for (const f of ["game.bas", "README.txt", "PITFALLS.txt", "build.sh", "build.bat", "RUNTIME.txt", "ghost-panic.cartridge", "spr0.png"]) expect(files[f], f).toBeDefined();
+    const bas = strFromU8(files["game.bas"]!);
+    expect(bas).toContain("Yours to edit");
+    expect(bas).not.toContain("Do not edit");
+    const runtime = strFromU8(files["RUNTIME.txt"]!);
+    // Variables by address from the symbol table, labels with their lines.
+    expect(runtime).toMatch(/\$0140 {2}gamestate/);
+    expect(runtime).toMatch(/\$2200 {2}otype/);
+    expect(runtime).toMatch(/main {2}\(line \d+\)/);
+    expect(runtime).toContain("STARTLIVES = 3");
+    expect(strFromU8(files["README.txt"]!)).toContain("7800basic 0.41");
+    expect(strFromU8(files["build.bat"]!)).toContain("\r\n");
+    const t = getTemplate("fixed-shooter");
+    expect(strFromU8(sourceFiles(structuredClone(t.sample), t)["game.bas"]!)).toContain("Yours to edit");
   });
 });
