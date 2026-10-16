@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cartridge Studio: make a real cartridge game in an afternoon</title>
+  <meta name="description" content="A free game maker in your browser that builds real 7800 cartridge ROMs. Draw things, paint a room, write rules as sentences, then play it on a console with a flash cartridge.">
+  <meta name="theme-color" content="#11131f">
+  <meta property="og:title" content="Cartridge Studio">
+  <meta property="og:description" content="Make a real cartridge game in an afternoon. No install, no code, no account.">
+  <meta property="og:image" content="clips/ghost-panic.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23ff8a5c' d='M2 1h12v10h-1v4H3v-4H2z'/%3E%3Cpath fill='%2311131f' d='M4 3h8v5H4zM5 12h1v2H5zm2 0h1v2H7zm2 0h1v2H9z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-row">
+      <a class="brand" href="#top" aria-label="Cartridge Studio, back to top">
+        <svg class="brand-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2 1h12v10h-1v4H3v-4H2z"/><path class="cut" d="M4 3h8v5H4zM5 12h1v2H5zm2 0h1v2H7zm2 0h1v2H9z"/></svg>
+        <span>Cartridge Studio</span>
+      </a>
+      <nav aria-label="Sections">
+        <ul class="nav-links">
+          <li><a href="#clips">Clips</a></li>
+          <li><a href="#afternoon">How it works</a></li>
+          <li><a href="#who">Who it's for</a></li>
+          <li><a href="#console">On a console</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ul>
+      </nav>
+      <!-- Set this to wherever the app is deployed (the default assumes the app build sits in app/ next to this page). -->
+      <a class="button small" href="app/">Open the studio</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="kicker">Free game maker · runs in your browser</p>
+          <h1 id="hero-title">Paint it. Write the rules. <span class="hl">Play it on a real console.</span></h1>
+          <p class="lede">Cartridge Studio builds genuine 7800 cartridge games from things you draw and rules you write as plain sentences. No install, no code, no account. When you're done, the game you made is a real ROM: copy it to a flash cartridge to play it on a console and a TV.</p>
+          <div class="cta-row">
+            <a class="button" href="app/">Open the studio</a>
+            <a class="button ghost" href="#clips">Watch it play</a>
+          </div>
+          <ul class="proof" aria-label="What's guaranteed">
+            <li><strong>60 fps</strong> <span>every game the editor accepts is fuzz-tested to hold it</span></li>
+            <li><strong>2 emulators</strong> <span>behaviour tests run in js7800 and MAME</span></li>
+            <li><strong>1 file</strong> <span>an offline player you can send to anyone</span></li>
+          </ul>
+        </div>
+        <figure class="tv hero-tv">
+          <div class="screen">
+            <picture>
+              <source srcset="clips/ghost-panic.png" media="(prefers-reduced-motion: reduce)">
+              <img class="clip" src="clips/ghost-panic.gif" width="320" height="240" fetchpriority="high"
+                   data-still="clips/ghost-panic.png" data-moving="clips/ghost-panic.gif"
+                   alt="Ghost Panic: a green cat races through a blue brick maze, eats catnip, and the ghosts turn scared; the cat chases them down and the score climbs into the hundreds.">
+            </picture>
+          </div>
+          <figcaption>Ghost Panic, one of the four starter games. Recorded from the built ROM.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="band" id="clips" aria-labelledby="clips-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="clips-title">Real games, really running</h2>
+          <p>Each clip is the actual cartridge ROM, built by Cartridge Studio and recorded frame by frame in the emulator while a little autopilot plays. Nothing is mocked up. Each one is a starter you can open and change.</p>
+          <button class="toggle" type="button" id="motion-toggle" aria-pressed="false" hidden>Pause the clips</button>
+        </div>
+        <ul class="clip-grid">
+          <li>
+            <figure class="tv">
+              <div class="screen">
+                <picture>
+                  <source srcset="clips/shooter.png" media="(prefers-reduced-motion: reduce)">
+                  <img class="clip" src="clips/shooter.gif" width="320" height="240" loading="lazy" decoding="async"
+                       data-still="clips/shooter.png" data-moving="clips/shooter.gif"
+                       alt="Cat vs. Vacuums: a cat-ship at the bottom of the screen slides left and right, firing up at two marching rows of vacuum cleaners and stepping out from under their falling dust.">
+                </picture>
+              </div>
+              <figcaption><strong>Shooter</strong> · Cat vs. Vacuums. Line up, fire, dodge what falls.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure class="tv">
+              <div class="screen">
+                <picture>
+                  <source srcset="clips/maze.png" media="(prefers-reduced-motion: reduce)">
+                  <img class="clip" src="clips/maze.gif" width="320" height="240" loading="lazy" decoding="async"
+                       data-still="clips/maze.png" data-moving="clips/maze.gif"
+                       alt="Yarn Hunt: a cat threads through a brick maze collecting balls of yarn while ghosts chase it and a bat patrols the middle corridor.">
+                </picture>
+              </div>
+              <figcaption><strong>Maze</strong> · Yarn Hunt. Collect it all; don't get caught.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure class="tv">
+              <div class="screen">
+                <picture>
+                  <source srcset="clips/dodger.png" media="(prefers-reduced-motion: reduce)">
+                  <img class="clip" src="clips/dodger.gif" width="320" height="240" loading="lazy" decoding="async"
+                       data-still="clips/dodger.png" data-moving="clips/dodger.gif"
+                       alt="Rock Fall: a ship weaves along the bottom of the screen between falling rocks and boulders, catching falling stars for points.">
+                </picture>
+              </div>
+              <figcaption><strong>Dodger</strong> · Rock Fall. Weave, catch the stars, last thirty seconds.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure class="tv">
+              <div class="screen">
+                <picture>
+                  <source srcset="clips/ghost-panic.png" media="(prefers-reduced-motion: reduce)">
+                  <img class="clip" src="clips/ghost-panic.gif" width="320" height="240" loading="lazy" decoding="async"
+                       data-still="clips/ghost-panic.png" data-moving="clips/ghost-panic.gif"
+                       alt="Ghost Panic: the cat grabs catnip, every ghost turns scared for six seconds, and each one it catches is worth more than the last.">
+                </picture>
+              </div>
+              <figcaption><strong>Ghost Panic</strong> · catnip turns the tables, and combos stack up.</figcaption>
+            </figure>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" id="afternoon" aria-labelledby="afternoon-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">How it works</p>
+          <h2 id="afternoon-title">Make a real cartridge game in an afternoon</h2>
+          <p>Start from a game that already works, then make it yours. You can't break it: if the editor accepts a change, the game still runs at full speed.</p>
+        </div>
+        <ol class="steps">
+          <li>
+            <h3><span class="step-no" aria-hidden="true">1</span> Pick a starter</h3>
+            <p>A shooter, a maze, a chase or a dodger. Each one plays from the first second, so you're always changing a game, never facing a blank page.</p>
+          </li>
+          <li>
+            <h3><span class="step-no" aria-hidden="true">2</span> Draw your things</h3>
+            <p>Up to eight kinds of thing, each a little sprite with two frames of animation. Give each one a behaviour: chases the player, patrols, falls, flees, marches, or fires.</p>
+          </li>
+          <li>
+            <h3><span class="step-no" aria-hidden="true">3</span> Paint the room</h3>
+            <p>Lay down walls, spikes and goals, and place where everything starts. What you paint is what the console draws.</p>
+          </li>
+          <li>
+            <h3><span class="step-no" aria-hidden="true">4</span> Write the rules as sentences</h3>
+            <p class="rule" aria-label="Example rule: When the cat touches the catnip, remove the catnip, then turn every ghost into a scared ghost for 6 seconds.">
+              <span class="chip when">When</span> <span class="chip thing">cat</span> touches <span class="chip thing">catnip</span>
+              <span class="chip then">then</span> remove <span class="chip thing">catnip</span>, turn every <span class="chip thing">ghost</span> into <span class="chip thing">scared</span> for <span class="chip num">6</span> seconds
+            </p>
+            <p>Counters, "only if", timers and levels are there when you want more.</p>
+          </li>
+          <li>
+            <h3><span class="step-no" aria-hidden="true">5</span> Play it, then show it off</h3>
+            <p>Play as you edit. When it's ready: TV mode for the living room, a one-file offline player, a GIF clip, a printable box, label and manual, and the ROM for a flash cartridge.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section alt" id="who" aria-labelledby="who-title">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="kicker">Who it's for</p>
+          <h2 id="who-title">Simple on the surface, honest all the way down</h2>
+        </div>
+        <div class="strips">
+          <article class="strip" aria-labelledby="who-families">
+            <h3 id="who-families">Families and first-timers</h3>
+            <p>Make a game together on a rainy Saturday, then play it on the television that evening. No downloads, no sign-up, nothing to install, and the words are plain: things, rooms, rules.</p>
+            <ul>
+              <li>Rules read like sentences, and a sentence that doesn't make sense can't be written</li>
+              <li>Play with a keyboard or a gamepad; the editor is checked for accessibility too</li>
+              <li>Print a real box, label and instruction manual for the finished game</li>
+            </ul>
+          </article>
+          <article class="strip" aria-labelledby="who-hobby">
+            <h3 id="who-hobby">Hobbyists: look under the hood</h3>
+            <p>Every game is ordinary 7800basic compiled by the real toolchain, running in your browser. Nothing is hidden behind a proprietary format.</p>
+            <ul>
+              <li>Export the generated <code>.bas</code> source and graphics and keep going by hand</li>
+              <li>A CPU meter shows each frame's budget; the editor refuses changes that would drop a frame</li>
+              <li>Signed <code>.bin</code> and headered <code>.a78</code> ROMs, plus scripted behaviour tests that run in js7800 and MAME</li>
+            </ul>
+          </article>
+          <article class="strip" aria-labelledby="who-jams">
+            <h3 id="who-jams">Game jam organisers</h3>
+            <p>Run a jam where every entry boots. Because the editor only accepts games that hold 60 fps, judging day isn't spent chasing crashes.</p>
+            <ul>
+              <li>Each entry exports as one submission ZIP: ROM, print kit, source and a checklist</li>
+              <li>A one-file offline player per entry, so judges just double-click</li>
+              <li>TV mode for showing entries on a big screen</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="console" aria-labelledby="console-title">
+      <div class="wrap console-grid">
+        <div>
+          <p class="kicker">From browser to television</p>
+          <h2 id="console-title">How it reaches a real console</h2>
+          <p>Cartridge Studio doesn't fake the hardware: it produces the same kind of ROM file a cartridge holds. A <strong>flash cartridge</strong> is a cartridge with a memory-card slot that loads game files, and it's the bridge from your browser to the console.</p>
+          <ol class="console-steps">
+            <li>Get a flash cartridge that plays 7800 games and is known to work in your console (check the seller lists 7800 support, not only 2600).</li>
+            <li>In Cartridge Studio, choose <em>Show it</em>, then <em>Download for a flash cart</em>, and copy the file onto the card.</li>
+            <li>Put the cartridge in the console, switch on, and pick your game from its menu.</li>
+          </ol>
+        </div>
+        <aside class="compat" aria-labelledby="compat-title">
+          <h3 id="compat-title">Compatibility</h3>
+          <p>Games are standard 7800 ROMs, made for:</p>
+          <ul>
+            <li>An original Atari 7800, with a 7800 flash cartridge</li>
+            <li>Atari 7800+ and 2600+ consoles, whose firmware decides which cartridges they accept</li>
+            <li>Emulators that read <code>.a78</code> files</li>
+          </ul>
+          <p class="note">Every game is tested in two emulators; testing on real consoles is under way. Not every flash cartridge works in every console, and the 7800+ and 2600+ depend on their firmware version, so check reports for your console and cartridge before you buy. If you try one, we'd love to hear which console, firmware and cartridge you used.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section alt" id="faq" aria-labelledby="faq-title">
+      <div class="wrap narrow">
+        <h2 id="faq-title">Questions</h2>
+        <div class="faq">
+          <details>
+            <summary>Is it free?</summary>
+            <p>Yes. Cartridge Studio is free software under the GPL (version 3 or later), and it runs entirely in your browser.</p>
+          </details>
+          <details>
+            <summary>Who owns the games I make?</summary>
+            <p>You do. Your game, art, rules and text are yours: sell it, give it away or put it on a cartridge. The 7800basic toolchain is GPL v2, and its licence says ROMs built from your own source are yours. The runtime routines compiled into your game, from 7800basic and from the Cartridge Studio game kit, are CC0 (public domain), so they put no conditions on your game.</p>
+          </details>
+          <details>
+            <summary>Do I need to know how to program?</summary>
+            <p>No. Rules are sentences you build from menus. If you do program, you can export the generated 7800basic source and carry on by hand.</p>
+          </details>
+          <details>
+            <summary>Will my game really run on a console?</summary>
+            <p>It's built by the same toolchain homebrew developers use, signed, and tested in two emulators. We haven't finished testing on real consoles yet, and flash cartridge support varies by console and firmware, so please tell us how yours gets on.</p>
+          </details>
+          <details>
+            <summary>Does it work offline?</summary>
+            <p>The offline player does: one HTML file that plays your game with no internet connection. You can send it to anyone.</p>
+          </details>
+          <details>
+            <summary>Is this an Atari product?</summary>
+            <p>No. Cartridge Studio is an independent project. It is not affiliated with, sponsored by or endorsed by Atari. Console names are used only to describe compatibility.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap">
+        <h2 id="final-title">Your first cartridge is an afternoon away</h2>
+        <p>Open a starter, change one thing, press play. That's a game.</p>
+        <a class="button big" href="app/">Open the studio</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-row">
+      <p>Cartridge Studio is free software (GPL-3.0-or-later). <a href="https://github.com/AnnabelleChimpton/CartridgeStudio">Source code</a></p>
+      <p class="legal">Not affiliated with or endorsed by Atari. Atari, 2600+ and 7800+ are trademarks of their respective owners and are used here only to describe compatibility. Fonts: Press Start 2P and Atkinson Hyperlegible, <a href="fonts/press-start-2p-OFL.txt">SIL Open Font License</a>.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Clips loop forever, so offer a pause (WCAG 2.2.2). Paused swaps each GIF for its still.
+    (function () {
+      var button = document.getElementById("motion-toggle");
+      var clips = document.querySelectorAll("img.clip");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+      var paused = false;
+      function show() {
+        clips.forEach(function (img) {
+          var source = img.parentNode.querySelector("source");
+          // The <source> holds the still: on while paused, off while playing (even with reduced motion, once asked).
+          if (source) source.media = paused ? "all" : "not all";
+          img.src = paused ? img.dataset.still : img.dataset.moving;
+        });
+        button.setAttribute("aria-pressed", String(paused));
+        button.textContent = paused ? "Play the clips" : "Pause the clips";
+      }
+      button.hidden = false;
+      if (reduce.matches) { paused = true; show(); }
+      button.addEventListener("click", function () { paused = !paused; show(); });
+    })();
+  </script>
+</body>
+</html>
