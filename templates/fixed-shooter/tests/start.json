@@ -1,0 +1,10 @@
+{
+  "name": "waits on the title screen until fire starts the game",
+  "steps": [
+    { "frames": 120 },
+    { "expect": { "state": 3, "lives": 3, "score": 0 } },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 2 },
+    { "expect": { "state": 0, "lives": 3, "score": 0, "enemiesLeft": 18 } }
+  ]
+}

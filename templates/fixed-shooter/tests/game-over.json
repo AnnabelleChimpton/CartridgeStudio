@@ -1,0 +1,15 @@
+{
+  "name": "losing the last life ends the game, and fire starts a new one",
+  "project": { "params": { "lives": 1, "bombRate": 20 } },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "until": { "state": 2 }, "maxFrames": 6000, "steps": [{ "frames": 10 }] },
+    { "expect": { "lives": 0 } },
+    { "frames": 60 },
+    { "expect": { "state": 2 } },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 2 },
+    { "expect": { "state": 0, "lives": 1, "score": 0, "enemiesLeft": 18 } }
+  ]
+}

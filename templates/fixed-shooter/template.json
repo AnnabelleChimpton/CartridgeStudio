@@ -1,0 +1,55 @@
+{
+  "id": "fixed-shooter",
+  "version": "0.2.0",
+  "name": "Fixed shooter",
+  "description": "Move along the bottom, shoot the formation before it reaches you.",
+  "toolchain": "7800basic 0.41",
+  "romSize": "32k",
+  "sprites": [
+    { "role": "player", "label": "Player ship", "width": 16, "height": 16, "editable": true, "frames": 1 },
+    { "role": "enemy", "label": "Enemy", "width": 12, "height": 8, "editable": true, "frames": 2 },
+    { "role": "shot", "label": "Player shot", "width": 4, "height": 6, "editable": true, "frames": 1 },
+    { "role": "bomb", "label": "Enemy bomb", "width": 4, "height": 4, "editable": true, "frames": 1 },
+    { "role": "font", "label": "Score digits", "width": 64, "height": 8, "editable": false, "frames": 1 }
+  ],
+  "params": [
+    { "id": "shipSpeed", "label": "Ship speed", "min": 1, "max": 4, "step": 1, "default": 2 },
+    { "id": "shotSpeed", "label": "Shot speed", "min": 2, "max": 8, "step": 1, "default": 4 },
+    { "id": "enemySpeed", "label": "Enemy speed", "min": 1, "max": 10, "step": 1, "default": 5 },
+    { "id": "waveSpeedup", "label": "Speed-up per wave", "min": 0, "max": 3, "step": 1, "default": 1 },
+    { "id": "bombRate", "label": "Bomb rate", "min": 0, "max": 20, "step": 1, "default": 6 },
+    { "id": "lives", "label": "Lives", "min": 1, "max": 9, "step": 1, "default": 3 },
+    { "id": "pointsPerEnemy", "label": "Points per enemy", "min": 10, "max": 90, "step": 10, "default": 10 }
+  ],
+  "triggers": [
+    { "id": "input.fire", "label": "Fire is pressed", "hook": "input_fire" },
+    { "id": "shot.hits.enemy", "label": "A shot hits an enemy", "hook": "shot_hits_enemy" },
+    { "id": "player.touches.enemy", "label": "The player is hit", "hook": "player_touches_enemy" },
+    { "id": "enemies.cleared", "label": "All enemies are cleared", "hook": "enemies_cleared" }
+  ],
+  "actions": [
+    { "id": "player.shoot", "label": "Player shoots" },
+    { "id": "score.add", "label": "Add points" },
+    { "id": "lives.lose", "label": "Lose a life" },
+    { "id": "wave.next", "label": "Start the next wave" }
+  ],
+  "sounds": [
+    { "slot": "shoot", "label": "Shooting", "default": "zap" },
+    { "slot": "hit", "label": "Enemy hit", "default": "boom" },
+    { "slot": "lose", "label": "Losing a life", "default": "down" },
+    { "slot": "wave", "label": "New wave", "default": "up" }
+  ],
+  "watch": {
+    "score": { "symbol": "score0", "bytes": 3, "bcd": true },
+    "lives": { "symbol": "lives" },
+    "wave": { "symbol": "wave" },
+    "enemiesLeft": { "symbol": "enemiesleft" },
+    "state": { "symbol": "gamestate" },
+    "moveInterval": { "symbol": "moveinterval" },
+    "animFrame": { "symbol": "animframe" }
+  },
+  "budgets": {
+    "maxEnemies": 18,
+    "maxPalettes": 8
+  }
+}

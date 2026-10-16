@@ -1,0 +1,11 @@
+{
+  "name": "each hit adds Points per enemy",
+  "project": { "params": { "pointsPerEnemy": 40, "bombRate": 0 } },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 2 },
+    { "until": { "score": { "gte": 120 } }, "maxFrames": 3000, "steps": [{ "hold": ["fire"], "frames": 2 }, { "frames": 10 }] },
+    { "expect": { "score": { "multipleOf": 40 }, "enemiesLeft": { "lt": 18 } } }
+  ]
+}

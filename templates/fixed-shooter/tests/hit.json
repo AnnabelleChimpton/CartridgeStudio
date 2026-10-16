@@ -1,0 +1,10 @@
+{
+  "name": "a bomb hit loses a life",
+  "project": { "params": { "bombRate": 20 } },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "until": { "lives": 2 }, "maxFrames": 6000, "steps": [{ "frames": 10 }] },
+    { "expect": { "state": 1 } }
+  ]
+}

@@ -9,6 +9,12 @@ export interface BuildInput {
   files?: Record<string, Uint8Array>;
   /** Run 7800optimize between postprocess and dasm. */
   optimize?: boolean;
+  /**
+   * Sign the ROM so it passes the NTSC console's cartridge check (default true).
+   * Signing is most of a build's time and emulators don't check it, so
+   * previews can skip it. Anything a creator downloads must be signed.
+   */
+  sign?: boolean;
 }
 
 export interface StageTiming {
@@ -20,8 +26,9 @@ export interface BuildSuccess {
   ok: true;
   /** ROM with a 128-byte A78 header, for emulators and flash carts. */
   a78: Uint8Array;
-  /** Signed raw ROM that passes the NTSC console's cartridge check. */
+  /** Raw ROM; passes the NTSC console's cartridge check only when `signed`. */
   bin: Uint8Array;
+  signed: boolean;
   /** dasm symbol table, for reading RAM addresses in tests. */
   symbols: string;
   log: string;

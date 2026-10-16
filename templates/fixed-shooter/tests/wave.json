@@ -1,0 +1,26 @@
+{
+  "name": "clearing the formation starts a faster next wave",
+  "project": {
+    "params": { "bombRate": 0, "enemySpeed": 5, "waveSpeedup": 2 },
+    "rules": [
+      { "when": "input.fire", "then": ["player.shoot"] },
+      { "when": "shot.hits.enemy", "then": ["score.add"] },
+      { "when": "enemies.cleared", "then": ["wave.next"] }
+    ]
+  },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 2 },
+    { "expect": { "wave": 0, "moveInterval": 8 } },
+    {
+      "until": { "wave": 1 },
+      "maxFrames": 30000,
+      "steps": [
+        { "repeat": 9, "steps": [{ "hold": ["left", "fire"], "frames": 2 }, { "hold": ["left"], "frames": 6 }] },
+        { "repeat": 9, "steps": [{ "hold": ["right", "fire"], "frames": 2 }, { "hold": ["right"], "frames": 6 }] }
+      ]
+    },
+    { "expect": { "wave": 1, "moveInterval": 6, "score": { "gte": 180 }, "lives": 3 } }
+  ]
+}

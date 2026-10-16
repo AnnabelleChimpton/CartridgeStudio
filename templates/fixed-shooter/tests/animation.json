@@ -1,0 +1,8 @@
+{
+  "name": "the enemy animation alternates frames",
+  "steps": [
+    { "frames": 1 },
+    { "until": { "animFrame": 1 }, "maxFrames": 40, "steps": [{ "frames": 1 }] },
+    { "until": { "animFrame": 0 }, "maxFrames": 40, "steps": [{ "frames": 1 }] }
+  ]
+}

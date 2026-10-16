@@ -1,0 +1,10 @@
+{
+  "name": "starts with the Lives setting",
+  "project": { "params": { "lives": 7 } },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 2 },
+    { "expect": { "state": 0, "lives": 7 } }
+  ]
+}

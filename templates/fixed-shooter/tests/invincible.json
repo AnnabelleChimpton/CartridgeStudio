@@ -1,0 +1,13 @@
+{
+  "name": "without a lose-a-life rule, hits don't cost lives",
+  "project": {
+    "params": { "bombRate": 20 },
+    "rules": [{ "when": "input.fire", "then": ["player.shoot"] }]
+  },
+  "steps": [
+    { "frames": 5 },
+    { "hold": ["fire"], "frames": 2 },
+    { "frames": 3000 },
+    { "expect": { "lives": 3, "state": 0 } }
+  ]
+}

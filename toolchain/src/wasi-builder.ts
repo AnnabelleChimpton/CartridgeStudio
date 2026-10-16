@@ -37,11 +37,10 @@ interface RunResult {
 }
 
 class StageError extends Error {
-  constructor(
-    readonly stage: string,
-    message: string,
-  ) {
+  readonly stage: string;
+  constructor(stage: string, message: string) {
     super(message);
+    this.stage = stage;
   }
 }
 
@@ -49,11 +48,19 @@ const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 export class WasiBuilder implements Builder {
+  readonly toolchainVersion: string;
+  private readonly modules: Map<Tool, WebAssembly.Module>;
+  private readonly toolDirContents: Map<string, Inode>;
+
   private constructor(
-    readonly toolchainVersion: string,
-    private readonly modules: Map<Tool, WebAssembly.Module>,
-    private readonly toolDirContents: Map<string, Inode>,
-  ) {}
+    toolchainVersion: string,
+    modules: Map<Tool, WebAssembly.Module>,
+    toolDirContents: Map<string, Inode>,
+  ) {
+    this.toolchainVersion = toolchainVersion;
+    this.modules = modules;
+    this.toolDirContents = toolDirContents;
+  }
 
   /** Compiles every tool once; the compiled modules are reused for each build. */
   static async create(pack: ToolchainPack): Promise<WasiBuilder> {
@@ -157,10 +164,13 @@ export class WasiBuilder implements Builder {
       log += decoder.decode(filtered.stdout);
       if (dasm.code !== 0) throw new StageError("dasm", `exit code ${dasm.code}`);
 
-      // 5. Sign the raw image in place, then write the .a78 with its header.
-      const sign = await run("7800sign", ["-w", `${SOURCE}.bin`]);
-      log += decoder.decode(sign.stdout);
-      if (sign.code !== 0) throw new StageError("7800sign", `exit code ${sign.code}`);
+      // 5. Sign the raw image in place (unless asked not to), then write the .a78 with its header.
+      const signed = input.sign ?? true;
+      if (signed) {
+        const sign = await run("7800sign", ["-w", `${SOURCE}.bin`]);
+        log += decoder.decode(sign.stdout);
+        if (sign.code !== 0) throw new StageError("7800sign", `exit code ${sign.code}`);
+      }
 
       const header = await run("7800header", ["-o", "-f", "a78info.cfg", `${SOURCE}.bin`]);
       log += decoder.decode(header.stdout);
@@ -168,7 +178,8 @@ export class WasiBuilder implements Builder {
 
       return {
         ok: true,
-        bin: readFile(`${SOURCE}.bin`, "7800sign"),
+        bin: readFile(`${SOURCE}.bin`, "dasm"),
+        signed,
         a78: readFile(`${SOURCE}.a78`, "7800header"),
         symbols: decoder.decode(readFile(`${SOURCE}.symbol.txt`, "dasm")),
         log,

@@ -59,3 +59,22 @@ describe("WasiBuilder", () => {
     if (!result.ok) expect(["7800basic", "dasm"]).toContain(result.stage);
   });
 });
+
+describe("signing", () => {
+  it("can skip signing; the unsigned ROM differs only in the signature", async () => {
+    const signed = await builder.build({ source, files });
+    const unsigned = await builder.build({ source, files, sign: false });
+    if (!signed.ok || !unsigned.ok) throw new Error("build failed");
+    expect(signed.signed).toBe(true);
+    expect(unsigned.signed).toBe(false);
+    expect(unsigned.log).not.toContain("Wrote back");
+    expect(unsigned.timings.map((t) => t.stage)).not.toContain("7800sign");
+
+    // 7800sign writes 120 bytes of signature into the last bank; nothing else changes.
+    let differing = 0;
+    for (let i = 0; i < signed.bin.length; i++) if (signed.bin[i] !== unsigned.bin[i]) differing++;
+    expect(differing).toBeGreaterThan(0);
+    expect(differing).toBeLessThanOrEqual(120);
+    expect(unsigned.a78.subarray(128)).toEqual(unsigned.bin);
+  });
+});

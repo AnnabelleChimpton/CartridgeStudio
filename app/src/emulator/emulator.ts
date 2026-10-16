@@ -15,6 +15,10 @@ export interface Emulator {
   pause(paused: boolean): void;
   setInput(state: JoystickState): void;
   onFrame(cb: (frame: number) => void): () => void;
+  /** Runs exactly `n` more frames right away (lockstep). Pause first for repeatable runs. */
   stepFrames(n: number): Promise<void>; // for tests
+  /** SHA-256 of the visible picture's palette indices. */
   framebufferHash(): Promise<string>; // for tests
+  /** Reads console memory, e.g. game variables at addresses from dasm's symbol table. */
+  readMemory(address: number, length: number): Promise<Uint8Array>; // for tests
 }
