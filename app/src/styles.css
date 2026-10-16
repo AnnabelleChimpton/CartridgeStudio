@@ -1,0 +1,53 @@
+:root {
+  --bg: #14161b;
+  --panel: #1d2027;
+  --line: #2c313b;
+  --text: #e6e8ec;
+  --muted: #9aa1ad;
+  --accent: #f0a23a;
+  --error: #ff7b72;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+
+.page { max-width: 1280px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+h1 { font-size: 20px; margin: 0; }
+.tag { color: var(--accent); font-size: 13px; }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 680px); gap: 16px; }
+@media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+
+.editor, .preview { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-width: 0; }
+.editor { display: flex; flex-direction: column; gap: 8px; }
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.spacer { flex: 1; }
+textarea {
+  flex: 1; min-height: 480px; width: 100%; resize: vertical;
+  background: #0f1115; color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px; font: 13px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
+}
+button {
+  background: var(--accent); color: #1a1205; border: 0; border-radius: 6px;
+  padding: 6px 12px; font-weight: 600; cursor: pointer;
+}
+button.secondary { background: #2c313b; color: var(--text); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+.emu { width: 100%; }
+.hint { color: var(--muted); font-size: 12px; margin: 6px 0 12px; }
+.stats { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px; margin: 0; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; overflow-wrap: anywhere; }
+.mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.error { color: var(--error); font-size: 13px; }
+
+.log { margin-top: 16px; }
+.log summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.log pre { background: #0f1115; border: 1px solid var(--line); border-radius: 6px; padding: 10px; font-size: 12px; overflow: auto; max-height: 360px; }
+
+/* js7800's splash shows a console logo; the app never displays it. */
+.js7800__logo { display: none !important; }

@@ -1,0 +1,18 @@
+{
+  "name": "cartridge-studio",
+  "private": true,
+  "version": "0.0.0",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "workspaces": [
+    "toolchain",
+    "app"
+  ],
+  "scripts": {
+    "setup": "npm run fetch -w toolchain && npm run vendor -w app",
+    "dev": "npm run dev -w app",
+    "build": "npm run build -w app",
+    "test": "npm run test -w toolchain && npm run test:e2e -w app",
+    "typecheck": "npm run typecheck -w toolchain && npm run typecheck -w app"
+  }
+}

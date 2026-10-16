@@ -1,0 +1,17 @@
+{
+  "name": "7800basic",
+  "version": "0.41",
+  "url": "https://github.com/7800-devtools/7800basic/releases/download/v0.41/7800basic-0.41-wasm.tar.gz",
+  "sha256": "62ef0a562541bff3f813c038a4609abc89ab125ebda3a371f57de2821e7a7fe7",
+  "tools": [
+    "7800preprocess",
+    "7800basic",
+    "7800postprocess",
+    "7800optimize",
+    "dasm",
+    "7800filter",
+    "7800sign",
+    "7800header"
+  ],
+  "licenses": ["LICENSE.txt", "dasm.LICENSE.txt", "README.txt"]
+}
