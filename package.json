@@ -13,7 +13,8 @@
     "setup": "npm run fetch -w toolchain && npm run vendor -w app",
     "dev": "npm run dev -w app",
     "build": "npm run build -w app",
-    "test": "npm run test -w toolchain && npm run test:e2e -w app",
-    "typecheck": "npm run typecheck -w toolchain && npm run typecheck -w app"
+    "test": "npm run test -w toolchain && npm run test -w app && npm run test:e2e -w app",
+    "typecheck": "npm run typecheck -w toolchain && npm run typecheck -w app && tsc -p harness",
+    "test:mame": "vitest run --config harness/vitest.config.ts"
   }
 }
