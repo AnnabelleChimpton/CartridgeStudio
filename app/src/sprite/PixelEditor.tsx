@@ -2,7 +2,8 @@
 // allows what 160A can show: three colors plus transparent at a fixed size,
 // drawn 2:1 wide as on screen. Each stroke is one undo step (one edit key).
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { arrowKeys, drawCursor, radioProps, tabProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscCss } from "../ui/ntsc.ts";
 import {
   clearFrame,
@@ -49,6 +50,24 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
   const current = Math.min(frameIndex, frames.length - 1);
   const frame = frames[current]!;
   const update = (next: (f: Frame) => Frame, key?: string) => onFrame(current, next, key);
+  const ids = useId();
+
+  const colorName = (v: PixelValue) => (v === 0 ? "Transparent" : `Color ${v}`);
+  const grid = useGridKeyboard({
+    cols: width,
+    rows: height,
+    paint: (x, y, erase, key, line) => {
+      const value: PixelValue = erase ? 0 : color;
+      update((f) => (tool === "fill" && !line ? floodFill(f, x, y, value) : setPixels(f, [[x, y]], value)), key);
+    },
+    describe: (x, y) => `Column ${x + 1}, row ${y + 1}: ${colorName(((frame[y]?.charCodeAt(x) ?? 48) - 48) as PixelValue)}`,
+    onOtherKey: (k) => {
+      if (!["0", "1", "2", "3"].includes(k)) return false;
+      setColor(Number(k) as PixelValue);
+      return true;
+    },
+  });
+  const cursor = grid.cursor;
 
   // Cell size: 160A pixels are twice as wide as they are tall.
   const cellH = Math.max(4, Math.min(MAX_CELL_HEIGHT, Math.floor(MAX_CANVAS_WIDTH / (width * 2))));
@@ -79,7 +98,8 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
       ctx.lineTo(canvasW, y * cellH + 0.5);
     }
     ctx.stroke();
-  }, [frame, colors, width, height, cellW, cellH, canvasW, canvasH]);
+    if (cursor) drawCursor(ctx, cursor[0] * cellW, cursor[1] * cellH, cellW, cellH);
+  }, [frame, colors, width, height, cellW, cellH, canvasW, canvasH, cursor?.[0], cursor?.[1], cursor !== null]);
 
   const cellAt = (e: React.PointerEvent<HTMLCanvasElement>): [number, number] => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -92,6 +112,7 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
     if (e.button !== 0 && e.button !== 2) return;
     e.preventDefault();
     const [x, y] = cellAt(e);
+    grid.moveTo(x, y);
     const value: PixelValue = e.button === 2 ? 0 : color;
     const key = `stroke:${++strokeCounter}`;
     if (tool === "fill") {
@@ -122,14 +143,13 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
   return (
     <>
       <div className="se-toolbar">
-        <div className="se-group" role="radiogroup" aria-label="Drawing color">
+        <div className="se-group" role="radiogroup" aria-label="Drawing color" onKeyDown={arrowKeys("radio")}>
           {([0, 1, 2, 3] as PixelValue[]).map((v) => (
             <button
               key={v}
               type="button"
-              role="radio"
-              aria-checked={color === v}
-              aria-label={v === 0 ? "Transparent" : `Color ${v}`}
+              {...radioProps(color === v)}
+              aria-label={colorName(v)}
               title={v === 0 ? "Transparent (or right-click)" : `Color ${v}`}
               className={`se-color ${v === 0 ? "transparent" : ""} ${color === v ? "selected" : ""}`}
               style={{ background: swatch(v) }}
@@ -137,13 +157,12 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
             />
           ))}
         </div>
-        <div className="se-group" role="radiogroup" aria-label="Tool">
+        <div className="se-group" role="radiogroup" aria-label="Tool" onKeyDown={arrowKeys("radio")}>
           {(["pencil", "fill"] as Tool[]).map((t) => (
             <button
               key={t}
               type="button"
-              role="radio"
-              aria-checked={tool === t}
+              {...radioProps(tool === t)}
               className={`secondary ${tool === t ? "active" : ""}`}
               onClick={() => setTool(t)}
             >
@@ -155,20 +174,24 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
       </div>
 
       {(frames.length > 1 || framesExtra) && (
-        <div className="se-toolbar" role="tablist" aria-label="Animation frames">
-          {frames.length > 1 &&
-            frames.map((_, f) => (
-              <button
-                key={f}
-                type="button"
-                role="tab"
-                aria-selected={f === current}
-                className={`secondary ${f === current ? "active" : ""}`}
-                onClick={() => setFrameIndex(f)}
-              >
-                Frame {f + 1}
-              </button>
-            ))}
+        <div className="se-toolbar">
+          {frames.length > 1 && (
+            <div className="se-group" role="tablist" aria-label="Animation frames" onKeyDown={arrowKeys("tab")}>
+              {frames.map((_, f) => (
+                <button
+                  key={f}
+                  type="button"
+                  {...tabProps(f === current)}
+                  id={`${ids}-tab-${f}`}
+                  aria-controls={`${ids}-panel`}
+                  className={`secondary ${f === current ? "active" : ""}`}
+                  onClick={() => setFrameIndex(f)}
+                >
+                  Frame {f + 1}
+                </button>
+              ))}
+            </div>
+          )}
           {current > 0 && (
             <button type="button" className="link" onClick={() => update(() => [...frames[current - 1]!])}>
               Copy frame {current}
@@ -179,20 +202,34 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
         </div>
       )}
 
-      <div className="se-canvas-wrap">
+      <div
+        className="se-canvas-wrap"
+        id={`${ids}-panel`}
+        role={frames.length > 1 ? "tabpanel" : undefined}
+        aria-labelledby={frames.length > 1 ? `${ids}-tab-${current}` : undefined}
+      >
         <canvas
           ref={canvas}
           width={canvasW}
           height={canvasH}
           className="se-canvas"
           aria-label={frames.length > 1 ? `${label} frame ${current + 1} pixels` : `${label} pixels`}
+          aria-roledescription="pixel grid"
+          aria-describedby={`${ids}-keys`}
+          {...grid.props}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={endStroke}
           onPointerCancel={endStroke}
           onContextMenu={(e) => e.preventDefault()}
         />
+        <span className="visually-hidden" aria-live="polite">
+          {grid.announcement}
+        </span>
       </div>
+      <p className="muted small keys-hint" id={`${ids}-keys`}>
+        Keyboard: arrows move, Space draws, Shift+arrows draw lines, Delete erases, 0–3 pick a color.
+      </p>
 
       <div className="se-toolbar">
         <button type="button" className="secondary" onClick={() => update(flipHorizontal)}>

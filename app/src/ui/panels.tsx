@@ -36,10 +36,9 @@ export function GraphicsPanel({
                 className="sprite-select"
                 disabled={!role.editable}
                 aria-pressed={selected === role.role}
-                aria-label={role.editable ? `Edit ${role.label}` : `${role.label} (not editable)`}
                 onClick={() => onSelect(role.role)}
               >
-                <span className="sprite-thumb">
+                <span className="sprite-thumb" aria-hidden="true">
                   <SpritePreview sprite={sprite} palette={palette} scale={role.width > 16 ? 1 : 3} />
                 </span>
                 <span className="sprite-meta">

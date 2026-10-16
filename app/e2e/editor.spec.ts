@@ -194,7 +194,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   // The formation's area of the preview canvas (scan lines ~24-80 of 192).
   const formation = () => litPixels(page, 0, 45, 320, 70);
 
-  await page.getByRole("button", { name: "Edit Enemy", exact: true }).click();
+  await page.getByRole("button", { name: /^Enemy \d/ }).click();
   const canvas = page.getByLabel("Enemy frame 1 pixels");
   const box = (await canvas.boundingBox())!;
   const cell = (x: number, y: number) => ({ x: box.x + ((x + 0.5) * box.width) / 12, y: box.y + ((y + 0.5) * box.height) / 8 });
@@ -327,7 +327,7 @@ test("lockstep runs are repeatable and game variables are readable from RAM", as
   expect(a.lives).toBe(3);
 });
 
-test("keys typed in text fields don't reach the game", async ({ page }) => {
+test("game keys only reach the game while it has focus", async ({ page }) => {
   await open(page);
   const shotactive = await symbol(page, "shotactive");
   const shotFired = () =>
@@ -355,6 +355,14 @@ test("keys typed in text fields don't reach the game", async ({ page }) => {
   expect(await shotFired()).toBe(false);
   await page.keyboard.up(" ");
   await expect(title).toHaveValue("Cat vs. Vacuums ");
+
+  // Space presses a focused button rather than firing.
+  const sound = page.getByRole("button", { name: "Sound on" });
+  await sound.focus();
+  await page.keyboard.down(" ");
+  expect(await shotFired()).toBe(false);
+  await page.keyboard.up(" ");
+  await expect(page.getByRole("button", { name: "Sound off" })).toHaveAttribute("aria-pressed", "true");
 
   await page.getByLabel("Game preview").click();
   await page.keyboard.down(" ");

@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { linePoints } from "../sprite/pixels.ts";
+import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import { cellAt, isPlayer, paintCell, placements, type Brush } from "./edit.ts";
@@ -19,7 +20,7 @@ const css = (color: string) => {
   return `rgb(${r} ${g} ${b})`;
 };
 
-function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>) {
+function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, cursor: readonly [number, number] | null) {
   ctx.fillStyle = css(g.background);
   ctx.fillRect(0, 0, ROOM_COLS * CELL, ROOM_ROWS * CELL);
   const wallColor = css(g.palettes.find((p) => p.id === g.wallPalette)?.colors[0] ?? "$0F");
@@ -63,6 +64,7 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>) 
     ctx.lineWidth = 2;
     ctx.strokeRect(1, r * CELL + 1, ROOM_COLS * CELL - 2, CELL - 2);
   }
+  if (cursor) drawCursor(ctx, cursor[0] * CELL, cursor[1] * CELL, CELL, CELL);
 }
 
 export function RoomPainter() {
@@ -76,9 +78,31 @@ export function RoomPainter() {
   for (const p of placements(game)) perRow.set(p.row, (perRow.get(p.row) ?? 0) + 1);
   const busyRows = new Set([...perRow].filter(([, n]) => n > ZONE_BUDGET).map(([r]) => r));
 
+  const brushes: { id: Brush; label: string }[] = [
+    { id: "wall", label: "Wall" },
+    { id: "erase", label: "Eraser" },
+    ...game.types.map((t) => ({ id: t.id, label: t.label })),
+  ];
+
+  const grid = useGridKeyboard({
+    cols: ROOM_COLS,
+    rows: ROOM_ROWS,
+    paint: (col, row, erase, key) => paintTo([col, row], [col, row], erase ? "erase" : brush, key),
+    describe: (col, row) => {
+      const c = cellAt(game, col, row);
+      const what = c === "wall" ? "Wall" : c ? (game.types.find((t) => t.id === c)?.label ?? c) : "Empty";
+      return `Column ${col + 1}, row ${row + 1}: ${what}`;
+    },
+    onOtherKey: (k) => {
+      const b = /^[1-9]$/.test(k) ? brushes[Number(k) - 1] : undefined;
+      if (b) setBrush(b.id);
+      return !!b;
+    },
+  });
+
   useEffect(() => {
     const ctx = canvas.current?.getContext("2d");
-    if (ctx) draw(ctx, game, busyRows);
+    if (ctx) draw(ctx, game, busyRows, grid.cursor);
   });
 
   const cellOf = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -94,24 +118,17 @@ export function RoomPainter() {
       for (const [col, row] of linePoints(from[0], from[1], to[0], to[1])) paintCell(d, col, row, b);
     }, key);
 
-  const brushes: { id: Brush; label: string }[] = [
-    { id: "wall", label: "Wall" },
-    { id: "erase", label: "Eraser" },
-    ...game.types.map((t) => ({ id: t.id, label: t.label })),
-  ];
-
   return (
     <section className="panel" aria-labelledby="room-h">
       <h2 id="room-h">Room</h2>
-      <div className="se-toolbar brushes" role="radiogroup" aria-label="Brush">
+      <div className="se-toolbar brushes" role="radiogroup" aria-label="Brush" onKeyDown={arrowKeys("radio")}>
         {brushes.map((b) => {
           const t = game.types.find((x) => x.id === b.id);
           return (
             <button
               key={b.id}
               type="button"
-              role="radio"
-              aria-checked={brush === b.id}
+              {...radioProps(brush === b.id)}
               aria-label={`Paint ${b.label}`}
               title={t && isPlayer(t) ? `${b.label} (the player: there's only one)` : b.label}
               className={`secondary brush ${brush === b.id ? "active" : ""}`}
@@ -136,12 +153,16 @@ export function RoomPainter() {
           height={ROOM_ROWS * CELL}
           className="room-canvas"
           aria-label="Room grid"
+          aria-roledescription="room grid"
+          aria-describedby="room-keys"
+          {...grid.props}
           onPointerDown={(e) => {
             if (e.button !== 0 && e.button !== 2) return;
             e.preventDefault();
             e.currentTarget.setPointerCapture(e.pointerId);
             const key = `room:${++strokeCounter}`;
             const cell = cellOf(e);
+            grid.moveTo(cell[0], cell[1]);
             const b = e.button === 2 ? "erase" : brush;
             stroke.current = { key, last: cell, brush: b };
             paintTo(cell, cell, b, key);
@@ -158,7 +179,13 @@ export function RoomPainter() {
           onPointerCancel={() => (stroke.current = null)}
           onContextMenu={(e) => e.preventDefault()}
         />
+        <span className="visually-hidden" aria-live="polite">
+          {grid.announcement}
+        </span>
       </div>
+      <p className="muted small keys-hint" id="room-keys">
+        Keyboard: arrows move, Space paints, Shift+arrows paint as you go, Delete erases, 1–9 pick a brush.
+      </p>
       <p className="muted small">
         Drag to paint; right-click erases. Things start in the square you put them in.
         {busyRows.size > 0 && (

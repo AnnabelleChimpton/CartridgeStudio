@@ -1,5 +1,7 @@
 // Main-thread side of the emulator worker. Owns input (keyboard and the
 // Gamepad API, mapped to one joystick with one button) and audio output.
+// The keyboard only reaches the game while its canvas has focus, so arrows,
+// Space and Z keep working everywhere else on the page (WCAG 2.1.4).
 
 import type { Emulator, JoystickState } from "./emulator.ts";
 import type { EmuRequest, EmuResponse } from "./protocol.ts";
@@ -21,13 +23,6 @@ const KEYS: Record<string, keyof JoystickState> = {
 
 const IDLE: JoystickState = { up: false, down: false, left: false, right: false, fire: false };
 
-function isEditable(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
-  );
-}
-
 export class WorkerEmulator implements Emulator {
   private readonly worker: Worker;
   private readonly ready: Promise<void>;
@@ -41,8 +36,10 @@ export class WorkerEmulator implements Emulator {
   private audio: AudioContext | null = null;
   private muted = false;
   private readonly cleanup: (() => void)[] = [];
+  private readonly canvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
     this.worker = new Worker(new URL("./emulator.worker.ts", import.meta.url), { type: "module" });
     this.ready = new Promise((resolve, reject) => {
       this.worker.onmessage = (e: MessageEvent<EmuResponse>) => {
@@ -148,10 +145,12 @@ export class WorkerEmulator implements Emulator {
   }
 
   private listenForInput() {
+    const canvas = this.canvas;
+    canvas.tabIndex = 0;
     const onKey = (down: boolean) => (e: KeyboardEvent) => {
       const control = KEYS[e.key];
-      if (!control || isEditable(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
-      // Keep arrows from scrolling the page and Space from pressing a focused button.
+      if (!control || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Keep arrows from scrolling the page while playing.
       e.preventDefault();
       if (down) void this.startAudio();
       this.keyboard = { ...this.keyboard, [control]: down };
@@ -160,17 +159,26 @@ export class WorkerEmulator implements Emulator {
     const keydown = onKey(true);
     const keyup = onKey(false);
     const gesture = () => void this.startAudio();
+    const pointerdown = () => {
+      canvas.focus();
+      void this.startAudio();
+    };
+    // Letting go of the game (Tab away, click elsewhere, switch windows) lets go of every key.
     const blur = () => {
       this.keyboard = { ...IDLE };
       this.sendInput();
     };
-    window.addEventListener("keydown", keydown);
-    window.addEventListener("keyup", keyup);
+    canvas.addEventListener("keydown", keydown);
+    canvas.addEventListener("keyup", keyup);
+    canvas.addEventListener("pointerdown", pointerdown);
+    canvas.addEventListener("blur", blur);
     window.addEventListener("pointerdown", gesture);
     window.addEventListener("blur", blur);
     this.cleanup.push(() => {
-      window.removeEventListener("keydown", keydown);
-      window.removeEventListener("keyup", keyup);
+      canvas.removeEventListener("keydown", keydown);
+      canvas.removeEventListener("keyup", keyup);
+      canvas.removeEventListener("pointerdown", pointerdown);
+      canvas.removeEventListener("blur", blur);
       window.removeEventListener("pointerdown", gesture);
       window.removeEventListener("blur", blur);
     });

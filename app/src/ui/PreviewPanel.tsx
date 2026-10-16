@@ -59,7 +59,9 @@ export function PreviewPanel({ preview, title, extraDownloads }: { preview: Prev
         >
           Fullscreen
         </button>
-        <span className="hint">Arrows move · Space fires · Gamepads work too</span>
+        <span className="hint" id="emu-hint">
+          Click the game to play: arrows move, Space fires, Tab leaves. Gamepads work any time.
+        </span>
       </div>
       <p className={`status ${result?.kind ?? ""}`} data-testid="build-status" role="status">
         {status}

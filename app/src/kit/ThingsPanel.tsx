@@ -35,10 +35,9 @@ export function ThingsPanel({ selected, onSelect }: { selected: string | null; o
                 type="button"
                 className="sprite-select"
                 aria-pressed={selected === t.id}
-                aria-label={`Edit ${t.label}`}
                 onClick={() => onSelect(t.id)}
               >
-                <span className="sprite-thumb">
+                <span className="sprite-thumb" aria-hidden="true">
                   <SpritePreview sprite={asSprite(t)} palette={palette} scale={t.width > 8 ? 2 : 3} />
                 </span>
                 <span className="sprite-meta">
