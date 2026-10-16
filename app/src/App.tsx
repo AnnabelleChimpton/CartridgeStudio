@@ -17,6 +17,7 @@ import { TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
+import { ContextItem } from "./ui/ContextStrip.tsx";
 import { PreviewPanel } from "./ui/PreviewPanel.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
 import { ShowItPanel } from "./ui/ShowItPanel.tsx";
@@ -97,14 +98,7 @@ export function App() {
 
   return (
     <>
-      {openError && (
-        <p className="error banner" role="alert">
-          {openError}{" "}
-          <button type="button" className="link" onClick={() => setOpenError(null)}>
-            Dismiss
-          </button>
-        </p>
-      )}
+      {openError && <ContextItem kind="error" message={openError} onDismiss={() => setOpenError(null)} />}
       {mode === "kit" ? (
         <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
       ) : (

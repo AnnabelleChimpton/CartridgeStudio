@@ -75,9 +75,9 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
           <Icon name={muted ? "mute" : "sound"} />
           {muted ? "Sound off" : "Sound on"}
         </button>
-        <button type="button" className="secondary" onClick={enterTv}>
-          <Icon name="expand" />
-          Full screen
+        <button type="button" className="secondary" onClick={enterTv} disabled={!lastGood} title="Full screen, with the title and a gamepad prompt">
+          <Icon name="tv" />
+          Play on a TV
         </button>
         <span className="hint" id="emu-hint">
           Arrows move, Space fires, Tab leaves. Gamepads work too.

@@ -1,12 +1,14 @@
 // The editor's top bar: the brand, the game's title, undo/redo, the Mode
 // (tier) switch, saving, and a Game menu for starting or opening a game.
+// Under it, the context strip (ContextStrip.tsx).
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { arrowKeys } from "./a11y.ts";
-import { BrandMark } from "./BrandMark.tsx";
+import { BrandMark, Wordmark } from "./BrandMark.tsx";
 import { Icon, type IconName } from "./Icon.tsx";
-import { TIERS, setTheme, setTier, useTheme, useTier, type Theme } from "./prefs.ts";
+import { ContextStrip } from "./ContextStrip.tsx";
+import { TIERS, setTier, useTier } from "./prefs.ts";
 import { Toaster } from "./Toaster.tsx";
 
 function isTextField(t: EventTarget | null) {
@@ -81,8 +83,8 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
             { label: "Open…", icon: "open", onClick: () => fileInput.current?.click() },
           ]}
         />
-        <ThemeButton />
       </div>
+      <ContextStrip />
       <Toaster />
     </header>
   );
@@ -92,7 +94,7 @@ export function Brand() {
   return (
     <span className="brand">
       <BrandMark />
-      <span className="brand-name">Cartridge Studio</span>
+      <Wordmark />
     </span>
   );
 }
@@ -116,31 +118,6 @@ export function ModeSwitch() {
         </button>
       ))}
     </div>
-  );
-}
-
-const THEMES: { id: Theme; label: string; icon: IconName }[] = [
-  { id: "system", label: "System", icon: "system" },
-  { id: "light", label: "Light", icon: "sun" },
-  { id: "dark", label: "Dark", icon: "moon" },
-];
-
-/** Cycles System → Light → Dark. */
-export function ThemeButton() {
-  const theme = useTheme();
-  const i = THEMES.findIndex((t) => t.id === theme);
-  const now = THEMES[i]!;
-  const next = THEMES[(i + 1) % THEMES.length]!;
-  return (
-    <button
-      type="button"
-      className="icon"
-      aria-label={`Theme: ${now.label}`}
-      title={`Theme: ${now.label}. Click for ${next.label}.`}
-      onClick={() => setTheme(next.id)}
-    >
-      <Icon name={now.icon} />
-    </button>
   );
 }
 

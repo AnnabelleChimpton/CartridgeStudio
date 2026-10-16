@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { arrowKeys } from "./a11y.ts";
-import { ntscCss, toColor } from "./ntsc.ts";
+import { colorName, ntscCss, toColor } from "./ntsc.ts";
 
 interface Props {
   value: string;
@@ -12,6 +12,8 @@ interface Props {
 
 export function ColorPicker({ value, label, onChange }: Props) {
   const [open, setOpen] = useState(false);
+  /** The color under the pointer or keyboard, named below the grid. */
+  const [active, setActive] = useState(value);
   const ref = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const shut = () => {
@@ -22,6 +24,7 @@ export function ColorPicker({ value, label, onChange }: Props) {
   // Opening moves focus to the current color, so arrows work straight away.
   useEffect(() => {
     const grid = ref.current;
+    if (open) setActive(value);
     if (open) (grid?.querySelector<HTMLElement>('[aria-selected="true"]') ?? grid?.querySelector<HTMLElement>('[role="option"]'))?.focus();
   }, [open]);
 
@@ -45,8 +48,8 @@ export function ColorPicker({ value, label, onChange }: Props) {
         className="swatch"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={`${label}: ${value}`}
-        title={`${label}: ${value}`}
+        aria-label={`${label}: ${value}, ${colorName(value)}`}
+        title={`${label}: ${value}, ${colorName(value)}`}
         style={{ background: ntscCss(value) }}
         onClick={() => setOpen((o) => !o)}
       />
@@ -67,8 +70,10 @@ export function ColorPicker({ value, label, onChange }: Props) {
                 role="option"
                 aria-selected={c === value.toUpperCase()}
                 tabIndex={c === value.toUpperCase() ? 0 : -1}
-                aria-label={c}
-                title={c}
+                aria-label={`${c}, ${colorName(c)}`}
+                title={`${c}, ${colorName(c)}`}
+                onFocus={() => setActive(c)}
+                onMouseEnter={() => setActive(c)}
                 className={c === value.toUpperCase() ? "selected" : undefined}
                 style={{ background: ntscCss(c) }}
                 onClick={() => {
@@ -78,6 +83,10 @@ export function ColorPicker({ value, label, onChange }: Props) {
               />
             );
           })}
+          <p className="picker-name" aria-hidden="true">
+            <span className="picker-chip" style={{ background: ntscCss(active) }} />
+            <strong>{colorName(active)}</strong> <span className="muted">{active}</span>
+          </p>
         </div>
       )}
     </div>

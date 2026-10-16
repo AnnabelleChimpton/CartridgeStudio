@@ -1,5 +1,5 @@
-// The app shell: the Game menu, the Mode (tier) switch, the theme switch and
-// toasts. Each tier and theme passes axe.
+// The app shell: the Game menu, the Mode (tier) switch, toasts, the context
+// strip, Show it's groups and colour names. Each tier passes axe.
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
@@ -72,23 +72,37 @@ test("saving says so in a toast", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: "rock-fall.cartridge" })).toContainText("Saved rock-fall.cartridge to your downloads");
 });
 
-test("light and dark themes both pass axe, and the choice is remembered", async ({ page }) => {
+test("every tab, Show it and a dialog pass axe; Show it leads with making it real", async ({ page }) => {
   await start(page, /^Ghost Panic/);
-  const theme = page.getByRole("button", { name: /^Theme:/ });
-  await expect(theme).toHaveAccessibleName("Theme: System");
-  await theme.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  expect(await axe(page), "light").toEqual([]);
-  await theme.click();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  expect(await axe(page), "dark").toEqual([]);
-  for (const name of ["Rules", "Game"]) {
+  expect(await axe(page)).toEqual([]);
+  for (const name of ["Room", "Rules", "Game"]) {
     await page.getByRole("tab", { name }).click();
-    expect(await axe(page), `dark ${name}`).toEqual([]);
+    expect(await axe(page), name).toEqual([]);
   }
-  await page.getByRole("button", { name: /Put it on a console/ }).click();
-  expect(await axe(page), "dark dialog").toEqual([]);
-  await page.keyboard.press("Escape");
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  const showIt = page.getByRole("region", { name: "Show it" });
+  await expect(showIt.getByRole("heading", { level: 3 })).toHaveText(["Make it real", "Share it"]);
+  await expect(showIt.getByRole("group", { name: "Make it real" }).getByRole("button")).toHaveText([/^Put it on a console/, /^Print the box/]);
+  await expect(showIt.getByRole("group", { name: "Share it" }).getByRole("button")).toHaveText([/^Send to family/, /^Make a clip/]);
+  await showIt.getByRole("button", { name: /Put it on a console/ }).click();
+  expect(await axe(page), "dialog").toEqual([]);
+});
+
+test("the colour picker names colours", async ({ page }) => {
+  await start(page, /^Dodger/);
+  await page.getByRole("tab", { name: "Game" }).click();
+  const swatch = page.getByRole("button", { name: /^Background/ }).first();
+  await expect(swatch).toHaveAccessibleName(/^Background.*: \$[0-9A-F]{2}, [a-z ]+$/);
+  await swatch.click();
+  await expect(page.getByRole("option", { name: "$C8, sea green" })).toBeAttached();
+  await page.getByRole("option", { name: "$D7, green" }).hover();
+  await expect(page.locator(".picker-name")).toContainText("green $D7");
+});
+
+test("an error takes the context strip under the top bar", async ({ page }) => {
+  await start(page, /^Dodger/);
+  await page.getByLabel("Open game file").setInputFiles({ name: "notes.cartridge", mimeType: "text/plain", buffer: Buffer.from("hi") });
+  const alert = page.locator(".topbar").getByRole("alert");
+  await expect(alert).toContainText("Couldn't open notes.cartridge");
+  await alert.getByRole("button", { name: "Dismiss" }).click();
+  await expect(alert).toBeEmpty();
 });

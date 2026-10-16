@@ -23,7 +23,8 @@ const WALL = ["1111", "1112", "1112", "2222", "1111", "2111", "2111", "2222"];
 const HAZARD = ["0000", "0300", "0300", "3330", "0000", "0003", "0003", "3033"];
 /** Goal tile (`*`): a dotted square in color 2. */
 const GOAL = ["2020", "0000", "2000", "0000", "2000", "0000", "2000", "0000"];
-const TILE_GLYPHS: Record<string, string[]> = { "#": WALL, "~": HAZARD, "*": GOAL };
+/** Room tiles by map character, 4 pixels × 8 lines each, colors 1-3 of the wall palette. */
+export const TILE_GLYPHS: Record<string, string[]> = { "#": WALL, "~": HAZARD, "*": GOAL };
 
 /** The font graphic's 8 rows for `chars`, one 4-pixel-wide cell per character. */
 export function fontRows(chars: string): string[] {

@@ -1,12 +1,10 @@
-// Per-browser display preferences: the tier (what the editor shows by
-// default) and the colour theme. Each is written to an attribute on <html>
-// so CSS can follow it: data-tier="starter|maker|coder", data-theme="light|dark"
-// (absent means follow the system). See design/DIRECTION.md, Three tiers.
+// Per-browser display preference: the tier (what the editor shows by
+// default). It is written to <html data-tier="starter|maker|coder"> so CSS
+// can follow it. See design/DIRECTION.md, Three tiers.
 
 import { useSyncExternalStore } from "react";
 
 export type Tier = "starter" | "maker" | "coder";
-export type Theme = "system" | "light" | "dark";
 
 export const TIERS: { id: Tier; label: string; detail: string }[] = [
   { id: "starter", label: "Starter", detail: "Things, the room and the game. The simplest place to begin." },
@@ -46,17 +44,5 @@ function pref<T extends string>(key: string, allowed: readonly T[], fallback: T,
 const root = () => (typeof document === "undefined" ? null : document.documentElement);
 
 const tier = pref<Tier>("cs-tier", ["starter", "maker", "coder"], "starter", (v) => root()?.setAttribute("data-tier", v));
-const theme = pref<Theme>("cs-theme", ["system", "light", "dark"], "system", (v) => {
-  const el = root();
-  if (!el) return;
-  // Swap colours at once rather than through every control's hover transition.
-  el.setAttribute("data-theme-switching", "");
-  if (v === "system") el.removeAttribute("data-theme");
-  else el.setAttribute("data-theme", v);
-  requestAnimationFrame(() => requestAnimationFrame(() => el.removeAttribute("data-theme-switching")));
-});
-
 export const setTier = tier.set;
-export const setTheme = theme.set;
 export const useTier = () => useSyncExternalStore(tier.subscribe, tier.get);
-export const useTheme = () => useSyncExternalStore(theme.subscribe, theme.get);

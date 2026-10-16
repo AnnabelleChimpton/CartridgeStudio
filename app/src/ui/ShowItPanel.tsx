@@ -1,6 +1,7 @@
-// "Show it": every way a game leaves the editor, in plain words. Play it big
-// on a TV, send a one-file player to family, record a clip to post, put it on
-// a real console, or print a box and manual.
+// "Show it": every way a game leaves the editor, in plain words, in two
+// groups. Make it real: put it on a real console, print a box and manual.
+// Share it: send a one-file player to family, record a clip to post.
+// Playing it big on a TV is the game's own control, beside the game.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
@@ -53,8 +54,23 @@ export function ShowItPanel({ preview, title, print }: Props) {
   return (
     <section className="panel show-it" aria-labelledby="show-it-h">
       <h2 id="show-it-h">Show it</h2>
-      <div className="show-grid">
-        <ShowButton icon="tv" title="Play on a TV" detail="Big screen, ready for a gamepad" disabled={!ready} onClick={preview.enterTv} />
+      <h3 className="show-h" id="show-real-h">
+        Make it real
+      </h3>
+      <div className="show-grid real" role="group" aria-labelledby="show-real-h">
+        <ShowButton icon="cartridge" title="Put it on a console" detail="For a 7800+, 2600+ or 7800" disabled={!ready} onClick={openFrom("console")} />
+        <ShowButton
+          icon="print"
+          title="Print the box"
+          detail="Box, labels and manual, and everything in one package"
+          disabled={!ready}
+          onClick={(e) => (typeof print === "function" ? print() : openFrom("print")(e))}
+        />
+      </div>
+      <h3 className="show-h" id="show-share-h">
+        Share it
+      </h3>
+      <div className="show-grid" role="group" aria-labelledby="show-share-h">
         <ShowButton
           icon="send"
           title={busy === "player" ? "Making the file…" : "Send to family"}
@@ -63,14 +79,6 @@ export function ShowItPanel({ preview, title, print }: Props) {
           onClick={() => void sendToFamily()}
         />
         <ClipRecorder preview={preview} slug={slug} disabled={!ready || busy === "player"} onBusy={(b) => setBusy(b ? "clip" : null)} onError={setError} />
-        <ShowButton icon="cartridge" title="Put it on a console" detail="For a 7800+, 2600+ or 7800" disabled={!ready} onClick={openFrom("console")} />
-        <ShowButton
-          icon="print"
-          title="Print the box"
-          detail="Box, cartridge labels and manual"
-          disabled={!ready}
-          onClick={(e) => (typeof print === "function" ? print() : openFrom("print")(e))}
-        />
       </div>
       <p className="muted small">
         <button type="button" className="link" onClick={openFrom("tv")}>
