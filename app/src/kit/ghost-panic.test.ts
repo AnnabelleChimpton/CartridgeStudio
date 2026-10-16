@@ -20,7 +20,7 @@ const START: Step[] = [{ frames: 5 }, { hold: ["fire"], frames: 2 }, { frames: 2
 const WATCH: WatchMap = {
   ...KIT_WATCH,
   level: { symbol: "levelnum" },
-  combo: { symbol: "cnt0" },
+  combo: { symbol: "cnt_combo" },
   ghostA: { symbol: "otype", offset: 1 },
   ghostB: { symbol: "otype", offset: 2 },
   ghostAx: { symbol: "ox", offset: 1 },
@@ -64,10 +64,13 @@ describe("Ghost Panic", () => {
 
   it("catching scared ghosts scores 200 each; the bonus is checked before the catch", async () => {
     // A closed corridor on row 9: cat, catnip, then both ghosts against a wall, so fleeing can't save them.
-    // (The cat, the top catnip and both ghosts move there.) Both are caught in the same frame, so
-    // neither gets the combo bonus: the bonus rule comes first and sees combo 0.
+    // (The cat, the top catnip and both ghosts move there.) The cat eats the catnip and waits while
+    // the scared ghosts flee into the corner, on top of each other. Both are caught in the same frame,
+    // so neither gets the combo bonus: the bonus rule comes first and sees combo 0.
     const g = withCells([1, 1, " "], [1, 8, " "], [1, 18, " "], [9, 18, " "], [9, 1, "P"], [9, 2, "N"], [9, 5, "G"], [9, 6, "G"], [9, 7, "#"]);
     await run(g, [
+      { hold: ["right"], frames: 8 },
+      { frames: 60 },
       { until: { combo: 2 }, maxFrames: 200, steps: [{ hold: ["right"], frames: 1 }] },
       { expect: { score: 400 } },
     ]);
@@ -77,7 +80,7 @@ describe("Ghost Panic", () => {
     // One ghost starts scared, next to the cat, and the combo is already 1.
     const g = withCells([1, 18, " "], [1, 3, "S"]);
     g.room.legend.S = "scared";
-    g.counters[0]!.start = 1;
+    g.counters.find((c) => c.id === "combo")!.start = 1;
     await run(g, [
       { until: { combo: 2 }, maxFrames: 60, steps: [{ hold: ["right"], frames: 1 }] },
       { expect: { score: 500 } },

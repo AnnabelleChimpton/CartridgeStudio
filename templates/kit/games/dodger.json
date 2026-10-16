@@ -1,44 +1,27 @@
 {
- "kit": 1,
+ "kit": 2,
  "title": "Rock Fall",
  "palettes": [
   {
    "id": "ship",
-   "colors": [
-    "$3A",
-    "$02",
-    "$0F"
-   ]
+   "colors": [ "$3A", "$02", "$0F" ]
   },
   {
    "id": "rock",
-   "colors": [
-    "$F4",
-    "$F8",
-    "$02"
-   ]
+   "colors": [ "$F4", "$F8", "$02" ]
   },
   {
    "id": "star",
-   "colors": [
-    "$1E",
-    "$0F",
-    "$00"
-   ]
+   "colors": [ "$1E", "$0F", "$00" ]
   },
   {
    "id": "text",
-   "colors": [
-    "$0F",
-    "$0F",
-    "$0F"
-   ]
+   "colors": [ "$0F", "$0F", "$0F" ]
   }
  ],
  "background": "$80",
  "wallPalette": "text",
  "textPalette": "text",
- "lives": 3,
  "types": [
   {
    "id": "ship",
@@ -49,8 +32,13 @@
     [ "0000000110000000", "0000001111000000", "0000001221000000", "0000011221100000", "0000011111100000", "0000111111110000", "0001113333111000", "0011113333111100", "0111111111111110", "1111111111111111", "1111222222221111", "1110022222200111", "1100002222000011", "1000000330000001", "0000003333000000", "0000000330000000" ]
    ],
    "palette": "ship",
-   "behaviour": "player-lr",
-   "speed": 4
+   "control": {
+    "joystick": 1,
+    "axes": "lr",
+    "mode": "direct",
+    "speed": { "step": 4 }
+   },
+   "move": { "vx": 0, "vy": 0, "wall": "slide", "edge": "stop" }
   },
   {
    "id": "rock",
@@ -61,8 +49,7 @@
     [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
    ],
    "palette": "rock",
-   "behaviour": "fall",
-   "speed": 3
+   "move": { "vx": 0, "vy": 16, "wall": "through", "edge": "pass" }
   },
   {
    "id": "boulder",
@@ -73,8 +60,7 @@
     [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
    ],
    "palette": "rock",
-   "behaviour": "fall",
-   "speed": 4
+   "move": { "vx": 0, "vy": 32, "wall": "through", "edge": "pass" }
   },
   {
    "id": "star",
@@ -85,8 +71,7 @@
     [ "00010000", "00111000", "11111110", "01111100", "00111000", "01101100", "11000110", "00000000" ]
    ],
    "palette": "star",
-   "behaviour": "fall",
-   "speed": 2
+   "move": { "vx": 0, "vy": 8, "wall": "through", "edge": "pass" }
   }
  ],
  "room": {
@@ -103,89 +88,185 @@
    "                    ",
    "         P          "
   ],
-  "legend": {
-   "r": "rock",
-   "b": "boulder",
-   "s": "star",
-   "P": "ship"
-  }
+  "legend": { "r": "rock", "b": "boulder", "s": "star", "P": "ship" }
  },
+ "counters": [
+  { "id": "lives", "label": "Lives", "start": 3 }
+ ],
+ "hud": [
+  { "show": "score", "at": "left" },
+  { "show": "lives", "at": "right" },
+  { "show": "seconds", "at": "middle" }
+ ],
  "rules": [
   {
+   "id": "r-1",
    "when": {
-    "touch": [
-     "ship",
-     "rock"
-    ]
+    "touch": [ "ship", "rock" ]
    },
+   "fires": "while",
    "then": [
     {
-     "loseLife": true
+     "id": "a-1-1-l",
+     "take": {
+      "what": { "counter": "lives" },
+      "by": 1
+     }
     },
     {
-     "respawn": "second"
+     "id": "a-1-1-s0",
+     "toStart": { "every": "ship" }
     },
     {
-     "sound": "boom"
+     "id": "a-1-1-p0",
+     "protect": {
+      "who": { "every": "ship" },
+      "tenths": 15
+     }
+    },
+    { "id": "a-1-2", "toStart": "other" },
+    { "id": "a-1-3", "sound": "boom" }
+   ]
+  },
+  {
+   "id": "r-2",
+   "when": {
+    "touch": [ "ship", "boulder" ]
+   },
+   "fires": "while",
+   "then": [
+    {
+     "id": "a-2-1-l",
+     "take": {
+      "what": { "counter": "lives" },
+      "by": 1
+     }
+    },
+    {
+     "id": "a-2-1-s0",
+     "toStart": { "every": "ship" }
+    },
+    {
+     "id": "a-2-1-p0",
+     "protect": {
+      "who": { "every": "ship" },
+      "tenths": 15
+     }
+    },
+    { "id": "a-2-2", "toStart": "other" },
+    { "id": "a-2-3", "sound": "boom" }
+   ]
+  },
+  {
+   "id": "r-3",
+   "when": {
+    "touch": [ "ship", "star" ]
+   },
+   "fires": "while",
+   "then": [
+    {
+     "id": "a-3-1",
+     "add": {
+      "what": { "counter": "score" },
+      "by": 50
+     }
+    },
+    { "id": "a-3-2", "toStart": "other" },
+    { "id": "a-3-3", "sound": "blip" }
+   ]
+  },
+  {
+   "id": "r-4",
+   "when": { "after": 30 },
+   "then": [
+    { "id": "a-4-1", "sound": "chime" },
+    { "id": "a-4-2", "gameOver": "won" }
+   ]
+  },
+  {
+   "id": "r-p-fall1",
+   "when": { "leaves": "rock" },
+   "then": [
+    {
+     "id": "r-p-fall1-1",
+     "set": {
+      "what": { "prop": "x", "of": "it" },
+      "to": { "random": 19, "times": 8 }
+     }
+    },
+    {
+     "id": "r-p-fall1-2",
+     "set": {
+      "what": { "prop": "y", "of": "it" },
+      "to": 16
+     }
     }
    ]
   },
   {
-   "when": {
-    "touch": [
-     "ship",
-     "boulder"
-    ]
-   },
+   "id": "r-p-fall2",
+   "when": { "leaves": "boulder" },
    "then": [
     {
-     "loseLife": true
+     "id": "r-p-fall2-1",
+     "set": {
+      "what": { "prop": "x", "of": "it" },
+      "to": { "random": 19, "times": 8 }
+     }
     },
     {
-     "respawn": "second"
-    },
-    {
-     "sound": "boom"
+     "id": "r-p-fall2-2",
+     "set": {
+      "what": { "prop": "y", "of": "it" },
+      "to": 16
+     }
     }
    ]
   },
   {
-   "when": {
-    "touch": [
-     "ship",
-     "star"
-    ]
-   },
+   "id": "r-p-fall3",
+   "when": { "leaves": "star" },
    "then": [
     {
-     "score": 50
+     "id": "r-p-fall3-1",
+     "set": {
+      "what": { "prop": "x", "of": "it" },
+      "to": { "random": 19, "times": 8 }
+     }
     },
     {
-     "respawn": "second"
-    },
-    {
-     "sound": "blip"
+     "id": "r-p-fall3-2",
+     "set": {
+      "what": { "prop": "y", "of": "it" },
+      "to": 16
+     }
     }
    ]
   },
   {
+   "id": "r-p-lives",
    "when": {
-    "timer": 30
-   },
-   "then": [
-    {
-     "sound": "chime"
-    },
-    {
-     "win": true
+    "test": {
+     "a": { "counter": "lives" },
+     "op": "eq",
+     "b": 0
     }
+   },
+   "fires": "once",
+   "then": [
+    { "id": "a-p-lives", "gameOver": "lost" }
    ]
   }
  ],
- "text": {
-  "title": "Rock Fall",
-  "win": "You survived!",
-  "lose": "Game over"
+ "text": { "title": "Rock Fall", "win": "You survived!", "lose": "Game over" },
+ "flow": {
+  "title": true,
+  "attract": null,
+  "end": {
+   "show": [ "score" ],
+   "after": 0
+  },
+  "remember": false
  },
- "sounds": {}
+ "cartridge": { "manualText": null }
 }

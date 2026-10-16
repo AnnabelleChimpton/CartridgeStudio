@@ -40,8 +40,8 @@ describe("ejecting", () => {
     expect(code.source.split("\n").length).toBe(gen.input.source.split("\n").length);
     expect(code.graphics.map((g) => `${g.name}.png`).sort()).toEqual(Object.keys(gen.input.files).sort());
     // Each graphic keeps its thing's palette, so the asset editor shows its own colors.
-    expect(code.graphics.find((g) => g.name === "spr0")!.palette).toBe(game.types[0]!.palette);
-    expect(code.graphics.find((g) => g.name === "spr0")!.rows).toEqual(game.types[0]!.frames[0]);
+    expect(code.graphics.find((g) => g.name === `spr_${game.types[0]!.id}`)!.palette).toBe(game.types[0]!.palette);
+    expect(code.graphics.find((g) => g.name === `spr_${game.types[0]!.id}`)!.rows).toEqual(game.types[0]!.frames[0]);
   });
 
   it("builds the ejected kit game to the same ROM", async () => {
@@ -108,8 +108,8 @@ describe("generated-code markers", () => {
   it("finds a rule's check and its actions", () => {
     const got = text(markedLines(gen.input.source, { rule: 2 }));
     expect(got[0]).toMatch(/^ rem rule 2: /);
-    expect(got).toContain("r1_do");
-    expect(got.some((l) => /^r0_|rem rule 3/.test(l))).toBe(false);
+    expect(got).toContain("rule2_do");
+    expect(got.some((l) => /^rule1_|rem rule 3/.test(l))).toBe(false);
   });
 
   it("finds a thing's graphics, palette and draw routine", () => {
@@ -128,7 +128,7 @@ describe("the source folder", () => {
     const built = await buildProject(builder, game, undefined, { sign: false });
     if (built.kind !== "built") throw new Error("build");
     const files = kitSourceFiles(game, SOUND_LIBRARY, { symbols: built.symbols, cartridge: { name: "ghost-panic.cartridge", bytes: writeCartridgeFile(game) } });
-    for (const f of ["game.bas", "README.txt", "PITFALLS.txt", "build.sh", "build.bat", "RUNTIME.txt", "ghost-panic.cartridge", "spr0.png"]) expect(files[f], f).toBeDefined();
+    for (const f of ["game.bas", "README.txt", "PITFALLS.txt", "build.sh", "build.bat", "RUNTIME.txt", "ghost-panic.cartridge", "spr_cat.png"]) expect(files[f], f).toBeDefined();
     const bas = strFromU8(files["game.bas"]!);
     expect(bas).toContain("Yours to edit");
     expect(bas).not.toContain("Do not edit");
@@ -137,7 +137,7 @@ describe("the source folder", () => {
     expect(runtime).toMatch(/\$0140 {2}gamestate/);
     expect(runtime).toMatch(/\$2200 {2}otype/);
     expect(runtime).toMatch(/main {2}\(line \d+\)/);
-    expect(runtime).toContain("STARTLIVES = 3");
+    expect(runtime).toContain("T_CAT = 0");
     expect(strFromU8(files["README.txt"]!)).toContain("7800basic 0.41");
     expect(strFromU8(files["build.bat"]!)).toContain("\r\n");
     const t = getTemplate("fixed-shooter");

@@ -1,10 +1,11 @@
 // Game-wide settings for kit games: lives, colors, the words on screen, the
-// shooting sound and the counters rules can keep.
+// shooting sound and the counters rules can keep. Lives is a counter too,
+// shown as a slider; the shooting sound is an action in the shooting rule.
 
 import { Fragment, useState } from "react";
-import { SOUND_LIBRARY } from "../project/templates.ts";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
-import { addCounter, removeCounter, showCounter } from "./edit.ts";
+import { SOUND_LIBRARY } from "../project/templates.ts";
+import { addCounter, livesOf, removeCounter, setLives, setShootSound, shootSoundOf, shootsOf, showCounter, shown } from "./edit.ts";
 import { kitText } from "./generate.ts";
 import { MAX_COUNTERS, type KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
@@ -37,23 +38,20 @@ export function KitSettingsPanel() {
   const edit = useKitStore((s) => s.edit);
   const wall = game.palettes.find((p) => p.id === game.wallPalette);
   const text = game.palettes.find((p) => p.id === game.textPalette);
-  const shooter = game.types.some((t) => t.shoots);
+  const lives = livesOf(game);
+  const shooter = game.types.some((t) => shootsOf(game, t.id));
 
   return (
     <section className="panel" aria-labelledby="kit-settings-h">
       <h2 id="kit-settings-h">Game</h2>
       <div className="field-grid">
-        <label className="slider">
-          <span>Lives</span>
-          <input
-            type="range"
-            min={1}
-            max={9}
-            value={game.lives}
-            onChange={(e) => edit((d) => void (d.lives = Number(e.target.value)), "lives")}
-          />
-          <output aria-hidden="true">{game.lives}</output>
-        </label>
+        {lives !== null && (
+          <label className="slider">
+            <span>Lives</span>
+            <input type="range" min={1} max={9} value={lives} onChange={(e) => edit((d) => setLives(d, Number(e.target.value)), "lives")} />
+            <output aria-hidden="true">{lives}</output>
+          </label>
+        )}
         <div className="color-row">
           <span>Colors</span>
           <span className="colors">
@@ -98,11 +96,7 @@ export function KitSettingsPanel() {
         {shooter && (
           <label>
             <span>Shooting sound</span>
-            <select
-              
-              value={game.sounds.shoot ?? ""}
-              onChange={(e) => edit((d) => (e.target.value ? (d.sounds.shoot = e.target.value) : delete d.sounds.shoot))}
-            >
+            <select value={shootSoundOf(game) ?? ""} onChange={(e) => edit((d) => setShootSound(d, e.target.value || null))}>
               <option value="">None</option>
               {SOUND_LIBRARY.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -114,14 +108,14 @@ export function KitSettingsPanel() {
         )}
       </div>
       <h3 id="kit-counters-h" className="section-h">Counters</h3>
-      <p className="muted small">Numbers your rules can change and check: keys, coins, a combo. The level is always there.</p>
-      {game.counters.length > 0 && (
+      <p className="muted small">Numbers your rules can change and check: keys, coins, a combo, the level.</p>
+      {game.counters.some((c) => c.id !== "lives") && (
         <ul className="counters" aria-labelledby="kit-counters-h">
-          {game.counters.map((c, i) => (
+          {game.counters.flatMap((c, i) => (c.id === "lives" ? [] : [[c, i] as const])).map(([c, i], shownAt) => (
             <li key={c.id} className="counter-row">
               <NameInput
                 value={c.label}
-                label={`Counter ${i + 1} name`}
+                label={`Counter ${shownAt + 1} name`}
                 maxLength={20}
                 onChange={(v) => edit((d) => void (d.counters[i]!.label = v), `counter:${c.id}:label`)}
               />
@@ -141,7 +135,12 @@ export function KitSettingsPanel() {
                 />
               </label>
               <label>
-                <input type="checkbox" checked={!!c.show} onChange={(e) => edit((d) => showCounter(d, e.target.checked ? c.id : null))} />
+                <input
+                  type="checkbox"
+                  checked={shown(game, c.id)}
+                  disabled={!shown(game, c.id) && game.hud.length >= 4}
+                  onChange={(e) => edit((d) => showCounter(d, c.id, e.target.checked))}
+                />
                 <span>
                   Show on screen<span className="visually-hidden">: {c.label}</span>
                 </span>
@@ -153,7 +152,7 @@ export function KitSettingsPanel() {
           ))}
         </ul>
       )}
-      {game.counters.some((c) => c.show) && <p className="muted small">Only one counter fits on screen, beside the score.</p>}
+      {game.hud.length >= 4 && <p className="muted small">Four numbers fit on screen; untick one to show another.</p>}
       <button type="button" className="secondary" disabled={game.counters.length >= MAX_COUNTERS} onClick={() => edit((d) => void addCounter(d))}>
         Add counter
       </button>

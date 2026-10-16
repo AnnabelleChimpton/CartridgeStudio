@@ -7,7 +7,7 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { CPU_BUDGET, cpuCost, generateKit, validateKit } from "./generate.ts";
-import { KitGameSchema, type KitGame } from "./schema.ts";
+import { KitGameSchema, type KitGame, type KitGameInput, type KitRule } from "./schema.ts";
 import { KitTestSchema, runKitTest } from "./tests.ts";
 
 const games = import.meta.glob<unknown>("../../../templates/kit/games/*.json", { import: "default", eager: true });
@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 
 describe("kit games", () => {
-  it("has the spike genres and the batch 1 preset", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "maze", "shooter"]));
+  it("has the spike genres and the batch 1 preset", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "key-quest", "maze", "shooter"]));
 
   for (const [name, raw] of Object.entries(kitGames)) {
     describe(name, () => {
@@ -53,36 +53,45 @@ describe("kit games", () => {
 
 describe("kit validation", () => {
   const box = (w: number) => Array.from({ length: 8 }, () => "1".repeat(w));
-  const wide = (id: string) => ({ id, label: id, width: 16, height: 8, frames: [box(16)], palette: "p", behaviour: "still" as const, speed: 1 });
-  const base = (row: string, rules: KitGame["rules"]): KitGame => ({
-    kit: 1,
+  const wide = (id: string) => ({ id, label: id, width: 16, height: 8, frames: [box(16)], palette: "p" });
+  let n = 0;
+  const rule = (when: KitRule["when"], then: Record<string, unknown>[]): KitRule => ({ id: `r-${++n}`, when, then: then.map((a) => ({ id: `a-${++n}`, ...a })) }) as KitRule;
+  const base = (row: string, rules: KitRule[]): KitGameInput => ({
+    kit: 2,
     title: "T",
     palettes: [{ id: "p", colors: ["$0F", "$46", "$86"] }],
     background: "$00",
     wallPalette: "p",
     textPalette: "p",
-    lives: 3,
-    types: [{ ...wide("hero"), behaviour: "player-lr" }, wide("box")],
+    types: [{ ...wide("hero"), control: { joystick: 1, axes: "lr", speed: { step: 3 } } }, wide("box")],
     room: { rows: [row.padEnd(20), ...Array(10).fill(" ".repeat(20))], legend: { "~": "hazard", P: "hero", B: "box" } },
-    counters: [],
     rules,
     text: { title: "T", win: "W", lose: "L" },
-    sounds: {},
-    cartridge: { manualText: null },
   });
-  const errors = (g: KitGame) => {
+  const errors = (g: KitGameInput) => {
     const v = validateKit(g, SOUND_LIBRARY);
     return v.ok ? [] : v.errors;
   };
 
   it("refuses a rule that restarts the room while it's already true at the start", () => {
     // A 16-wide hero placed left of a hazard has its middle on the hazard.
-    expect(errors(base("P~", [{ when: { onTile: ["hero", "hazard"] }, then: [{ restartRoom: true }] }]))).toEqual([
+    expect(errors(base("P~", [rule({ onTile: ["hero", "hazard"] }, [{ restartRoom: true }])]))).toEqual([
       "Rule 1 starts the room again, but it's already true when the room starts (a hero starts on a hazard tile), so the room would restart forever.",
     ]);
-    expect(errors(base("PB", [{ when: { touch: ["hero", "box"] }, then: [{ nextLevel: true }] }]))[0]).toMatch(/a hero and a box start touching/);
+    expect(errors(base("PB", [rule({ touch: ["hero", "box"] }, [{ restartRoom: true }])]))[0]).toMatch(/a hero and a box start touching/);
     // Not true at the start, or not restarting: fine.
-    expect(errors(base("P ~", [{ when: { onTile: ["hero", "hazard"] }, then: [{ restartRoom: true }] }]))).toEqual([]);
-    expect(errors(base("PB", [{ when: { touch: ["hero", "box"] }, then: [{ score: 10 }] }]))).toEqual([]);
+    expect(errors(base("P ~", [rule({ onTile: ["hero", "hazard"] }, [{ restartRoom: true }])]))).toEqual([]);
+    expect(errors(base("PB", [rule({ touch: ["hero", "box"] }, [{ add: { what: { counter: "score" }, by: 10 } }])]))).toEqual([]);
+  });
+
+  it("says what's coming soon instead of building half of it", () => {
+    const p2 = base("P", []);
+    p2.types[0]!.control!.joystick = 2;
+    expect(errors(p2)[0]).toMatch(/joystick 2: two players are coming soon/);
+    expect(errors(base("P", [rule({ button: { joy: 1, button: 2 } }, [{ add: { what: { counter: "score" }, by: 10 } }])]))[0]).toMatch(/button 2/);
+  });
+
+  it("refuses rules that couldn't stop: a room start that starts a room", () => {
+    expect(errors(base("P", [rule({ roomStart: true }, [{ restartRoom: true }])]))[0]).toMatch(/can't start a room again/);
   });
 });

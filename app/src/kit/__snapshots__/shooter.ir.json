@@ -1,0 +1,1367 @@
+{
+ "title": "Cat vs. Vacuums",
+ "types": [
+  {
+   "index": 0,
+   "id": "ship",
+   "label": "Player ship",
+   "sym": "T_SHIP",
+   "name": "ship",
+   "sprite": "spr_ship",
+   "width": 16,
+   "height": 16,
+   "palette": 0,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "control": {
+    "joystick": 1,
+    "axes": "lr",
+    "mode": "direct",
+    "speed": {
+     "step": 4,
+     "max": 6
+    }
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": false
+   },
+   "own": [
+    0,
+    0
+   ],
+   "loop": [
+    0,
+    0
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "ship"
+   }
+  },
+  {
+   "index": 1,
+   "id": "invader",
+   "label": "Vacuum",
+   "sym": "T_INVADER",
+   "name": "invader",
+   "sprite": "spr_invader",
+   "width": 12,
+   "height": 8,
+   "palette": 1,
+   "frames": "2 frame(s)",
+   "anim": 2,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 8,
+    "vy": 0,
+    "wall": "through",
+    "edge": "pass",
+    "sliced": false
+   },
+   "own": [
+    1,
+    10
+   ],
+   "loop": [
+    1,
+    10
+   ],
+   "population": 10,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "invader"
+   }
+  },
+  {
+   "index": 2,
+   "id": "shot",
+   "label": "Shot",
+   "sym": "T_SHOT",
+   "name": "shot",
+   "sprite": "spr_shot",
+   "width": 4,
+   "height": 6,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": -64,
+    "wall": "destroy",
+    "edge": "destroy",
+    "sliced": false
+   },
+   "own": [
+    11,
+    11
+   ],
+   "loop": [
+    11,
+    11
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "shot"
+   }
+  },
+  {
+   "index": 3,
+   "id": "bomb",
+   "label": "Dust bomb",
+   "sym": "T_BOMB",
+   "name": "bomb",
+   "sprite": "spr_bomb",
+   "width": 4,
+   "height": 4,
+   "palette": 3,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 32,
+    "wall": "destroy",
+    "edge": "destroy",
+    "sliced": false
+   },
+   "own": [
+    12,
+    12
+   ],
+   "loop": [
+    12,
+    12
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "bomb"
+   }
+  }
+ ],
+ "rooms": [
+  {
+   "index": 0,
+   "rows": [
+    "                    ",
+    "   V  V  V  V  V    ",
+    "   V  V  V  V  V    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "                    ",
+    "         P          "
+   ],
+   "tiles": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "spawns": [
+    {
+     "type": 1,
+     "x": 24,
+     "y": 32,
+     "slot": 1,
+     "place": 0
+    },
+    {
+     "type": 1,
+     "x": 48,
+     "y": 32,
+     "slot": 2,
+     "place": 1
+    },
+    {
+     "type": 1,
+     "x": 72,
+     "y": 32,
+     "slot": 3,
+     "place": 2
+    },
+    {
+     "type": 1,
+     "x": 96,
+     "y": 32,
+     "slot": 4,
+     "place": 3
+    },
+    {
+     "type": 1,
+     "x": 120,
+     "y": 32,
+     "slot": 5,
+     "place": 4
+    },
+    {
+     "type": 1,
+     "x": 24,
+     "y": 48,
+     "slot": 6,
+     "place": 5
+    },
+    {
+     "type": 1,
+     "x": 48,
+     "y": 48,
+     "slot": 7,
+     "place": 6
+    },
+    {
+     "type": 1,
+     "x": 72,
+     "y": 48,
+     "slot": 8,
+     "place": 7
+    },
+    {
+     "type": 1,
+     "x": 96,
+     "y": 48,
+     "slot": 9,
+     "place": 8
+    },
+    {
+     "type": 1,
+     "x": 120,
+     "y": 48,
+     "slot": 10,
+     "place": 9
+    },
+    {
+     "type": 0,
+     "x": 72,
+     "y": 176,
+     "slot": 0,
+     "place": 10
+    }
+   ],
+   "exits": {},
+   "span": {
+    "kind": "room",
+    "id": "room-1"
+   }
+  }
+ ],
+ "counters": [
+  {
+   "id": "lives",
+   "label": "Lives",
+   "name": "lives",
+   "start": 3,
+   "keep": "game",
+   "span": {
+    "kind": "counter",
+    "id": "lives"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "n": 1,
+   "id": "r-1",
+   "label": "rule1",
+   "trigger": {
+    "k": "touch",
+    "a": 2,
+    "b": 1
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-1-1",
+     "span": {
+      "kind": "action",
+      "id": "a-1-1"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "it",
+      "type": 2
+     }
+    },
+    {
+     "id": "a-1-2",
+     "span": {
+      "kind": "action",
+      "id": "a-1-2"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "other",
+      "type": 1
+     }
+    },
+    {
+     "id": "a-1-3",
+     "span": {
+      "kind": "action",
+      "id": "a-1-3"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 10
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-1-4",
+     "span": {
+      "kind": "action",
+      "id": "a-1-4"
+     },
+     "k": "sound",
+     "label": "sfx_boom"
+    }
+   ],
+   "event": false,
+   "its": [
+    2
+   ],
+   "other": 1,
+   "span": {
+    "kind": "rule",
+    "id": "r-1"
+   }
+  },
+  {
+   "n": 2,
+   "id": "r-2",
+   "label": "rule2",
+   "trigger": {
+    "k": "touch",
+    "a": 3,
+    "b": 0
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-2-1",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "it",
+      "type": 3
+     }
+    },
+    {
+     "id": "a-2-2-l",
+     "span": {
+      "kind": "action",
+      "id": "a-2-2-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-2-2-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-2-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-2-2-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-2-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-2-3",
+     "span": {
+      "kind": "action",
+      "id": "a-2-3"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    }
+   ],
+   "event": false,
+   "its": [
+    3
+   ],
+   "other": 0,
+   "span": {
+    "kind": "rule",
+    "id": "r-2"
+   }
+  },
+  {
+   "n": 3,
+   "id": "r-3",
+   "label": "rule3",
+   "trigger": {
+    "k": "touch",
+    "a": 1,
+    "b": 0
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-3-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-3-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-3-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-3-2",
+     "span": {
+      "kind": "action",
+      "id": "a-3-2"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    },
+    {
+     "id": "a-3-3",
+     "span": {
+      "kind": "action",
+      "id": "a-3-3"
+     },
+     "k": "restart"
+    }
+   ],
+   "event": false,
+   "its": [
+    1
+   ],
+   "other": 0,
+   "span": {
+    "kind": "rule",
+    "id": "r-3"
+   }
+  },
+  {
+   "n": 4,
+   "id": "r-4",
+   "label": "rule4",
+   "trigger": {
+    "k": "edge",
+    "type": 1,
+    "sides": [
+     "bottom"
+    ]
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-4-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-4-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-4-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-4-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-4-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-4-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-4-2",
+     "span": {
+      "kind": "action",
+      "id": "a-4-2"
+     },
+     "k": "restart"
+    }
+   ],
+   "event": false,
+   "its": [
+    1
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-4"
+   }
+  },
+  {
+   "n": 5,
+   "id": "r-5",
+   "label": "rule5",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "count",
+       "type": 1
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 0
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-5-1",
+     "span": {
+      "kind": "action",
+      "id": "a-5-1"
+     },
+     "k": "sound",
+     "label": "sfx_up"
+    },
+    {
+     "id": "a-5-2",
+     "span": {
+      "kind": "action",
+      "id": "a-5-2"
+     },
+     "k": "restart"
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-5"
+   }
+  },
+  {
+   "n": 6,
+   "id": "r-p-shoot0",
+   "label": "rule6",
+   "trigger": {
+    "k": "button",
+    "released": false,
+    "types": [
+     0
+    ]
+   },
+   "fires": null,
+   "any": false,
+   "latch": null,
+   "pre": [
+    {
+     "a": {
+      "src": {
+       "k": "count",
+       "type": 2
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   ],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-p-shoot0",
+     "span": {
+      "kind": "action",
+      "id": "a-p-shoot0"
+     },
+     "k": "create",
+     "type": 2,
+     "at": {
+      "k": "it",
+      "type": 0
+     },
+     "place": "above",
+     "dx": 0,
+     "dy": 0
+    },
+    {
+     "id": "a-p-zap0",
+     "span": {
+      "kind": "action",
+      "id": "a-p-zap0"
+     },
+     "k": "sound",
+     "label": "sfx_zap"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-shoot0"
+   }
+  },
+  {
+   "n": 7,
+   "id": "r-p-drop1",
+   "label": "rule7",
+   "trigger": {
+    "k": "every",
+    "n": 1,
+    "frames": "undefined frame(s)",
+    "counter": "ev7"
+   },
+   "fires": null,
+   "any": false,
+   "latch": null,
+   "pre": [
+    {
+     "a": {
+      "src": {
+       "k": "random",
+       "n": 255
+      },
+      "signed": false
+     },
+     "op": "lt",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 50
+      },
+      "signed": false
+     }
+    },
+    {
+     "a": {
+      "src": {
+       "k": "count",
+       "type": 3
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   ],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-p-drop1",
+     "span": {
+      "kind": "action",
+      "id": "a-p-drop1"
+     },
+     "k": "create",
+     "type": 3,
+     "at": {
+      "k": "random",
+      "type": 1
+     },
+     "place": "below",
+     "dx": 0,
+     "dy": 0
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-drop1"
+   }
+  },
+  {
+   "n": 8,
+   "id": "r-p-march1",
+   "label": "rule8",
+   "trigger": {
+    "k": "edge",
+    "type": 1,
+    "sides": [
+     "left",
+     "right"
+    ]
+   },
+   "fires": "once",
+   "any": true,
+   "latch": {
+    "k": "global",
+    "bit": 1
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "r-p-march1-1",
+     "span": {
+      "kind": "action",
+      "id": "r-p-march1-1"
+     },
+     "k": "prop",
+     "mode": "set",
+     "prop": "vx",
+     "who": {
+      "k": "every",
+      "type": 1
+     },
+     "value": {
+      "src": {
+       "k": "prop",
+       "prop": "vx",
+       "of": "target"
+      },
+      "neg": true,
+      "signed": true
+     }
+    },
+    {
+     "id": "r-p-march1-2",
+     "span": {
+      "kind": "action",
+      "id": "r-p-march1-2"
+     },
+     "k": "prop",
+     "mode": "add",
+     "prop": "y",
+     "who": {
+      "k": "every",
+      "type": 1
+     },
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 8
+      },
+      "signed": false
+     }
+    }
+   ],
+   "event": false,
+   "its": [
+    1
+   ],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-march1"
+   }
+  },
+  {
+   "n": 9,
+   "id": "r-p-lives",
+   "label": "rule9",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "lives"
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 2
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-p-lives",
+     "span": {
+      "kind": "action",
+      "id": "a-p-lives"
+     },
+     "k": "gameOver",
+     "won": false
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-lives"
+   }
+  }
+ ],
+ "hud": [
+  {
+   "show": "score",
+   "at": "left",
+   "name": "score"
+  },
+  {
+   "show": "lives",
+   "at": "right",
+   "name": "lives"
+  }
+ ],
+ "messages": [],
+ "palettes": [
+  {
+   "id": "ship",
+   "colors": [
+    "$3A",
+    "$02",
+    "$0F"
+   ]
+  },
+  {
+   "id": "enemy",
+   "colors": [
+    "$96",
+    "$42",
+    "$90"
+   ]
+  },
+  {
+   "id": "shot",
+   "colors": [
+    "$0F",
+    "$1C",
+    "$1C"
+   ]
+  },
+  {
+   "id": "bomb",
+   "colors": [
+    "$46",
+    "$46",
+    "$46"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  }
+ ],
+ "background": "$00",
+ "textPalette": 4,
+ "wallPalette": 4,
+ "text": {
+  "title": "Cat vs. Vacuums",
+  "win": "You win!",
+  "lose": "Game over"
+ },
+ "flow": {
+  "title": true,
+  "attract": {
+   "after": 20,
+   "input": [
+    8,
+    40,
+    24,
+    2,
+    8,
+    30,
+    0,
+    10,
+    4,
+    50,
+    20,
+    2,
+    4,
+    30,
+    1,
+    20,
+    2,
+    20,
+    16,
+    2,
+    0,
+    20
+   ]
+  },
+  "end": {
+   "show": [
+    {
+     "label": "score",
+     "name": "score"
+    }
+   ],
+   "after": 0
+  },
+  "remember": false
+ },
+ "sounds": [
+  {
+   "label": "sfx_boom",
+   "id": "boom"
+  },
+  {
+   "label": "sfx_down",
+   "id": "down"
+  },
+  {
+   "label": "sfx_up",
+   "id": "up"
+  },
+  {
+   "label": "sfx_zap",
+   "id": "zap"
+  }
+ ],
+ "code": {
+  "init": "",
+  "startroom": "",
+  "frame": "",
+  "draw": "",
+  "routines": [],
+  "cost": 10
+ },
+ "features": {
+  "walls": false,
+  "tileMap": false,
+  "timers": false,
+  "protect": true,
+  "timedTurns": false,
+  "facing": false,
+  "contact": false,
+  "latchThings": false,
+  "globalLatches": 3,
+  "everyCounters": [
+   "ev7"
+  ],
+  "messages": false,
+  "rooms": 1,
+  "exits": false,
+  "remember": false,
+  "vars": false,
+  "place": false,
+  "joy2": false
+ }
+}

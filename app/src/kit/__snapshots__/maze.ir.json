@@ -1,0 +1,1074 @@
+{
+ "title": "Yarn Hunt",
+ "types": [
+  {
+   "index": 0,
+   "id": "cat",
+   "label": "Cat",
+   "sym": "T_CAT",
+   "name": "cat",
+   "sprite": "spr_cat",
+   "width": 8,
+   "height": 12,
+   "palette": 0,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "control": {
+    "joystick": 1,
+    "axes": "4way",
+    "mode": "direct",
+    "speed": {
+     "step": 3,
+     "max": 6
+    }
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": false
+   },
+   "own": [
+    0,
+    0
+   ],
+   "loop": [
+    0,
+    0
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "cat"
+   }
+  },
+  {
+   "index": 1,
+   "id": "ghost",
+   "label": "Dust ghost",
+   "sym": "T_GHOST",
+   "name": "ghost",
+   "sprite": "spr_ghost",
+   "width": 8,
+   "height": 12,
+   "palette": 1,
+   "frames": "2 frame(s)",
+   "anim": 2,
+   "dirSets": 1,
+   "animate": 16,
+   "steer": {
+    "target": 0,
+    "away": false,
+    "speed": {
+     "step": 1,
+     "max": 6
+    },
+    "every": 1
+   },
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "slide",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    1,
+    2
+   ],
+   "loop": [
+    1,
+    2
+   ],
+   "population": 2,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": true
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "ghost"
+   }
+  },
+  {
+   "index": 2,
+   "id": "yarn",
+   "label": "Yarn ball",
+   "sym": "T_YARN",
+   "name": "yarn",
+   "sprite": "spr_yarn",
+   "width": 4,
+   "height": 6,
+   "palette": 2,
+   "frames": "1 frame(s)",
+   "anim": 1,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 0,
+    "vy": 0,
+    "wall": "stop",
+    "edge": "stop",
+    "sliced": true
+   },
+   "own": [
+    3,
+    13
+   ],
+   "loop": [
+    3,
+    13
+   ],
+   "population": 11,
+   "from": [],
+   "axes": {
+    "x": false,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": false
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "yarn"
+   }
+  },
+  {
+   "index": 3,
+   "id": "bat",
+   "label": "Bat",
+   "sym": "T_BAT",
+   "name": "bat",
+   "sprite": "spr_bat",
+   "width": 8,
+   "height": 8,
+   "palette": 5,
+   "frames": "2 frame(s)",
+   "anim": 2,
+   "dirSets": 1,
+   "animate": 16,
+   "move": {
+    "vx": 8,
+    "vy": 0,
+    "wall": "bounce",
+    "edge": "bounce",
+    "sliced": true
+   },
+   "own": [
+    14,
+    14
+   ],
+   "loop": [
+    14,
+    14
+   ],
+   "population": 1,
+   "from": [],
+   "axes": {
+    "x": true,
+    "y": false
+   },
+   "uses": {
+    "facing": false,
+    "contact": false,
+    "leavesRule": false,
+    "exits": false,
+    "moves": true
+   },
+   "vars": {
+    "a": 0,
+    "b": 0
+   },
+   "span": {
+    "kind": "type",
+    "id": "bat"
+   }
+  }
+ ],
+ "rooms": [
+  {
+   "index": 0,
+   "rows": [
+    "####################",
+    "#P  y   y   #  y  G#",
+    "#  ###  ###   ###  #",
+    "#y #       y    #  #",
+    "#  #  ####  ### # y#",
+    "#     B        y   #",
+    "# y  ###  ##  ###  #",
+    "#  #    y  #    #  #",
+    "#  #  #######   #y #",
+    "#y                G#",
+    "####################"
+   ],
+   "tiles": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "spawns": [
+    {
+     "type": 0,
+     "x": 8,
+     "y": 32,
+     "slot": 0,
+     "place": 0
+    },
+    {
+     "type": 2,
+     "x": 32,
+     "y": 32,
+     "slot": 3,
+     "place": 1
+    },
+    {
+     "type": 2,
+     "x": 64,
+     "y": 32,
+     "slot": 4,
+     "place": 2
+    },
+    {
+     "type": 2,
+     "x": 120,
+     "y": 32,
+     "slot": 5,
+     "place": 3
+    },
+    {
+     "type": 1,
+     "x": 144,
+     "y": 32,
+     "slot": 1,
+     "place": 4
+    },
+    {
+     "type": 2,
+     "x": 8,
+     "y": 64,
+     "slot": 6,
+     "place": 5
+    },
+    {
+     "type": 2,
+     "x": 88,
+     "y": 64,
+     "slot": 7,
+     "place": 6
+    },
+    {
+     "type": 2,
+     "x": 144,
+     "y": 80,
+     "slot": 8,
+     "place": 7
+    },
+    {
+     "type": 3,
+     "x": 48,
+     "y": 96,
+     "slot": 14,
+     "place": 8
+    },
+    {
+     "type": 2,
+     "x": 120,
+     "y": 96,
+     "slot": 9,
+     "place": 9
+    },
+    {
+     "type": 2,
+     "x": 16,
+     "y": 112,
+     "slot": 10,
+     "place": 10
+    },
+    {
+     "type": 2,
+     "x": 64,
+     "y": 128,
+     "slot": 11,
+     "place": 11
+    },
+    {
+     "type": 2,
+     "x": 136,
+     "y": 144,
+     "slot": 12,
+     "place": 12
+    },
+    {
+     "type": 2,
+     "x": 8,
+     "y": 160,
+     "slot": 13,
+     "place": 13
+    },
+    {
+     "type": 1,
+     "x": 144,
+     "y": 160,
+     "slot": 2,
+     "place": 14
+    }
+   ],
+   "exits": {},
+   "span": {
+    "kind": "room",
+    "id": "room-1"
+   }
+  }
+ ],
+ "counters": [
+  {
+   "id": "lives",
+   "label": "Lives",
+   "name": "lives",
+   "start": 3,
+   "keep": "game",
+   "span": {
+    "kind": "counter",
+    "id": "lives"
+   }
+  }
+ ],
+ "rules": [
+  {
+   "n": 1,
+   "id": "r-1",
+   "label": "rule1",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 2
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-1-1",
+     "span": {
+      "kind": "action",
+      "id": "a-1-1"
+     },
+     "k": "destroy",
+     "who": {
+      "k": "other",
+      "type": 2
+     }
+    },
+    {
+     "id": "a-1-2",
+     "span": {
+      "kind": "action",
+      "id": "a-1-2"
+     },
+     "k": "score",
+     "mode": "add",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 10
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-1-3",
+     "span": {
+      "kind": "action",
+      "id": "a-1-3"
+     },
+     "k": "sound",
+     "label": "sfx_blip"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 2,
+   "span": {
+    "kind": "rule",
+    "id": "r-1"
+   }
+  },
+  {
+   "n": 2,
+   "id": "r-2",
+   "label": "rule2",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 1
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-2-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-2-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-2-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-2-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-2-2",
+     "span": {
+      "kind": "action",
+      "id": "a-2-2"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 1,
+   "span": {
+    "kind": "rule",
+    "id": "r-2"
+   }
+  },
+  {
+   "n": 3,
+   "id": "r-3",
+   "label": "rule3",
+   "trigger": {
+    "k": "touch",
+    "a": 0,
+    "b": 3
+   },
+   "fires": "while",
+   "any": false,
+   "latch": null,
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-3-1-l",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-l"
+     },
+     "k": "counter",
+     "mode": "take",
+     "name": "lives",
+     "value": {
+      "src": {
+       "k": "lit",
+       "n": 1
+      },
+      "signed": false
+     }
+    },
+    {
+     "id": "a-3-1-s0",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-s0"
+     },
+     "k": "toStart",
+     "who": {
+      "k": "every",
+      "type": 0
+     }
+    },
+    {
+     "id": "a-3-1-p0",
+     "span": {
+      "kind": "action",
+      "id": "a-3-1-p0"
+     },
+     "k": "protect",
+     "who": {
+      "k": "every",
+      "type": 0
+     },
+     "tenths": 15
+    },
+    {
+     "id": "a-3-2",
+     "span": {
+      "kind": "action",
+      "id": "a-3-2"
+     },
+     "k": "sound",
+     "label": "sfx_down"
+    }
+   ],
+   "event": false,
+   "its": [
+    0
+   ],
+   "other": 3,
+   "span": {
+    "kind": "rule",
+    "id": "r-3"
+   }
+  },
+  {
+   "n": 4,
+   "id": "r-4",
+   "label": "rule4",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "count",
+       "type": 2
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 0
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-4-1",
+     "span": {
+      "kind": "action",
+      "id": "a-4-1"
+     },
+     "k": "sound",
+     "label": "sfx_chime"
+    },
+    {
+     "id": "a-4-2",
+     "span": {
+      "kind": "action",
+      "id": "a-4-2"
+     },
+     "k": "gameOver",
+     "won": true
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-4"
+   }
+  },
+  {
+   "n": 5,
+   "id": "r-p-lives",
+   "label": "rule5",
+   "trigger": {
+    "k": "test",
+    "cmp": {
+     "a": {
+      "src": {
+       "k": "var",
+       "name": "lives"
+      },
+      "signed": false
+     },
+     "op": "eq",
+     "b": {
+      "src": {
+       "k": "lit",
+       "n": 0
+      },
+      "signed": false
+     }
+    }
+   },
+   "fires": "once",
+   "any": false,
+   "latch": {
+    "k": "global",
+    "bit": 1
+   },
+   "pre": [],
+   "post": [],
+   "actions": [
+    {
+     "id": "a-p-lives",
+     "span": {
+      "kind": "action",
+      "id": "a-p-lives"
+     },
+     "k": "gameOver",
+     "won": false
+    }
+   ],
+   "event": false,
+   "its": [],
+   "other": null,
+   "span": {
+    "kind": "rule",
+    "id": "r-p-lives"
+   }
+  }
+ ],
+ "hud": [
+  {
+   "show": "score",
+   "at": "left",
+   "name": "score"
+  },
+  {
+   "show": "lives",
+   "at": "right",
+   "name": "lives"
+  }
+ ],
+ "messages": [],
+ "palettes": [
+  {
+   "id": "hero",
+   "colors": [
+    "$1C",
+    "$02",
+    "$46"
+   ]
+  },
+  {
+   "id": "ghost",
+   "colors": [
+    "$56",
+    "$0F",
+    "$02"
+   ]
+  },
+  {
+   "id": "coin",
+   "colors": [
+    "$1E",
+    "$2A",
+    "$00"
+   ]
+  },
+  {
+   "id": "walls",
+   "colors": [
+    "$84",
+    "$82",
+    "$00"
+   ]
+  },
+  {
+   "id": "text",
+   "colors": [
+    "$0F",
+    "$0F",
+    "$0F"
+   ]
+  },
+  {
+   "id": "bat",
+   "colors": [
+    "$06",
+    "$46",
+    "$00"
+   ]
+  }
+ ],
+ "background": "$00",
+ "textPalette": 4,
+ "wallPalette": 3,
+ "text": {
+  "title": "Yarn Hunt",
+  "win": "All the yarn!",
+  "lose": "Game over"
+ },
+ "flow": {
+  "title": true,
+  "attract": {
+   "after": 20,
+   "input": [
+    8,
+    40,
+    24,
+    2,
+    8,
+    30,
+    0,
+    10,
+    4,
+    50,
+    20,
+    2,
+    4,
+    30,
+    1,
+    20,
+    2,
+    20,
+    16,
+    2,
+    0,
+    20
+   ]
+  },
+  "end": {
+   "show": [
+    {
+     "label": "score",
+     "name": "score"
+    }
+   ],
+   "after": 0
+  },
+  "remember": false
+ },
+ "sounds": [
+  {
+   "label": "sfx_blip",
+   "id": "blip"
+  },
+  {
+   "label": "sfx_down",
+   "id": "down"
+  },
+  {
+   "label": "sfx_chime",
+   "id": "chime"
+  }
+ ],
+ "code": {
+  "init": "",
+  "startroom": "",
+  "frame": "",
+  "draw": "",
+  "routines": [],
+  "cost": 10
+ },
+ "features": {
+  "walls": true,
+  "tileMap": true,
+  "timers": false,
+  "protect": true,
+  "timedTurns": false,
+  "facing": false,
+  "contact": false,
+  "latchThings": false,
+  "globalLatches": 2,
+  "everyCounters": [],
+  "messages": false,
+  "rooms": 1,
+  "exits": false,
+  "remember": false,
+  "vars": false,
+  "place": false,
+  "joy2": false
+ }
+}

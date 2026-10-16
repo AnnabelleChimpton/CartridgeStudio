@@ -60,14 +60,14 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
 
   // Change a line: the preview rebuilds with it.
   let n = await buildCount(page);
-  await find(page, "STARTLIVES = 3");
-  await page.keyboard.type("STARTLIVES = 7");
+  await find(page, "lives = 3");
+  await page.keyboard.type("lives = 7");
   await expect.poll(() => buildCount(page), { timeout: 30_000 }).toBeGreaterThan(n);
   await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
-  expect(await page.evaluate(() => window.__cs!.last!.kind === "built" && window.__cs!.last!.source)).toContain("const STARTLIVES = 7");
+  expect(await page.evaluate(() => window.__cs!.last!.kind === "built" && window.__cs!.last!.source)).toContain(" lives = 7");
 
   // A syntax error is marked on its line, in the gutter and the list.
-  const line = (await source(page)).split("\n").findIndex((l) => l.includes("STARTLIVES = 7")) + 2;
+  const line = (await source(page)).split("\n").findIndex((l) => l.includes("lives = 7")) + 2;
   n = await buildCount(page);
   await page.keyboard.press("End");
   await page.keyboard.press("Enter");
@@ -234,7 +234,7 @@ test("an ejected game still boxes up: print PDF, submission package and source f
   const src = await downloadOf(page, () => page.getByRole("button", { name: "Export source", exact: true }).click());
   expect(src.name).toBe("ghost-panic-source.zip");
   const files = unzipSync(src.bytes);
-  for (const f of ["game.bas", "build.sh", "build.bat", "PITFALLS.txt", "RUNTIME.txt", "README.txt", "ghost-panic.cartridge", "spr0.png"]) {
+  for (const f of ["game.bas", "build.sh", "build.bat", "PITFALLS.txt", "RUNTIME.txt", "README.txt", "ghost-panic.cartridge", "spr_cat.png"]) {
     expect(files[`ghost-panic-source/${f}`], f).toBeDefined();
   }
   // RUNTIME.txt has addresses from the last build.

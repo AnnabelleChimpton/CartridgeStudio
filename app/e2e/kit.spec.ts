@@ -103,7 +103,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
   await paint(page, [15, 4], [15, 4]);
   const g = await game(page);
   const comet = g.types.find((t) => t.label === "Comet")!;
-  expect(comet.behaviour).toBe("chase");
+  expect(comet.steer?.toward).toBe(g.types.find((t) => t.control)!.id);
   expect(g.room.rows[4]![15]).toBe(Object.entries(g.room.legend).find(([, v]) => v === comet.id)![0]);
   expect((await nextBuild(page, n)).kind).toBe("built");
   await viewCode(page);
@@ -111,7 +111,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
 });
 
 test("rules use the game's own things", async ({ page }) => {
-  // The Dodger: it already shows a timer, so a timer rule has room in the budget (the HUD digits cost 7).
+  // The Dodger: it already shows a timer, so a timer rule has room in the budget.
   await start(page, "Rock Fall");
   const rules = (await game(page)).rules.length;
   await openTab(page, "Rules");
@@ -121,18 +121,18 @@ test("rules use the game's own things", async ({ page }) => {
   await page.getByLabel(`Rule ${n} seconds`).fill("45");
   await page.getByLabel(`Rule ${n} action 1`, { exact: true }).selectOption({ label: "lose the game" });
   const g = await game(page);
-  expect(g.rules.at(-1)).toEqual({ when: { timer: 45 }, then: [{ lose: true }] });
+  expect(g.rules.at(-1)).toMatchObject({ when: { after: 45 }, then: [{ gameOver: "lost" }] });
   await nextBuild(page, await buildCount(page) - 1);
   await viewCode(page);
-  await expect.poll(() => generated(page)).toContain("45 seconds pass");
+  await expect.poll(() => generated(page)).toContain("45 seconds have passed");
 });
 
 test("the CPU meter stops a game that's too busy", async ({ page }) => {
   await start(page, "Yarn Hunt");
-  // Ghosts chase through walls, the costliest behaviour: three more push the maze over budget.
+  // Ghosts chase the cat, one of the costlier ways to move: five more push the maze over budget.
   await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Dust ghost" }).click();
-  await paint(page, [10, 5], [12, 5]);
+  await paint(page, [10, 5], [14, 5]);
   await expect(page.getByTestId("cpu-meter")).toContainText("Too busy");
   // The meter names the changes that would make it fit.
   await expect(page.getByTestId("cpu-meter")).toContainText("Dust ghosts out of the room");
@@ -184,7 +184,7 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
 
   // Changing one word changes just that word.
   await page.getByLabel("Rule 2 action 3 seconds").fill("8");
-  expect((await game(page)).rules[1]!.then[2]).toEqual({ turnAll: { type: "ghost", into: "scared", seconds: 8 } });
+  expect((await game(page)).rules[1]!.then[2]).toMatchObject({ turn: { who: { every: "ghost" }, into: "scared", seconds: 8 } });
   await openTab(page, "Room");
   await expect(page.getByRole("radio", { name: "Paint Spikes" })).toBeVisible();
 });
@@ -235,12 +235,19 @@ test("builds a key-and-door rule with a counter and only if", async ({ page }) =
 
   const g = await game(page);
   const ids = Object.fromEntries(g.types.map((t) => [t.label, t.id]));
-  expect(g.counters).toEqual([{ id: "counter-1", label: "Keys", start: 0, show: true }]);
-  expect(g.rules[key - 1]).toEqual({ when: { touch: ["ship", ids.Key] }, then: [{ remove: "second" }, { add: ["counter-1", 1] }] });
-  expect(g.rules[door - 1]).toEqual({
+  expect(g.counters).toEqual([
+    { id: "lives", label: "Lives", start: 3 },
+    { id: "counter-1", label: "Keys", start: 0 },
+  ]);
+  expect(g.hud.map((h) => h.show)).toContain("counter-1");
+  expect(g.rules[key - 1]).toMatchObject({
+    when: { touch: ["ship", ids.Key] },
+    then: [{ destroy: "other" }, { add: { what: { counter: "counter-1" }, by: 1 } }],
+  });
+  expect(g.rules[door - 1]).toMatchObject({
     when: { touch: ["ship", ids.Door] },
-    if: [{ counter: "counter-1", op: "gte", value: 1 }],
-    then: [{ remove: "second" }, { take: ["counter-1", 1] }, { score: 100 }],
+    if: [{ a: { counter: "counter-1" }, op: "gte", b: 1 }],
+    then: [{ destroy: "other" }, { take: { what: { counter: "counter-1" }, by: 1 } }, { add: { what: { counter: "score" }, by: 100 } }],
   });
   expect((await nextBuild(page, n)).kind).toBe("built");
 
@@ -248,7 +255,8 @@ test("builds a key-and-door rule with a counter and only if", async ({ page }) =
   await openTab(page, "Game");
   await page.getByRole("button", { name: "Remove Keys" }).click();
   const after = await game(page);
-  expect(after.rules[door - 1]).toEqual({ when: { touch: ["ship", ids.Door] }, then: [{ remove: "second" }, { score: 100 }] });
+  expect(after.rules[door - 1]).toMatchObject({ when: { touch: ["ship", ids.Door] }, then: [{ destroy: "other" }, { add: { what: { counter: "score" }, by: 100 } }] });
+  expect(after.rules[door - 1]!.if).toBeUndefined();
 });
 
 test("turns, timed turns and the newer triggers can be chosen", async ({ page }) => {
@@ -261,15 +269,15 @@ test("turns, timed turns and the newer triggers can be chosen", async ({ page })
   await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Scared ghost" });
   await page.getByRole("button", { name: "Rule 5 action 1: only for some seconds" }).click();
   await page.getByLabel("Rule 5 action 1 seconds").fill("3");
-  expect((await game(page)).rules[4]).toEqual({
+  expect((await game(page)).rules[4]).toMatchObject({
     when: { every: 20 },
-    then: [{ turnAll: { type: "ghost", into: "scared", seconds: 3 } }, { sound: "down" }],
+    then: [{ turn: { who: { every: "ghost" }, into: "scared", seconds: 3 } }, { toStart: { every: "cat" } }, { protect: { who: { every: "cat" } } }, { sound: "down" }],
   });
   // A thing on a goal, turning into something else for good.
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "is on a goal" });
   await page.getByLabel("Rule 5 thing").selectOption({ label: "Dust ghost" });
   await page.getByLabel("Rule 5 action 1", { exact: true }).selectOption({ label: "turn" });
-  await expect(page.getByLabel("Rule 5 action 1 which")).toHaveValue("first");
+  await expect(page.getByLabel("Rule 5 action 1 which")).toHaveValue("it");
   await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Fast ghost" });
   // A counter reaching a number.
   await page.getByLabel("Rule 7 trigger").selectOption({ label: "reaches" });
@@ -278,8 +286,10 @@ test("turns, timed turns and the newer triggers can be chosen", async ({ page })
   await page.getByLabel("Rule 7 action 1", { exact: true }).selectOption({ label: "go to the next level" });
   const g = await game(page);
   expect(g.rules[4]!.when).toEqual({ onTile: ["ghost", "goal"] });
-  expect(g.rules[4]!.then[0]).toEqual({ turn: { who: "first", into: "fast-ghost" } });
-  expect(g.rules[6]).toEqual({ when: { reaches: ["combo", 5] }, then: [{ nextLevel: true }, { sound: "down" }] });
+  expect(g.rules[4]!.then[0]).toMatchObject({ turn: { who: "it", into: "fast-ghost" } });
+  // "Go to the next level" is two actions: one more level, and the room again.
+  expect(g.rules[6]!.when).toEqual({ test: { a: { counter: "combo" }, op: "gte", b: 5 } });
+  expect(g.rules[6]!.then.slice(0, 2)).toMatchObject([{ add: { what: { counter: "level" }, by: 1 } }, { restartRoom: true }]);
 });
 
 test("rules can be reordered by keyboard and by dragging", async ({ page, browserName }) => {

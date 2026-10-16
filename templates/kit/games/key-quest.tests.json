@@ -1,0 +1,339 @@
+[
+  {
+    "name": "starts on the title screen, in the first room",
+    "steps": [
+      {
+        "frames": 60
+      },
+      {
+        "expect": {
+          "state": 0,
+          "room": 1
+        }
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "expect": {
+          "state": 1,
+          "room": 1,
+          "lives": 3,
+          "score": 0
+        }
+      }
+    ]
+  },
+  {
+    "name": "the right exit leads to room 2, and the left one back",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "room": 2
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "heroX": {
+            "lte": 8
+          },
+          "heroY": 96
+        }
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "room": 1
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "left"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "heroX": {
+            "gte": 144
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "the key opens the door to the crown",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "room": 2
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "until": {
+          "heroX": {
+            "gte": 72
+          }
+        },
+        "maxFrames": 200,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": 50
+        }
+      },
+      {
+        "until": {
+          "room": 4
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "down"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "until": {
+          "state": 2
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "down"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": 650,
+          "lives": 3
+        }
+      }
+    ]
+  },
+  {
+    "name": "a taken key stays taken when you come back",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "room": 2
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "until": {
+          "heroX": {
+            "gte": 72
+          }
+        },
+        "maxFrames": 200,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": 50
+        }
+      },
+      {
+        "until": {
+          "room": 1
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "left"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "room": 2
+        },
+        "maxFrames": 300,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "until": {
+          "heroX": {
+            "gte": 72
+          }
+        },
+        "maxFrames": 200,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "expect": {
+          "score": 50
+        }
+      }
+    ]
+  },
+  {
+    "name": "holds 60 fps while playing",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "repeat": 6,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 30
+          },
+          {
+            "hold": [
+              "up"
+            ],
+            "frames": 10
+          },
+          {
+            "hold": [
+              "left"
+            ],
+            "frames": 30
+          },
+          {
+            "hold": [
+              "down"
+            ],
+            "frames": 10
+          }
+        ]
+      },
+      {
+        "expect": {
+          "loops": {
+            "gte": 480
+          }
+        }
+      }
+    ]
+  }
+]
