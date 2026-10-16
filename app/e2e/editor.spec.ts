@@ -3,6 +3,7 @@
 // it, and it leaves the editor as ROMs, a print PDF, source and game files.
 
 import { expect, test, type Page } from "@playwright/test";
+import { autosaved } from "./wait.ts";
 
 /** Switches the editor to one of its tabs (Things, Room, Rules, Game, Code). */
 const openTab = (page: Page, name: string) => page.getByRole("tab", { name, exact: true }).click();
@@ -141,7 +142,7 @@ test("the game survives a reload", async ({ page }) => {
   const title = page.getByLabel("Game title");
   await title.fill("Moth Patrol");
   await setLives(page, 7);
-  await page.waitForTimeout(800); // autosave debounce
+  await autosaved(page, "Moth Patrol");
   await open(page);
   await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
   await openTab(page, "Game");
@@ -173,9 +174,11 @@ test("a newer build cancels an older one, and a hung build times out", async ({ 
 });
 
 // CPU throttling slows the page's main thread but not dedicated workers, so
-// the throttled runs build on the main thread (`?builder=inline`).
+// the throttled runs build on the main thread (`?builder=inline`). Tagged
+// @perf: timing on shared CI machines is noisy, so pull requests skip these
+// and the nightly run keeps them.
 for (const rate of [1, 4, 6]) {
-  test(`build time with ${rate}x CPU throttling`, async ({ page, context, browserName }) => {
+  test(`build time with ${rate}x CPU throttling`, { tag: "@perf" }, async ({ page, context, browserName }) => {
     if (rate !== 1) {
       test.skip(browserName !== "chromium", "CPU throttling uses CDP, which is Chromium-only");
       const cdp = await context.newCDPSession(page);

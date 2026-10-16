@@ -14,7 +14,9 @@ export type EmuRequest =
   /** Starts keeping every `every`th frame's palette indices, up to `max` frames (a clip). */
   | { type: "clip-start"; every: number; max: number }
   /** Stops a clip; replies with its frames and the palette (RGB triples). */
-  | { type: "clip-stop"; id: number };
+  | { type: "clip-stop"; id: number }
+  /** Test hook (window.__cs): the next frame throws, to exercise fault recovery. */
+  | { type: "inject-fault" };
 
 export type EmuResponse =
   | { type: "ready" }
@@ -22,4 +24,6 @@ export type EmuResponse =
   | { type: "frame"; frame: number }
   /** A clip reached its maximum length. */
   | { type: "clip-full" }
-  | { type: "reply"; id: number; value?: unknown; error?: string };
+  | { type: "reply"; id: number; value?: unknown; error?: string }
+  /** The real-time loop threw and has stopped; the preview needs a restart. */
+  | { type: "fault"; message: string };

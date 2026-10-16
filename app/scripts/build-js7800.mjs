@@ -1,7 +1,8 @@
 // Builds public/vendor/js7800-core/js7800-core.js: js7800's emulation core
-// (src/js/prosystem/*) from the pinned upstream commit, unmodified, as one ES
-// module the emulator worker loads at runtime. js7800's two page-bound modules
-// (web/audio.js, web/mouse.js) are swapped for the stand-ins in js7800-core/.
+// (src/js/prosystem/*) as one ES module the emulator worker loads at runtime,
+// built from unmodified upstream source at the pinned commit, with two
+// worker-safe I/O stand-ins: js7800's page-bound web/audio.js and web/mouse.js
+// are swapped for the ones in js7800-core/.
 //
 //   node scripts/build-js7800.mjs <work-dir>
 //
@@ -87,9 +88,10 @@ fs.writeFileSync(
 - Upstream: https://github.com/raz0red/js7800
 - Commit: \`${COMMIT}\`
 - License: GPL v2 or later (\`LICENSE\`, \`LICENSE-third-party\`)
-- Contents: js7800's \`src/js/prosystem/*\` core, unmodified, plus its event and
-  md5 helpers. \`web/audio.js\` and \`web/mouse.js\` are replaced at bundle time
-  by the worker-safe stand-ins in \`app/js7800-core/\`. The entry module is
+- Contents: js7800's \`src/js/prosystem/*\` core plus its event and md5
+  helpers, built from unmodified upstream source, with two worker-safe I/O
+  stand-ins: \`web/audio.js\` and \`web/mouse.js\` are replaced at bundle time by
+  \`app/js7800-core/audio-stub.js\` and \`mouse-stub.js\`. The entry module is
   \`app/js7800-core/entry.js\`.
 - Rebuild: \`node app/scripts/build-js7800.mjs <work-dir>\`
 

@@ -5,7 +5,7 @@
 
 import { WasiBuilder, readPack } from "@cartridge-studio/toolchain";
 import { buildProject } from "./project-build.ts";
-import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
+import { buildFault, type WorkerRequest, type WorkerResponse } from "./protocol.ts";
 import { idbRomCache } from "./rom-cache.ts";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -35,8 +35,15 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   }
 
   if (msg.type === "build") {
-    if (!builder) throw new Error("Worker not initialized");
-    const result = await buildProject(await builder, msg.project, cache, msg.options);
-    post({ type: "result", id: msg.id, result }, result.kind === "built" ? [result.a78.buffer, result.bin.buffer] : []);
+    // Anything that throws (a generator bug, a malformed game) is reported as
+    // this build's fault, not left to look like a timeout.
+    const t0 = performance.now();
+    try {
+      if (!builder) throw new Error("The build worker wasn't initialized");
+      const result = await buildProject(await builder, msg.project, cache, msg.options);
+      post({ type: "result", id: msg.id, result }, result.kind === "built" ? [result.a78.buffer, result.bin.buffer] : []);
+    } catch (err) {
+      post({ type: "result", id: msg.id, result: buildFault(err, performance.now() - t0) });
+    }
   }
 };

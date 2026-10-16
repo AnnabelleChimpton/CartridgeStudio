@@ -2,6 +2,7 @@
 // and the game rebuilds; the CPU meter guards the console's frame budget.
 
 import { expect, test, type Page } from "@playwright/test";
+import { autosaved } from "./wait.ts";
 
 async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Rock Fall" | "Ghost Panic") {
   await page.goto("/");
@@ -145,7 +146,7 @@ test("the CPU meter stops a game that's too busy", async ({ page }) => {
 test("a kit game survives a reload and round-trips through a game file", async ({ page }) => {
   await start(page, "Cat vs. Vacuums");
   await page.getByLabel("Game title").fill("Moon Patrol-ish");
-  await page.waitForTimeout(800); // autosave
+  await autosaved(page, "Moon Patrol-ish");
   await page.reload();
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish", { timeout: 30_000 });
 

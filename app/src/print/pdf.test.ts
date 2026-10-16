@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { generate } from "../codegen/generate.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { getTemplate } from "../project/templates.ts";
-import { PAPER_SIZES, buildPrintPdf, type PrintFonts, type Screenshot } from "./pdf.ts";
+import { PAPER_SIZES, PRINT_COMPAT, PRINT_TRADEMARK, buildPrintPdf, type PrintFonts, type Screenshot } from "./pdf.ts";
 import { templatePrintSubject } from "./subject.ts";
 
 const template = getTemplate("fixed-shooter");
@@ -28,6 +28,14 @@ beforeAll(async () => {
   await host.load(built.a78);
   host.step(90);
   screenshot = { width: 320, height: 240, rgba: host.rgba() };
+});
+
+describe("print wording", () => {
+  it("names no particular console, and carries the trademark line", () => {
+    expect(PRINT_COMPAT).toBe("Runs on 7800-compatible consoles via flash cart.");
+    expect(PRINT_COMPAT).not.toMatch(/Atari|2600|\+/);
+    expect(PRINT_TRADEMARK).toBe("Atari is a trademark of its owner; not affiliated with or endorsed by Atari.");
+  });
 });
 
 describe("buildPrintPdf", () => {

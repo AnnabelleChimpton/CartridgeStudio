@@ -75,7 +75,7 @@ ${"=".repeat(title.length + 23)}
 
 What's in this package
   play.html                  plays the game in any web browser, with no internet
-  rom/${slug}.bin            signed ROM for flash carts and real consoles
+  rom/${slug}.bin            signed ROM in the 7800 cartridge format, for flash carts
   rom/${slug}.a78            ROM with an A78 header, for emulators and flash carts
   print/${slug}-print.pdf    box front and back, cartridge labels, manual
   project/${slug}.cartridge  your game file; open it in Cartridge Studio to keep editing
@@ -85,8 +85,9 @@ What's in this package
 
 Before you send it
   [ ] Play it start to finish in the Cartridge Studio preview.
-  [ ] Boot rom/${slug}.bin on real hardware with a flash cart: a 7800+ or
-      2600+ (note the firmware version) and, if you can, an original 7800.
+  [ ] If you have real hardware, try rom/${slug}.bin on it with a flash cart,
+      and note the console and firmware version. Cartridge Studio has been
+      tested in emulators, not yet on real consoles, so your report helps.
   [ ] Print the PDF at actual size (100%) and check the 1-inch square, then
       check the box and label sizes against your box and cartridge shell.
   [ ] Read the manual once more for typos.
@@ -100,6 +101,7 @@ Sending it
 
 Credits and licences
   The game is yours to license as you wish. ${credits}
-  Made with Cartridge Studio. Not affiliated with or endorsed by Atari.
+  Made with Cartridge Studio. Atari is a trademark of its owner;
+  not affiliated with or endorsed by Atari.
 `;
 }

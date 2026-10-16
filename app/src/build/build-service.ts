@@ -5,7 +5,7 @@
 
 import { TOOLCHAIN_PACK_FILE, WasiBuilder, readPack } from "@cartridge-studio/toolchain";
 import { buildProject, type BuildOptions, type GameSource, type ProjectBuildResult } from "./project-build.ts";
-import type { WorkerRequest, WorkerResponse } from "./protocol.ts";
+import { buildFault, type WorkerRequest, type WorkerResponse } from "./protocol.ts";
 import { idbRomCache } from "./rom-cache.ts";
 
 export interface ReadyInfo {
@@ -54,7 +54,15 @@ export class WorkerBuildService implements BuildService {
         else if (msg.type === "init-error") reject(new Error(msg.message));
         else if (msg.type === "result" && this.inFlight?.id === msg.id) this.finish(msg.result);
       };
-      this.worker.onerror = (e) => reject(new Error(e.message));
+      // An uncaught error or an unreadable message fails the build in flight at
+      // once (rather than at the timeout), and the next build gets a fresh worker.
+      this.worker.onerror = (e) => {
+        e.preventDefault?.();
+        const err = new Error(e.message || "The build worker stopped");
+        reject(err);
+        this.fault(err);
+      };
+      this.worker.onmessageerror = () => this.fault(new Error("The build worker sent a message we couldn't read"));
     });
     this.workerReady.catch(() => {});
     this.post({ type: "init", packUrl: this.packUrl });
@@ -70,6 +78,12 @@ export class WorkerBuildService implements BuildService {
     clearTimeout(f.timer);
     this.inFlight = null;
     f.resolve(result);
+  }
+
+  private fault(err: Error) {
+    if (!this.inFlight) return;
+    this.restart();
+    this.finish(buildFault(err));
   }
 
   /** Stops whatever the worker is doing and starts a fresh one. */

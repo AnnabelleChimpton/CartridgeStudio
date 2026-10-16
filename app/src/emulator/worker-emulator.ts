@@ -30,6 +30,9 @@ export class WorkerEmulator implements Emulator {
   private readonly replies = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
   private readonly frameListeners = new Set<(frame: number) => void>();
   private readonly clipFullListeners = new Set<() => void>();
+  private readonly faultListeners = new Set<(message: string) => void>();
+  /** Why the emulator stopped, once it has; a stopped emulator needs replacing. */
+  fault: string | null = null;
   private keyboard: JoystickState = { ...IDLE };
   private external: JoystickState = { ...IDLE };
   private gamepad: JoystickState = { ...IDLE };
@@ -49,6 +52,7 @@ export class WorkerEmulator implements Emulator {
         else if (msg.type === "init-error") reject(new Error(msg.message));
         else if (msg.type === "frame") for (const cb of this.frameListeners) cb(msg.frame);
         else if (msg.type === "clip-full") for (const cb of this.clipFullListeners) cb();
+        else if (msg.type === "fault") this.fail(msg.message);
         else if (msg.type === "reply") {
           const r = this.replies.get(msg.id);
           this.replies.delete(msg.id);
@@ -56,8 +60,13 @@ export class WorkerEmulator implements Emulator {
           else r?.resolve(msg.value);
         }
       };
-      this.worker.onerror = (e) => reject(new Error(e.message));
+      this.worker.onerror = (e) => {
+        const message = e.message || "The emulator stopped";
+        reject(new Error(message));
+        this.fail(message);
+      };
     });
+    this.ready.catch(() => {});
     const offscreen = canvas.transferControlToOffscreen();
     this.post({ type: "init", canvas: offscreen, coreUrl: CORE_URL() }, [offscreen]);
     this.listenForInput();
@@ -114,6 +123,26 @@ export class WorkerEmulator implements Emulator {
   }
 
   // ---- Extras for the preview UI and tests ----
+
+  /** Runs `cb` if the emulator stops with an error; call `dispose` and make a new one to recover. */
+  onFault(cb: (message: string) => void): () => void {
+    this.faultListeners.add(cb);
+    return () => this.faultListeners.delete(cb);
+  }
+
+  /** Test hook: makes the next real-time frame throw. */
+  injectFault() {
+    this.post({ type: "inject-fault" });
+  }
+
+  private fail(message: string) {
+    if (this.fault !== null) return;
+    this.fault = message;
+    console.error(`[emulator] stopped: ${message}`);
+    for (const [, r] of this.replies) r.reject(new Error(message));
+    this.replies.clear();
+    for (const cb of this.faultListeners) cb(message);
+  }
 
   /** RGBA pixels of a region of the 320×240 picture. */
   readPixels(x: number, y: number, width: number, height: number): Promise<Uint8ClampedArray> {

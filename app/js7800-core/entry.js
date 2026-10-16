@@ -1,10 +1,10 @@
 // Entry point of the worker build of the js7800 emulation core
 // (public/vendor/js7800-core/js7800-core.js, built by scripts/build-js7800.mjs).
 //
-// It re-exports js7800's unmodified ProSystem core modules. The only change to
-// how they are put together: the two modules that touch the page
-// (web/audio.js, web/mouse.js) are swapped for the worker-safe stand-ins in
-// this folder at bundle time. Like ProSystem, this file is GPL v2 or later.
+// It re-exports js7800's ProSystem core modules, built from unmodified upstream
+// source, with two worker-safe I/O stand-ins: the two modules that touch the
+// page (web/audio.js, web/mouse.js) are swapped for the ones in this folder at
+// bundle time. Like ProSystem, this file is GPL v2 or later.
 
 import * as ProSystem from "@js7800/prosystem/ProSystem.js";
 import * as Cartridge from "@js7800/prosystem/Cartridge.js";

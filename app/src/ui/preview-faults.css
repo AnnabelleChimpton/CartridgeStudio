@@ -1,0 +1,8 @@
+/* A failed build or a stopped preview: the raw log behind a "Details" disclosure. */
+.raw-log { margin-top: 8px; }
+.raw-log summary { cursor: pointer; }
+.raw-log pre {
+  max-height: 12em; overflow: auto; margin: 6px 0;
+  padding: 8px; border-radius: 6px; border: 1px solid var(--field-line);
+  font-size: var(--fs-xs); white-space: pre-wrap; overflow-wrap: anywhere;
+}

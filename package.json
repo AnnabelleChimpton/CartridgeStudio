@@ -15,6 +15,9 @@
     "build": "npm run build -w app",
     "test": "npm run test -w toolchain && npm run test -w app && npm run test:e2e -w app",
     "typecheck": "npm run typecheck -w toolchain && npm run typecheck -w app && tsc -p harness",
-    "test:mame": "vitest run --config harness/vitest.config.ts"
+    "test:mame": "vitest run --config harness/vitest.config.ts",
+    "notices": "node scripts/third-party-notices.mjs",
+    "notices:check": "node scripts/third-party-notices.mjs --check",
+    "budget": "node scripts/bundle-budget.mjs"
   }
 }

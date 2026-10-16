@@ -8,6 +8,7 @@ import { arrowKeys } from "./a11y.ts";
 import { BrandMark, Wordmark } from "./BrandMark.tsx";
 import { Icon, type IconName } from "./Icon.tsx";
 import { ContextStrip } from "./ContextStrip.tsx";
+import { AboutDialog } from "./About.tsx";
 import { TIERS, setTier, useTier } from "./prefs.ts";
 import { Toaster } from "./Toaster.tsx";
 
@@ -37,6 +38,7 @@ interface Props {
 
 export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onOpen, onSave, onNew, extra }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
+  const [about, setAbout] = useState(false);
 
   // Undo / redo shortcuts (text fields keep their own undo).
   useEffect(() => {
@@ -89,8 +91,12 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
           items={[
             { label: "New game", icon: "plus", onClick: onNew },
             { label: "Open…", icon: "open", onClick: () => fileInput.current?.click() },
+            { label: "About and licences", icon: "cartridge", onClick: () => setAbout(true) },
           ]}
         />
+        {about && (
+          <AboutDialog onClose={() => setAbout(false)} returnTo={document.querySelector<HTMLElement>(".topbar .menu-wrap > button")} />
+        )}
       </div>
       <ContextStrip />
       <Toaster />

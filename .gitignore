@@ -2,6 +2,7 @@ node_modules/
 dist/
 toolchain/vendor/
 app/public/toolchain/
+app/public/legal/
 test-results/
 playwright-report/
 .DS_Store

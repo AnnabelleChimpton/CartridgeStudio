@@ -5,6 +5,7 @@
 import { readFileSync } from "node:fs";
 import { strToU8, zipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
+import { autosaved, savedThumbnails } from "./wait.ts";
 
 const templates = new URL("../../templates/", import.meta.url).pathname;
 const classicSample = JSON.parse(readFileSync(`${templates}fixed-shooter/sample.json`, "utf8")) as { title: string };
@@ -52,7 +53,9 @@ test("new games add to My games, and each one opens, renames, duplicates and del
   await expect(myGames(page)).toHaveCount(0);
   await start(page, /^Yarn Hunt/);
   await page.getByLabel("Game title").fill("Mine");
-  await page.waitForTimeout(3000); // autosave, and the picture a moment after the rebuild
+  await autosaved(page, "Mine");
+  // The picture is taken a moment after the rebuild.
+  await expect.poll(() => savedThumbnails(page), { timeout: 10_000 }).toBe(1);
 
   // Starting another game keeps this one: no "will be replaced".
   let chooser = await newGameDialog(page);

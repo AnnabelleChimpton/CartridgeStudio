@@ -64,6 +64,15 @@ const INCH = 72;
 const BOX = { w: 5.25 * INCH, h: 7.25 * INCH };
 const LABEL = { w: 3.25 * INCH, h: 2 * INCH };
 
+/**
+ * What the printed pieces say about hardware and trademarks. The box back
+ * carries the compatibility line in small type, naming no particular console
+ * (no hardware tests have run yet), and every printed piece carries the
+ * trademark and non-affiliation line.
+ */
+export const PRINT_COMPAT = "Runs on 7800-compatible consoles via flash cart.";
+export const PRINT_TRADEMARK = "Atari is a trademark of its owner; not affiliated with or endorsed by Atari.";
+
 const INK = rgb(0.06, 0.07, 0.1);
 const PAPER_WHITE = rgb(1, 1, 1);
 const MUTED = rgb(0.45, 0.47, 0.52);
@@ -244,17 +253,10 @@ export async function buildPrintPdf({ subject, paper, fonts: fontBytes, screensh
       drawSprite(page, player.frames[0]!, colorsOf(player), x + BOX.w / 2 - player.width * unit, y + 60 + player.height * unit, unit);
     }
 
-    // Bottom strip.
+    // Bottom strip: players and controller, and the trademark line.
     page.drawRectangle({ x, y, width: BOX.w, height: 34, color: rgb(0, 0, 0) });
-    page.drawText("1 PLAYER  JOYSTICK", { x: x + 14, y: y + 13, size: 7, font: fonts.title, color: PAPER_WHITE });
-    const compat = "For Atari 7800, 2600+ and 7800+ consoles";
-    page.drawText(compat, {
-      x: x + BOX.w - 14 - fonts.body.widthOfTextAtSize(compat, 8),
-      y: y + 13,
-      size: 8,
-      font: fonts.body,
-      color: PAPER_WHITE,
-    });
+    page.drawText("1 PLAYER  JOYSTICK", { x: x + 14, y: y + 18, size: 7, font: fonts.title, color: PAPER_WHITE });
+    page.drawText(PRINT_TRADEMARK, { x: x + 14, y: y + 6, size: 6, font: fonts.body, color: MUTED });
     cutMarks(page, x, y, BOX.w, BOX.h);
 
     // Calibration square.
@@ -309,12 +311,9 @@ export async function buildPrintPdf({ subject, paper, fonts: fontBytes, screensh
       cursor -= 2;
     }
 
-    page.drawText("Made with Cartridge Studio. Not affiliated with or endorsed by Atari.", {
-      x: x + pad,
-      y: y + 14,
-      size: 7,
-      font: fonts.body,
-      color: MUTED,
+    const legal = wrap(`${PRINT_COMPAT} Made with Cartridge Studio. ${PRINT_TRADEMARK}`, fonts.body, 7, BOX.w - 2 * pad);
+    legal.forEach((line, i) => {
+      page.drawText(line, { x: x + pad, y: y + 14 + (legal.length - 1 - i) * 9, size: 7, font: fonts.body, color: MUTED });
     });
     cutMarks(page, x, y, BOX.w, BOX.h);
   }
@@ -338,9 +337,17 @@ export async function buildPrintPdf({ subject, paper, fonts: fontBytes, screensh
         drawSprite(page, player.frames[0]!, colorsOf(player), x + (art - player.width * unit * 2) / 2, y + (LABEL.h + player.height * unit) / 2, unit);
       }
       const textW = LABEL.w - art - 5 - 16;
+      const panelX = x + art + 5 + (LABEL.w - art - 5) / 2;
+      // The trademark line along the bottom of the title panel; the title is centred above it.
+      const legal = wrap(PRINT_TRADEMARK, fonts.body, 5, textW);
+      legal.forEach((line, j) => {
+        const w = fonts.body.widthOfTextAtSize(line, 5);
+        page.drawText(line, { x: panelX - w / 2, y: y + 6 + (legal.length - 1 - j) * 6.5, size: 5, font: fonts.body, color: PAPER_WHITE, opacity: 0.75 });
+      });
+      const legalH = 6 + legal.length * 6.5;
       const fit = fitText(title.toUpperCase(), fonts.title, textW, 4, 13, 5);
       const textH = fit.lines.length * fit.size * 1.35;
-      centeredLines(page, fit.lines, fonts.title, fit.size, x + art + 5 + (LABEL.w - art - 5) / 2, y + (LABEL.h + textH) / 2 + 3, PAPER_WHITE);
+      centeredLines(page, fit.lines, fonts.title, fit.size, panelX, y + legalH + (LABEL.h - legalH + textH) / 2 + 3, PAPER_WHITE);
       cutMarks(page, x, y, LABEL.w, LABEL.h);
     }
   }

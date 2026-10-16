@@ -4,6 +4,8 @@
 
 import { useState, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
+import { toast } from "./Toaster.tsx";
+import "./preview-faults.css";
 import type { Preview } from "./usePreview.ts";
 
 /** How to play, in the editor and on the TV alike. */
@@ -21,7 +23,7 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error } = preview;
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error, emuFault, restartPreview } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
 
@@ -97,20 +99,77 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
       )}
       {result?.kind === "failed" &&
         (failure ?? (
-        <div className="broken small" data-testid="build-failed">
-          <p>
-            Something went wrong on our side, not yours. Your work is saved
-            {lastGood ? " and the game keeps running the last version that worked." : "."}
-          </p>
-          <ul>
-            <li>Press Undo to take back your last change, and the game should build again.</li>
-            <li>If it still doesn't, reload the page: your game comes back as you left it.</li>
-            <li>To help us fix it, use Save game file and send us the file with the details from the Code tab.</li>
-          </ul>
-        </div>
+          <div className="broken small" data-testid="build-failed" role="alert">
+            <p>
+              {failureHeadline(result.stage)} Your game is saved
+              {lastGood ? ", and the last good build still plays." : "."} Press Undo to take back your last change.
+            </p>
+            <RawLog text={`${result.message}${result.log ? `\n\n${result.log}` : ""}`} copyLabel="Copy build log" />
+          </div>
         ))}
+      {emuFault && (
+        <div className="error" role="alert" data-testid="emu-fault">
+          <p>The game preview stopped. Your game is saved.</p>
+          <button
+            type="button"
+            onClick={() =>
+              void restartPreview().then(() => {
+                // The new emulator starts running, with the sound as the button says.
+                setPaused(false);
+                emulator.current?.setMuted(muted);
+              })
+            }
+          >
+            <Icon name="restart" />
+            Restart the preview
+          </button>
+          <RawLog text={emuFault} copyLabel="Copy error" />
+        </div>
+      )}
       {error && <p className="error">{error}</p>}
       {meter}
     </section>
+  );
+}
+
+/** The first sentence of a failed build: which stage stopped. */
+export function failureHeadline(stage: string): string {
+  switch (stage) {
+    case "worker":
+    case "internal":
+      return "The game builder stopped.";
+    case "timeout":
+      return "The build took too long and was stopped.";
+    case "toolchain":
+      return "The game builder couldn't start.";
+    case "7800basic":
+      return "The 7800basic compiler stopped.";
+    case "dasm":
+      return "The dasm assembler stopped.";
+    default:
+      return `The ${stage} step of the build stopped.`;
+  }
+}
+
+/** The raw message or log, one click away, with a copy button. */
+function RawLog({ text, copyLabel }: { text: string; copyLabel: string }) {
+  return (
+    <details className="raw-log">
+      <summary>Details</summary>
+      <pre>{text}</pre>
+      <button
+        type="button"
+        className="secondary"
+        onClick={() =>
+          void navigator.clipboard.writeText(text).then(
+            () => toast("Copied"),
+            () => toast("Couldn't copy; select the text above instead"),
+          )
+        }
+      >
+        <Icon name="copy" />
+        {copyLabel}
+      </button>
+    </details>
   );
 }

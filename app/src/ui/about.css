@@ -1,0 +1,6 @@
+/* About and licences: the footer link and the dialog's credits. */
+.about-footer { max-width: 1440px; margin: 0 auto; padding: 0 16px 16px; }
+.about-credits { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 12px; }
+.about-credits h3 { margin: 0 0 2px; font-size: var(--fs-sm); }
+.about-credits p { margin: 0; }
+.about-credits p.about-links { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; }

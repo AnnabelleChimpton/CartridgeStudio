@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { playFrames } from "./wait.ts";
 import { encodeBriefParam, newBrief } from "../src/jam/brief.ts";
 
 const brief = newBrief({
@@ -114,7 +115,7 @@ test("two entries become a gallery that plays with the network off", async ({ pa
   const showIt = page.getByRole("region", { name: "Show it" });
   await showIt.getByRole("button", { name: /^Make a clip/ }).click();
   await page.keyboard.down("ArrowLeft");
-  await page.waitForTimeout(1200);
+  await playFrames(page, 72);
   await page.keyboard.up("ArrowLeft");
   await downloadOf(page, () => showIt.getByRole("button", { name: /^Recording/ }).click());
   await expect(entryForm(page)).toContainText("Clip: ready");

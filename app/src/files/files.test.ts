@@ -78,7 +78,9 @@ describe("exports", () => {
     const text = checklist(sample(), template);
     expect(text).toContain("rom/cat-vs-vacuums.bin");
     expect(text).toContain("7800basic 0.41");
-    expect(text).toContain("Not affiliated with or endorsed by Atari.");
+    expect(text).toContain("Atari is a trademark of its owner;\n  not affiliated with or endorsed by Atari.");
+    // No promises about particular consoles until the hardware matrix has run.
+    expect(text).not.toMatch(/7800\+|2600\+|for flash carts and real consoles/);
     expect(slugify("  Moth Patrol! 2 ")).toBe("moth-patrol-2");
     expect(slugify("🐱")).toBe("game");
   });

@@ -18,6 +18,7 @@ let running = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let nextAt = 0;
 let clip: { every: number; max: number; frames: Uint8Array[] } | null = null;
+let injectFault = false;
 
 const post = (msg: EmuResponse, transfer: Transferable[] = []) => self.postMessage(msg, transfer);
 const reply = (id: number, value?: unknown, transfer: Transferable[] = []) => post({ type: "reply", id, value }, transfer);
@@ -34,17 +35,31 @@ function flushAudio() {
   if (audioPort && samples.length) audioPort.postMessage(samples, [samples.buffer]);
 }
 
-/** Real-time loop, paced by setTimeout with drift correction. */
+/**
+ * Real-time loop, paced by setTimeout with drift correction. If a frame
+ * throws, the loop stops and says so, so the page can offer a restart
+ * instead of showing a frozen picture.
+ */
 function tick() {
   timer = null;
   if (!host || !running || paused) return;
   const frameMs = 1000 / host.frequency;
   const now = performance.now();
   if (now - nextAt > 250) nextAt = now; // we fell far behind (tab hidden?): don't fast-forward
-  host.step(1);
-  flushAudio();
-  render();
-  keepClipFrame();
+  try {
+    if (injectFault) {
+      injectFault = false;
+      throw new Error("Injected fault (test hook)");
+    }
+    host.step(1);
+    flushAudio();
+    render();
+    keepClipFrame();
+  } catch (err) {
+    running = false;
+    post({ type: "fault", message: err instanceof Error ? err.message || err.name : String(err) });
+    return;
+  }
   post({ type: "frame", frame: host.frame });
   nextAt += frameMs;
   timer = setTimeout(tick, Math.max(0, nextAt - performance.now()));
@@ -127,6 +142,9 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
         reply(msg.id, bytes, [bytes.buffer]);
         return;
       }
+      case "inject-fault":
+        injectFault = true;
+        return;
       case "clip-start":
         clip = { every: msg.every, max: msg.max, frames: [] };
         return;

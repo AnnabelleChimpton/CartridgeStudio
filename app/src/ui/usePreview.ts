@@ -57,6 +57,8 @@ export function usePreview(source: GameSource) {
   const [lastGood, setLastGood] = useState<Built | null>(null);
   const [record, setRecord] = useState<BuildRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** Why the emulator stopped, if it did: the preview offers a restart. */
+  const [emuFault, setEmuFault] = useState<string | null>(null);
   const service = useRef<BuildService | null>(null);
   const emulator = useRef<WorkerEmulator | null>(null);
   const emuContainer = useRef<HTMLDivElement>(null);
@@ -65,6 +67,46 @@ export function usePreview(source: GameSource) {
   const counter = useRef(0);
   const sourceRef = useRef(source);
   sourceRef.current = source;
+
+  /**
+   * A fresh emulator on a fresh canvas (a canvas can be handed to a worker only
+   * once). Used at mount and to recover after the emulator stops with an error.
+   */
+  const spawnEmulator = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 320;
+    canvas.height = 240;
+    canvas.className = "screen";
+    canvas.setAttribute("aria-label", "Game preview");
+    // Focusing it hands the arrows, Space and Z to the game; Esc or Tab leaves.
+    canvas.setAttribute("role", "application");
+    canvas.setAttribute("aria-roledescription", "game");
+    canvas.setAttribute("aria-describedby", "emu-hint");
+    // Esc stops playing (the TV's full screen handles its own Esc); Tab still moves on as usual.
+    canvas.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !document.fullscreenElement) canvas.blur();
+    });
+    emuContainer.current!.replaceChildren(canvas);
+    const emu = new WorkerEmulator(canvas);
+    emu.onFault((message) => setEmuFault(message));
+    emulator.current = emu;
+    window.__cs!.emulator = emu;
+    return emu;
+  };
+
+  /** "Restart the preview": replaces a stopped emulator and runs the last good ROM again. */
+  const restartPreview = async () => {
+    emulator.current?.dispose();
+    setEmuFault(null);
+    setError(null);
+    const emu = spawnEmulator();
+    if (!lastGood) return;
+    try {
+      await emu.load(lastGood.a78, "a78");
+    } catch (e) {
+      setError(`The game preview couldn't load the last good build (${String(e)}). Your game is saved. Reload the page to try again.`);
+    }
+  };
 
   // Build service and emulator, once per editor.
   useEffect(() => {
@@ -84,27 +126,10 @@ export function usePreview(source: GameSource) {
       },
       (e: unknown) => setError(`The game builder couldn't start (${String(e)}). Reload the page to try again; your work is saved.`),
     );
-    // A canvas can hand its drawing to a worker only once, so each mount gets a fresh one.
-    const canvas = document.createElement("canvas");
-    canvas.width = 320;
-    canvas.height = 240;
-    canvas.className = "screen";
-    canvas.setAttribute("aria-label", "Game preview");
-    // Focusing it hands the arrows, Space and Z to the game; Esc or Tab leaves.
-    canvas.setAttribute("role", "application");
-    canvas.setAttribute("aria-roledescription", "game");
-    canvas.setAttribute("aria-describedby", "emu-hint");
-    // Esc stops playing (the TV's full screen handles its own Esc); Tab still moves on as usual.
-    canvas.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !document.fullscreenElement) canvas.blur();
-    });
-    emuContainer.current!.replaceChildren(canvas);
-    const emu = new WorkerEmulator(canvas);
-    emulator.current = emu;
-    window.__cs.emulator = emu;
+    spawnEmulator();
     return () => {
       s.dispose();
-      emu.dispose();
+      emulator.current?.dispose();
       emulator.current = null;
     };
   }, []);
@@ -197,7 +222,23 @@ export function usePreview(source: GameSource) {
     el.querySelector("canvas")?.focus();
   };
 
-  return { emuContainer, stage, enterTv, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
+  return {
+    emuContainer,
+    stage,
+    enterTv,
+    emulator,
+    ready,
+    result,
+    lastGood,
+    status,
+    timing,
+    error,
+    setError,
+    emuFault,
+    restartPreview,
+    buildSigned,
+    screenshot,
+  };
 }
 
 export type Preview = ReturnType<typeof usePreview>;

@@ -1,6 +1,7 @@
 // Copies the packed 7800basic toolchain (built by `npm run fetch -w toolchain`)
 // into public/toolchain so the build worker can fetch it, along with its
-// license files so they are served next to it.
+// license files so they are served next to it, and the app's LICENSE and
+// THIRD_PARTY_NOTICES.txt into public/legal.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -26,4 +27,9 @@ for (const name of lock.licenses) {
     path.join(out, `${id}-${name}`),
   );
 }
+// The app's own licence and the third-party notices, for the About dialog.
+const legal = path.join(appDir, "public/legal");
+fs.mkdirSync(legal, { recursive: true });
+fs.copyFileSync(path.join(appDir, "../LICENSE"), path.join(legal, "LICENSE.txt"));
+fs.copyFileSync(path.join(appDir, "../THIRD_PARTY_NOTICES.txt"), path.join(legal, "THIRD_PARTY_NOTICES.txt"));
 console.log(`Vendored ${id}.pack`);

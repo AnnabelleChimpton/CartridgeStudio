@@ -1,0 +1,71 @@
+# Every pull request (and every push to main): type-check, unit tests, and the
+# browser tests in Chromium against the production build. Timing-sensitive
+# tests (tagged @perf) and the other browsers run nightly (nightly.yml).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # The pinned 7800basic release (checked against its SHA-256 by the fetch script).
+      - uses: actions/cache@v4
+        with:
+          path: toolchain/vendor
+          key: toolchain-${{ hashFiles('toolchain/toolchain.lock.json', 'toolchain/scripts/**') }}
+
+      - name: Fetch the 7800basic toolchain
+        run: npm run setup
+
+      - name: Third-party notices are up to date
+        run: npm run notices:check
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Unit tests (toolchain)
+        run: npm run test -w toolchain
+
+      - name: Unit tests (app)
+        working-directory: app
+        run: npx vitest run
+
+      - name: Install Playwright's Chromium
+        working-directory: app
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (Chromium, production build)
+        working-directory: app
+        run: npx playwright test --project=chromium --grep-invert @perf
+
+      - name: Keep the failure screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: app/test-results/
+          retention-days: 14

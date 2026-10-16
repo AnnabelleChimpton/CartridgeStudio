@@ -4,6 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { unzipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
+import { playFrames } from "./wait.ts";
 
 async function start(page: Page) {
   await page.goto("/");
@@ -51,7 +52,7 @@ test("a clip records play and saves an animated GIF", async ({ page }) => {
   await showIt(page).getByRole("button", { name: /^Make a clip/ }).click();
   await expect(page.getByLabel("Game preview")).toBeFocused();
   await page.keyboard.down("ArrowRight");
-  await page.waitForTimeout(1500);
+  await playFrames(page, 90);
   await page.keyboard.up("ArrowRight");
   const gif = await downloadOf(page, () => showIt(page).getByRole("button", { name: /^Recording/ }).click());
   expect(gif.name).toBe("ghost-panic-clip.gif");

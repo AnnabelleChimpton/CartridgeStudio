@@ -2,6 +2,7 @@
 // loads, runs the 7800basic toolchain, plays the game and saves the ROM.
 
 import { expect, test, type Page } from "@playwright/test";
+import { autosaved } from "./wait.ts";
 
 /** Opens the start screen and waits for the service worker to take over. */
 async function firstVisit(page: Page) {
@@ -69,7 +70,7 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
 
   // The game autosaved to IndexedDB and comes back on an offline reload.
   await page.getByLabel("Game title").fill("Offline Hunt");
-  await page.waitForTimeout(800);
+  await autosaved(page, "Offline Hunt");
   await page.reload();
   await expect(page.getByLabel("Game title")).toHaveValue("Offline Hunt", { timeout: 30_000 });
 });
