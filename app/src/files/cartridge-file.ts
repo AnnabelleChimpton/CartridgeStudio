@@ -3,6 +3,7 @@
 // template upgrades and validation as a saved project.
 
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
+import { CodeProjectSchema, isCodeProject, type CodeProject } from "../code/schema.ts";
 import { KitGameSchema, type KitGame } from "../kit/schema.ts";
 import { loadProject, type LoadResult } from "../project/load.ts";
 import type { Project, Template } from "../project/schema.ts";
@@ -11,20 +12,25 @@ export const CARTRIDGE_EXTENSION = ".cartridge";
 const FORMAT = "cartridge-studio";
 const FORMAT_VERSION = 1;
 
-/** Writes a template project or a kit game; `cartridge.json` says which (no `kind` means a template project). */
-export function writeCartridgeFile(project: Project | KitGame, thumbnailPng?: Uint8Array): Uint8Array {
-  const kind = "kit" in project ? { kind: "kit" } : {};
+/**
+ * Writes a template project, a kit game or a code project; `cartridge.json`
+ * says which (no `kind` means a template project). A code project's game.bas
+ * is also stored as a plain file, so the source is readable without the app.
+ */
+export function writeCartridgeFile(project: Project | KitGame | CodeProject, thumbnailPng?: Uint8Array): Uint8Array {
+  const kind = "kit" in project ? { kind: "kit" } : isCodeProject(project) ? { kind: "code" } : {};
   const files: Record<string, Uint8Array> = {
     "cartridge.json": strToU8(JSON.stringify({ format: FORMAT, version: FORMAT_VERSION, ...kind }, null, 2)),
     "project.json": strToU8(JSON.stringify(project, null, 2)),
   };
   if (thumbnailPng) files["thumbnail.png"] = thumbnailPng;
+  if (isCodeProject(project)) files["game.bas"] = strToU8(project.source);
   // Fixed timestamps keep the file identical for identical projects.
   return zipSync(files, { level: 9, mtime: new Date("2026-01-01T00:00:00Z") });
 }
 
 export interface OpenedCartridge {
-  result: LoadResult | { ok: true; kit: KitGame };
+  result: LoadResult | { ok: true; kit: KitGame } | { ok: true; code: CodeProject };
   thumbnail?: Uint8Array;
 }
 
@@ -50,6 +56,12 @@ export function readCartridgeFile(bytes: Uint8Array, templates: Record<string, T
       if (!kit.success) return { result: { ok: false, errors: ["This game file is damaged."] } };
       return { result: { ok: true, kit: kit.data }, thumbnail: files["thumbnail.png"] };
     }
+    if (meta.kind === "code") {
+      const code = CodeProjectSchema.safeParse(json);
+      if (!code.success) return { result: { ok: false, errors: ["This game file is damaged."] } };
+      return { result: { ok: true, code: code.data }, thumbnail: files["thumbnail.png"] };
+    }
+    if (meta.kind !== undefined) return { result: { ok: false, errors: ["This game file was saved by a newer version of Cartridge Studio."] } };
     return { result: loadProject(json, templates), thumbnail: files["thumbnail.png"] };
   } catch {
     return { result: { ok: false, errors: ["This game file is damaged."] } };

@@ -85,7 +85,7 @@ const kitCredits = () =>
 export const checklist = (project: Project, template: Template) => checklistText(project.title, templateCredits(template));
 export const kitChecklist = (game: KitGame) => checklistText(game.title, kitCredits());
 
-function checklistText(title: string, credits: string): string {
+export function checklistText(title: string, credits: string): string {
   const slug = slugify(title);
   return `${title} - submission checklist
 ${"=".repeat(title.length + 23)}

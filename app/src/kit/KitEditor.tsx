@@ -2,7 +2,8 @@
 // game settings, each with room to work), and the running game on the right
 // with every way to show it off.
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+import { SeeTheCode } from "../code/SeeTheCode.tsx";
 import { writeCartridgeFile } from "../files/cartridge-file.ts";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { folderZip, kitSourceFiles, slugify } from "../files/exports.ts";
@@ -32,7 +33,14 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
-export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew: () => void }) {
+interface Props {
+  onOpen: (file: File) => void;
+  onNew: () => void;
+  /** Makes a code project from this game (after asking). */
+  onEditAsCode?: () => void;
+}
+
+export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
   const game = useKitStore((s) => s.project);
   const canUndo = useKitStore((s) => s.past.length > 0);
   const canRedo = useKitStore((s) => s.future.length > 0);
@@ -41,6 +49,23 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   const [selected, setSelected] = useState<string | null>(() => game.types[0]?.id ?? null);
   const [tab, setTab] = useState<Tab>("things");
   const ids = useId();
+  /** What "See the code" marks: the chosen thing, or the rule last clicked or focused. */
+  const [codeFocus, setCodeFocus] = useState<{ rule: number } | "thing">("thing");
+  const codeSelection = useMemo(() => {
+    if (codeFocus !== "thing") return game.rules[codeFocus.rule - 1] ? { ref: codeFocus, name: `Rule ${codeFocus.rule}` } : null;
+    const t = game.types.find((x) => x.id === selected);
+    return t ? { ref: { thing: t.label, palette: t.palette }, name: t.label } : null;
+  }, [codeFocus, selected, game]);
+  const selectThing = (id: string | null) => {
+    setSelected(id);
+    setCodeFocus("thing");
+  };
+  /** Rules are cards in a list; whichever one is clicked or focused is the selected rule. */
+  const noticeRule = (e: React.SyntheticEvent) => {
+    const li = (e.target as Element).closest?.("ol.rules > li");
+    if (!li?.parentElement) return;
+    setCodeFocus({ rule: [...li.parentElement.children].indexOf(li) + 1 });
+  };
 
   useEffect(() => {
     window.__cs!.kitStore = useKitStore;
@@ -90,9 +115,13 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             ))}
           </div>
           <div className="workspace-panel" role="tabpanel" id={`${ids}-panel`} aria-labelledby={`${ids}-${tab}`}>
-            {tab === "things" && <ThingsPanel selected={selected} onSelect={setSelected} />}
+            {tab === "things" && <ThingsPanel selected={selected} onSelect={selectThing} />}
             {tab === "room" && <RoomPainter />}
-            {tab === "rules" && <KitRulesPanel />}
+            {tab === "rules" && (
+              <div onFocusCapture={noticeRule} onClickCapture={noticeRule}>
+                <KitRulesPanel />
+              </div>
+            )}
             {tab === "game" && <KitSettingsPanel />}
           </div>
         </div>
@@ -101,6 +130,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             preview={preview}
             title={game.title}
             meter={<CpuMeter />}
+            code={<SeeTheCode source={preview.lastGood?.source} selection={codeSelection} onEject={onEditAsCode} />}
             extraDownloads={
               <button
                 type="button"

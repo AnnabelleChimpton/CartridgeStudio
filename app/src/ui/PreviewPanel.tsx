@@ -11,9 +11,13 @@ interface Props {
   /** Shown under the game, e.g. the console-time meter. */
   meter?: ReactNode;
   extraDownloads?: ReactNode;
+  /** Replaces the plain code view under "For developers" (null hides it). */
+  code?: ReactNode;
+  /** Replaces the failed-build details (code projects: the creator's errors, not our bug). */
+  failure?: ReactNode;
 }
 
-export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
+export function PreviewPanel({ preview, title, meter, extraDownloads, code, failure }: Props) {
   const { emuContainer, stage, enterTv, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -86,7 +90,8 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
           ))}
         </ul>
       )}
-      {result?.kind === "failed" && (
+      {result?.kind === "failed" && failure}
+      {result?.kind === "failed" && failure === undefined && (
         <details className="small">
           <summary>Details for the Cartridge Studio team</summary>
           <pre className="log">{`${result.stage}: ${result.message}\n${result.log}`}</pre>
@@ -109,10 +114,14 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
           {extraDownloads}
           {exporting && <span className="muted small">Preparing download…</span>}
         </div>
-        <details className="code">
-          <summary>View code</summary>
-          <pre data-testid="game-bas">{lastGood?.source ?? ""}</pre>
-        </details>
+        {code === undefined ? (
+          <details className="code">
+            <summary>View code</summary>
+            <pre data-testid="game-bas">{lastGood?.source ?? ""}</pre>
+          </details>
+        ) : (
+          code
+        )}
       </details>
     </section>
   );

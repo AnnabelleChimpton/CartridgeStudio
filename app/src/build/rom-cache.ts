@@ -8,6 +8,7 @@ export interface CachedRom {
   a78: Uint8Array;
   bin: Uint8Array;
   symbols: string;
+  log?: string;
   at: number;
 }
 

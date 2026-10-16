@@ -4,7 +4,12 @@ import { useEffect, useRef } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 
 function isTextField(t: EventTarget | null) {
-  return t instanceof HTMLTextAreaElement || (t instanceof HTMLInputElement && t.type !== "range" && t.type !== "checkbox");
+  return (
+    t instanceof HTMLTextAreaElement ||
+    (t instanceof HTMLInputElement && t.type !== "range" && t.type !== "checkbox") ||
+    // The code editor (CodeMirror) keeps its own undo history too.
+    (t instanceof HTMLElement && t.isContentEditable)
+  );
 }
 
 interface Props {

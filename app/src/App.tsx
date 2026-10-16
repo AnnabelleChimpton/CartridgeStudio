@@ -1,10 +1,16 @@
 // Cartridge Studio: pick what to make, then edit it while it runs. Kit games
-// (things, rooms and rules on one runtime) and template projects (the classic
-// shooter) each have their own editor, laid out the same way: one job at a
-// time in tabs on the left and the running game on the right. Both rebuild
+// (things, rooms and rules on one runtime), template projects (the classic
+// shooter) and code projects (game.bas by hand, usually ejected from one of
+// the others) each have their own editor, laid out the same way: one job at a
+// time in tabs on the left and the running game on the right. All rebuild
 // the ROM 300 ms after every change and reload the preview.
 
 import { useEffect, useId, useState } from "react";
+import { CodeEditor } from "./code/CodeEditor.tsx";
+import { EjectDialog } from "./code/EjectDialog.tsx";
+import { blankCodeProject, ejectKit, ejectTemplate } from "./code/eject.ts";
+import { SeeTheCode } from "./code/SeeTheCode.tsx";
+import { useCodeStore } from "./code/store.ts";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
@@ -13,7 +19,7 @@ import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
 import { loadSession, saveMode, saveProject, type EditorMode } from "./project/persist.ts";
 import { useProjectStore } from "./project/store.ts";
-import { TEMPLATES, getTemplate } from "./project/templates.ts";
+import { SOUND_LIBRARY, TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
@@ -39,6 +45,9 @@ export function App() {
   const [mode, setMode] = useState<EditorMode | null | "loading">("loading");
   const [choosing, setChoosing] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
+  /** Asking before ejecting the kit or template game into a code project. */
+  const [ejecting, setEjecting] = useState<"kit" | "template" | null>(null);
+  const [ejectedFrom, setEjectedFrom] = useState<"kit" | "template" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +55,10 @@ export function App() {
       if (cancelled) return;
       if (s.project) useProjectStore.getState().load(s.project);
       if (s.kit) useKitStore.getState().load(s.kit);
-      setMode(s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : null);
+      if (s.code) useCodeStore.getState().load(s.code);
+      setMode(
+        s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : s.mode === "code" && s.code ? "code" : null,
+      );
     });
     return () => {
       cancelled = true;
@@ -63,6 +75,10 @@ export function App() {
     if (c.kind === "kit") {
       useKitStore.getState().load(structuredClone(KIT_PRESETS.find((p) => p.id === c.preset)!.game));
       switchTo("kit");
+    } else if (c.kind === "code") {
+      useCodeStore.getState().load(blankCodeProject());
+      setEjectedFrom(null);
+      switchTo("code");
     } else {
       useProjectStore.getState().load(structuredClone(getTemplate(c.template).sample));
       switchTo("template");
@@ -76,12 +92,16 @@ export function App() {
       setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")}`);
       return;
     }
-    const title = "kit" in r ? r.kit.title : r.project.title;
+    const title = "kit" in r ? r.kit.title : "code" in r ? r.code.title : r.project.title;
     if (!confirm(`Open "${title}"? The game you're editing will be replaced.`)) return;
     setOpenError(null);
     if ("kit" in r) {
       useKitStore.getState().load(r.kit);
       switchTo("kit");
+    } else if ("code" in r) {
+      useCodeStore.getState().load(r.code);
+      setEjectedFrom(null);
+      switchTo("code");
     } else {
       useProjectStore.getState().load(r.project);
       switchTo("template");
@@ -89,6 +109,31 @@ export function App() {
   };
 
   const onNew = () => setChoosing(true);
+
+  /** Ejects the kit or template game into a code project; the original is kept. */
+  const eject = (from: "kit" | "template") => {
+    setEjecting(null);
+    const code =
+      from === "kit"
+        ? ejectKit(useKitStore.getState().project, SOUND_LIBRARY)
+        : (() => {
+            const p = useProjectStore.getState().project;
+            return ejectTemplate(p, getTemplate(p.template.id));
+          })();
+    useCodeStore.getState().load(code);
+    setEjectedFrom(from);
+    switchTo("code");
+  };
+
+  /** The way back from a code project to the kit or template game it came from (or whichever is around). */
+  const backFrom = (): { label: string; go: () => void } | undefined => {
+    const kit = useKitStore.getState().project;
+    const project = useProjectStore.getState().project;
+    const to = ejectedFrom ?? (kit ? "kit" : project ? "template" : null);
+    if (to === "kit" && kit) return { label: `the kit game “${kit.title || "Untitled"}”`, go: () => switchTo("kit") };
+    if (to === "template" && project) return { label: `“${project.title || "Untitled"}”`, go: () => switchTo("template") };
+    return undefined;
+  };
 
   if (mode === "loading") return <div className="page loading">Loading…</div>;
   if (mode === null) return <StartChooser onChoose={choose} />;
@@ -104,9 +149,20 @@ export function App() {
         </p>
       )}
       {mode === "kit" ? (
-        <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
+        <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("kit")} />
+      ) : mode === "code" ? (
+        <CodeEditor key="code" onOpen={(f) => void open(f)} onNew={onNew} back={backFrom()} />
       ) : (
-        <TemplateEditor key="template" onOpen={(f) => void open(f)} onNew={onNew} />
+        <TemplateEditor key="template" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("template")} />
+      )}
+      {ejecting && (
+        <EjectDialog
+          title={(ejecting === "kit" ? useKitStore.getState().project : useProjectStore.getState().project).title}
+          kind={ejecting === "kit" ? "kit game" : "game"}
+          replaces={useCodeStore.getState().project?.title}
+          onConfirm={() => eject(ejecting)}
+          onClose={() => setEjecting(null)}
+        />
       )}
       {choosing && (
         <StartChooser
@@ -120,7 +176,7 @@ export function App() {
   );
 }
 
-function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew: () => void }) {
+function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) => void; onNew: () => void; onEditAsCode: () => void }) {
   const project = useProjectStore((s) => s.project);
   const canUndo = useProjectStore((s) => s.past.length > 0);
   const canRedo = useProjectStore((s) => s.future.length > 0);
@@ -205,6 +261,7 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
           <PreviewPanel
             preview={preview}
             title={project.title}
+            code={<SeeTheCode source={preview.lastGood?.source} onEject={onEditAsCode} />}
             extraDownloads={
               <button
                 type="button"

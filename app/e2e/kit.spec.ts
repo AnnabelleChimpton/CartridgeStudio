@@ -18,8 +18,11 @@ async function nextBuild(page: Page, after: number) {
 const openTab = (page: Page, name: "Things" | "Room" | "Rules" | "Game") => page.getByRole("tab", { name }).click();
 async function viewCode(page: Page) {
   await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  await page.getByText("View code").click();
+  await page.getByText("See the code").click();
+  await expect(page.locator(".see-code .cm-editor")).toBeVisible();
 }
+/** The generated game.bas (the code view only renders the lines on screen). */
+const generated = (page: Page) => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
 const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState().project);
 
 /**
@@ -102,7 +105,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
   expect(g.room.rows[4]![15]).toBe(Object.entries(g.room.legend).find(([, v]) => v === comet.id)![0]);
   expect((await nextBuild(page, n)).kind).toBe("built");
   await viewCode(page);
-  await expect(page.getByTestId("game-bas")).toContainText("rem Comet");
+  await expect.poll(() => generated(page)).toContain("rem Comet");
 });
 
 test("rules use the game's own things", async ({ page }) => {
@@ -119,7 +122,7 @@ test("rules use the game's own things", async ({ page }) => {
   expect(g.rules.at(-1)).toEqual({ when: { timer: 45 }, then: [{ lose: true }] });
   await nextBuild(page, await buildCount(page) - 1);
   await viewCode(page);
-  await expect(page.getByTestId("game-bas")).toContainText("45 seconds pass");
+  await expect.poll(() => generated(page)).toContain("45 seconds pass");
 });
 
 test("the CPU meter stops a game that's too busy", async ({ page }) => {

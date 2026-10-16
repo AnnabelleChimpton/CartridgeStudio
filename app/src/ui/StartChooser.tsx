@@ -4,7 +4,7 @@ import { KIT_PRESETS } from "../kit/presets.ts";
 import type { KitGame } from "../kit/schema.ts";
 import { SpritePreview } from "./SpritePreview.tsx";
 
-export type StartChoice = { kind: "kit"; preset: string } | { kind: "template"; template: string };
+export type StartChoice = { kind: "kit"; preset: string } | { kind: "template"; template: string } | { kind: "code" };
 
 function Cast({ game }: { game: KitGame }) {
   return (
@@ -38,6 +38,10 @@ export function StartChooser({ onChoose, onCancel }: { onChoose: (c: StartChoice
           <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "template", template: "fixed-shooter" })}>
             <strong>Classic shooter</strong>
             <span className="muted small">The original template: 18 vacuums, tuned by hand. Fewer choices, more polish.</span>
+          </button>
+          <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "code" })}>
+            <strong>Write code</strong>
+            <span className="muted small">A small 7800basic program to start from, with the same live preview. For coders.</span>
           </button>
         </div>
         {onCancel && (

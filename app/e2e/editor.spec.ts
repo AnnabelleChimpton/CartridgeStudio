@@ -117,12 +117,15 @@ test("rules edit the generated code", async ({ page }) => {
   await page.getByLabel("Rule 5 action 1").selectOption({ label: "Lose a life" });
   await waitForBuild(page, n + 1);
   await openDev(page);
-  await page.getByText("View code").click();
-  await expect(page.getByTestId("game-bas")).toContainText("rem rule 5: shot.hits.enemy -> lives.lose");
+  await page.getByText("See the code").click();
+  await expect(page.locator(".see-code .cm-editor")).toBeVisible();
+  // The code view only renders the lines on screen, so read the built source.
+  const generated = () => page.evaluate(() => (window.__cs!.last?.kind === "built" ? window.__cs!.last.source : ""));
+  await expect.poll(generated).toContain("rem rule 5: shot.hits.enemy -> lives.lose");
 
   await page.getByRole("button", { name: "Delete rule 5" }).click();
   await waitForBuild(page, n + 2);
-  await expect(page.getByTestId("game-bas")).not.toContainText("rem rule 5");
+  await expect.poll(generated).not.toContain("rem rule 5");
 });
 
 test("the project survives a reload", async ({ page }) => {
@@ -352,24 +355,34 @@ test("game keys only reach the game while it has focus", async ({ page }) => {
       return (await e.readMemory(addr, 1))[0] !== 0;
     }, shotactive);
   // Start the game from the title screen, in lockstep.
-  await page.evaluate(async () => {
-    const e = window.__cs!.emulator!;
-    const idle = { up: false, down: false, left: false, right: false, fire: false };
-    e.pause(true);
-    e.setInput({ ...idle, fire: true });
-    await e.stepFrames(2);
-    e.setInput(idle);
-    await e.stepFrames(2);
-  });
+  const startGame = () =>
+    page.evaluate(async () => {
+      const e = window.__cs!.emulator!;
+      const idle = { up: false, down: false, left: false, right: false, fire: false };
+      e.pause(true);
+      // A freshly loaded title screen waits a moment before it takes fire.
+      e.setInput(idle);
+      await e.stepFrames(60);
+      e.setInput({ ...idle, fire: true });
+      await e.stepFrames(2);
+      e.setInput(idle);
+      await e.stepFrames(2);
+    });
+  await startGame();
   expect(await shotFired()).toBe(false);
 
   const title = page.getByLabel("Game title");
+  const builds = await page.evaluate(() => window.__cs!.builds.length);
   await title.click();
   await title.evaluate((el: HTMLInputElement) => el.setSelectionRange(el.value.length, el.value.length));
   await page.keyboard.down(" ");
   expect(await shotFired()).toBe(false);
   await page.keyboard.up(" ");
   await expect(title).toHaveValue("Cat vs. Vacuums ");
+  // The new title rebuilds and reloads the ROM (back to its title screen), so wait for that and start again.
+  await expect.poll(() => page.evaluate(() => window.__cs!.builds.length), { timeout: 30_000 }).toBeGreaterThan(builds);
+  await expect(page.getByTestId("build-status")).toContainText("Up to date");
+  await startGame();
 
   // Space presses a focused button rather than firing.
   const sound = page.getByRole("button", { name: "Sound on" });
