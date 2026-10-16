@@ -1,0 +1,167 @@
+[
+ {
+  "id": "start-1",
+  "kind": "start",
+  "label": "Cat flap",
+  "blurb": "Climbs an A major chord and lands back home.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "E5 16, A5 16, C#6 16, E6 16 | - 16, C#6 16, E6 8, - 8, A5 8 | B5 16, C#6 16, B5 16, G#5 16, A5 4" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 9, "notes": "A2 8, - 8 | E2 8, A2 8, - 8, E2 8 | E2 8, E2 8, A2 4" }
+  ]
+ },
+ {
+  "id": "start-2",
+  "kind": "start",
+  "label": "Vacuum warms up",
+  "blurb": "Arpeggios that keep climbing over a buzz bass, for games that start fast.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "C5 16, E5 16, G5 16, C6 16 | B5 16, G5 16, E5 16, G5 16 | A5 16, C6 16, E6 16, C6 16 | G5 8, E6 8, C6 4" },
+   { "sound": "buzz", "envelope": "short", "volume": 9, "notes": "C3 8, G2 8 | E2 8, G2 8 | A2 8, E2 8 | G2 8, G2 8, C3 4" }
+  ]
+ },
+ {
+  "id": "start-3",
+  "kind": "start",
+  "label": "Paws on the floor",
+  "blurb": "A bar of kick, snare and hat, then a minor riff.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "- 2 | E5 8, G5 8, B5 16, A5 16, G5 16, F#5 16 | E5 8, B5 8, E6 4" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 9, "notes": "K 8, H 16, H 16, S 8, H 16, H 16 | E2 8, E2 8, G2 8, A2 8 | B2 8, B2 8, E2 4" }
+  ]
+ },
+ {
+  "id": "lost-1",
+  "kind": "lose",
+  "label": "Yarn unravels",
+  "blurb": "Two falling arpeggios and a slide down.",
+  "tempo": 9,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "E6 16, B5 16, G5 16, E5 16 | C6 16, A5 16, F#5 16, D#5 16 | E5 4~, - 8" },
+   { "sound": "buzz", "envelope": "fade", "volume": 9, "notes": "E2 4 | A2 4 | B2 8, E2 4" }
+  ]
+ },
+ {
+  "id": "lost-2",
+  "kind": "lose",
+  "label": "Teacup wobble",
+  "blurb": "Small hops that run out, ending on a slide.",
+  "tempo": 8,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "G5 16, C6 16, - 8, F#5 16, B5 16, - 8 | E5 16, A5 16, G5 8, E5 4~" },
+   { "sound": "buzz", "envelope": "fade", "volume": 9, "notes": "C3 4, B2 4 | A2 4, E2 4~" }
+  ]
+ },
+ {
+  "id": "lost-3",
+  "kind": "lose",
+  "label": "Fuse blows",
+  "blurb": "A snare, a kick and a drooping beep.",
+  "tempo": 8,
+  "voices": [
+   { "sound": "pure", "envelope": "short", "volume": 11, "notes": "E6 16, C6 16, A5 16, F#5 16, D#5 16, B4 16, - 8 | E5 8, - 8, E5 4~" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 9, "notes": "S 8, - 8, K 8, - 8 | K 4, - 4" }
+  ]
+ },
+ {
+  "id": "win-1",
+  "kind": "win",
+  "label": "Floors safe",
+  "blurb": "Two pure voices in harmony, like a small brass band.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 10, "notes": "A5 16, C#6 16, E6 8, C#6 16, E6 8. | F#5 8, A5 8, B5 8, C#6 8 | B5 8., G#5 16, A5 2" },
+   { "sound": "pure", "envelope": "pluck", "volume": 8, "notes": "C#5 16, E5 16, A5 8, E5 16, A5 8. | D5 8, F#5 8, G#5 8, A5 8 | G#5 8., E5 16, C#5 2" }
+  ]
+ },
+ {
+  "id": "win-2",
+  "kind": "win",
+  "label": "Catnip lap",
+  "blurb": "Fast arpeggios with a kick and snare under them.",
+  "tempo": 5,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 11, "notes": "G5 16, C6 16, E6 16, C6 16, G5 16, C6 16, E6 8 | A5 16, C6 16, E6 16, C6 16, A5 16, C6 16, E6 8 | B5 16, G5 16, B5 16, G5 16, C6 8, E6 8 | C6 4, - 4" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 9, "notes": "C3 8, K 8, C3 8, S 8 | A2 8, K 8, A2 8, S 8 | G2 8, K 8, G2 8, S 8 | C3 4, - 4" }
+  ]
+ },
+ {
+  "id": "win-3",
+  "kind": "win",
+  "label": "Dust settles",
+  "blurb": "Glittering arpeggios over a slow bass.",
+  "tempo": 5,
+  "voices": [
+   { "sound": "pure", "envelope": "short", "volume": 10, "notes": "E5 16, A5 16, C#6 16, E6 16, C#6 16, A5 16, E5 16, A5 16 | G#5 16, B5 16, E6 16, B5 16, G#5 16, E5 16, G#5 16, B5 16 | A5 16, C#6 16, E6 16, C#6 16, A5 16, C#6 16, E6 8 | A5 4, - 4" },
+   { "sound": "buzz", "envelope": "fade", "volume": 9, "notes": "A2 4, E2 4 | E2 4, B2 4 | A2 4, C#3 4 | A2 4, - 4" }
+  ]
+ },
+ {
+  "id": "over-1",
+  "kind": "over",
+  "label": "Lights out",
+  "blurb": "A slow minor walk down, ending on a long note.",
+  "tempo": 8,
+  "voices": [
+   { "sound": "pure", "envelope": "fade", "volume": 11, "notes": "B5 8, G5 8, E5 8, B4 8 | C6 8, A5 8, F#5 8, D#5 8 | E5 2" },
+   { "sound": "buzz", "envelope": "fade", "volume": 9, "notes": "E2 4, E2 4 | A2 4, B2 4 | E2 2" }
+  ]
+ },
+ {
+  "id": "over-2",
+  "kind": "over",
+  "label": "Asleep on the rug",
+  "blurb": "A quiet A minor farewell over soft pure chords.",
+  "tempo": 9,
+  "voices": [
+   { "sound": "pure", "envelope": "fade", "volume": 11, "notes": "E5 8., D5 16, C5 8, B4 8 | A4 8., B4 16, C5 8, E5 8 | A4 2" },
+   { "sound": "pure", "envelope": "hold", "volume": 6, "notes": "A3 2 | F3 2 | A3 2" }
+  ]
+ },
+ {
+  "id": "over-3",
+  "kind": "over",
+  "label": "Vacuum unplugged",
+  "blurb": "Arpeggios that wind down and switch off.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "short", "volume": 10, "notes": "E6 16, B5 16, G5 16, E5 16, E6 16, B5 16, G5 16, E5 16 | C6 8, A5 8, F#5 8, D#5 8 | E5 4., - 8, B4 4~" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 9, "notes": "E2 8, - 8, E2 8, - 8 | A2 8, - 8, B2 8, - 8 | E2 4~, - 4, K 4" }
+  ]
+ },
+ {
+  "id": "loop-1",
+  "kind": "title",
+  "label": "Morning laundry",
+  "blurb": "A cheerful A major tune with a walking buzz bass.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 10, "notes": "E5 8, A5 8, C#6 8, A5 8, B5 8, C#6 8, E6 4 | C#6 8., B5 16, A5 8, F#5 8, - 8, F#5 8, A5 8, C#6 8 | B5 8., A5 16, F#5 8, A5 8, - 8, D5 8, F#5 8, A5 8 | G#5 4, B5 4, E6 4, - 8, E5 8 | A5 8, C#6 8, E6 8, C#6 8, B5 8, A5 8, C#6 4 | F#5 8, A5 8, C#6 8, F#5 8, E5 8, F#5 8, A5 4 | A5 8, F#5 8, D5 8, F#5 8, G#5 8, B5 8, E6 8, B5 8 | A5 4, E5 8, A5 8, C#6 4, - 4" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 8, "notes": "A2 8, - 8, E2 8, A2 8, A2 8, - 8, E2 8, A2 8 | F#2 8, - 8, C#3 8, F#2 8, F#2 8, - 8, C#3 8, F#2 8 | D2 8, - 8, A2 8, D2 8, D2 8, - 8, A2 8, D2 8 | E2 8, - 8, B2 8, E2 8, E2 8, - 8, B2 8, G#2 8 | A2 8, - 8, E2 8, A2 8, A2 8, - 8, E2 8, A2 8 | F#2 8, - 8, C#3 8, F#2 8, F#2 8, - 8, C#3 8, F#2 8 | D2 8, - 8, A2 8, D2 8, E2 8, - 8, B2 8, E2 8 | A2 8, - 8, E2 8, A2 8, A2 4, E2 4" }
+  ]
+ },
+ {
+  "id": "loop-2",
+  "kind": "title",
+  "label": "Dust ghosts at night",
+  "blurb": "E minor over a bass and drum groove.",
+  "tempo": 6,
+  "voices": [
+   { "sound": "pure", "envelope": "fade", "volume": 10, "notes": "E5 4, G5 8, B5 8, - 8, B5 8, A5 8, G5 8 | E5 4, G5 8, C6 8, - 8, B5 8, A5 8, G5 8 | D5 4, G5 8, B5 8, - 8, A5 8, G5 8, F#5 8 | D#5 8, F#5 8, B5 4, A5 4, F#5 4 | E5 8, B5 8, E6 8, B5 8, G5 8, B5 8, E6 8, G5 8 | C6 4, B5 8, A5 8, G5 4, E5 4 | A5 8, C6 8, B5 8, A5 8, F#5 8, A5 8, D#5 4 | E5 2, - 4, B4 4" },
+   { "sound": "buzz", "envelope": "pluck", "volume": 8, "notes": "E2 8, H 8, S 8, E2 8, E2 8, H 8, S 8, H 8 | C3 8, H 8, S 8, C3 8, C3 8, H 8, S 8, H 8 | G2 8, H 8, S 8, G2 8, G2 8, H 8, S 8, H 8 | B2 8, H 8, S 8, B2 8, B2 8, H 8, S 8, S 8 | E2 8, H 8, S 8, E2 8, E2 8, H 8, S 8, H 8 | C3 8, H 8, S 8, C3 8, C3 8, H 8, S 8, H 8 | A2 8, H 8, S 8, A2 8, B2 8, H 8, S 8, B2 8 | E2 8, H 8, S 8, E2 8, E2 4, S 8, S 8" }
+  ]
+ },
+ {
+  "id": "loop-3",
+  "kind": "title",
+  "label": "Yarn basket",
+  "blurb": "Two gentle pure voices in C major, for calm games.",
+  "tempo": 7,
+  "voices": [
+   { "sound": "pure", "envelope": "pluck", "volume": 10, "notes": "C6 8, G5 8, E5 8, G5 8, C6 8, G5 8, E6 4 | C6 8, A5 8, E5 8, A5 8, C6 8, A5 8, E5 4 | A5 8, C6 8, A5 8, C6 8, A5 8, G5 8, A5 4 | B5 8, G5 8, D5 8, G5 8, B5 4, - 4 | C6 8, G5 8, E5 8, G5 8, C6 8, E6 8, C6 4 | A5 8, E5 8, C5 8, E5 8, A5 8, C6 8, A5 4 | A5 8, C6 8, E6 8, C6 8, B5 8, G5 8, B5 8, D5 8 | C6 4, G5 4, C5 4, - 4" },
+   { "sound": "pure", "envelope": "fade", "volume": 7, "notes": "C4 4, G3 4, C4 4, G3 4 | A3 4, E4 4, A3 4, E4 4 | F3 4, C4 4, F3 4, C4 4 | G3 4, B3 4, D4 4, B3 4 | C4 4, G3 4, C4 4, G3 4 | A3 4, E4 4, A3 4, E4 4 | F3 4, C4 4, G3 4, B3 4 | C4 4, G3 4, C4 4, - 4" }
+  ]
+ }
+]
