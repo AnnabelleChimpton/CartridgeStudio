@@ -1,5 +1,6 @@
-// The kit's character set: a 3×5 font in 4×8 cells (160A characters), plus a
-// wall tile. One graphic serves text, the score digits and the room's walls.
+// The kit's character set: a 3×5 font in 4×8 cells (160A characters), plus
+// the wall, hazard and goal tiles. One graphic serves text, the score digits
+// and the room's tiles.
 
 const GLYPHS: Record<string, string> = {
   "0": "111101101101111", "1": "010110010010111", "2": "111001111100111", "3": "111001111001111",
@@ -18,13 +19,18 @@ const GLYPHS: Record<string, string> = {
 
 /** A textured wall block in colors 1 and 2. */
 const WALL = ["1111", "1112", "1112", "2222", "1111", "2111", "2111", "2222"];
+/** Hazard tile (`~`): spikes in color 3. */
+const HAZARD = ["0000", "0300", "0300", "3330", "0000", "0003", "0003", "3033"];
+/** Goal tile (`*`): a dotted square in color 2. */
+const GOAL = ["2020", "0000", "2000", "0000", "2000", "0000", "2000", "0000"];
+const TILE_GLYPHS: Record<string, string[]> = { "#": WALL, "~": HAZARD, "*": GOAL };
 
 /** The font graphic's 8 rows for `chars`, one 4-pixel-wide cell per character. */
 export function fontRows(chars: string): string[] {
   const rows = Array.from({ length: 8 }, () => "");
   for (const ch of chars) {
     for (let r = 0; r < 8; r++) {
-      if (ch === "#") rows[r] += WALL[r]!;
+      if (TILE_GLYPHS[ch]) rows[r] += TILE_GLYPHS[ch]![r]!;
       else {
         const g = GLYPHS[ch];
         // Glyph rows 1-5 of the cell; 0, 6 and 7 are spacing.

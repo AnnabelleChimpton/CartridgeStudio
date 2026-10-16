@@ -8,7 +8,7 @@ import type { CoreHost } from "../emulator/core-host.ts";
 import { runRomOnHost, type Step, type WatchMap } from "../harness/behaviour.ts";
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import type { Behaviour, KitGame, KitRule, KitType } from "./schema.ts";
+import type { Behaviour, KitCounter, KitGame, KitRule, KitType } from "./schema.ts";
 import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
 const box = (w: number, h: number) => Array.from({ length: h }, () => "1".repeat(w));
@@ -27,7 +27,7 @@ const type = (id: string, behaviour: Behaviour, extra: Partial<KitType> = {}): K
 /** A game from a picture of the room: `#` wall, `P` the player, `A`/`B` things of the 2nd/3rd type. */
 function game(room: string[], types: KitType[], rules: KitRule[] = []): KitGame {
   const rows = [...room, ...Array(11).fill("")].slice(0, 11).map((r) => r.padEnd(20, " "));
-  const legend: Record<string, string> = { "#": "wall", P: types[0]!.id };
+  const legend: Record<string, string> = { "#": "wall", "~": "hazard", "*": "goal", P: types[0]!.id };
   if (types[1]) legend.A = types[1].id;
   if (types[2]) legend.B = types[2].id;
   return {
@@ -40,6 +40,7 @@ function game(room: string[], types: KitType[], rules: KitRule[] = []): KitGame 
     lives: 3,
     types,
     room: { rows, legend },
+    counters: [],
     rules,
     text: { title: "T", win: "W", lose: "L" },
     sounds: {},
@@ -141,11 +142,101 @@ describe("kit runtime behaviours", () => {
   });
 
   it("losing the last life ends the game; touching a goal wins it", async () => {
-    const goal = type("goal", "still");
-    const lose = game(["", "", "", "", "P A"], [hero(), goal], [{ when: { touch: ["hero", "goal"] }, then: [{ loseLife: true }] }]);
+    const goal = type("flag", "still");
+    const lose = game(["", "", "", "", "P A"], [hero(), goal], [{ when: { touch: ["hero", "flag"] }, then: [{ loseLife: true }] }]);
     lose.lives = 1;
     await run(lose, [{ hold: ["right"], frames: 40 }, { expect: { state: 3, lives: 0 } }]);
-    const win = game(["", "", "", "", "P A"], [hero(), goal], [{ when: { touch: ["hero", "goal"] }, then: [{ win: true }] }]);
+    const win = game(["", "", "", "", "P A"], [hero(), goal], [{ when: { touch: ["hero", "flag"] }, then: [{ win: true }] }]);
     await run(win, [{ hold: ["right"], frames: 40 }, { expect: { state: 2 } }, { hold: ["fire"], frames: 2 }, { frames: 2 }, { expect: { state: 0 } }]);
+  });
+});
+
+describe("kit runtime: batch 1 (state)", () => {
+  const counters = (...ids: string[]): KitCounter[] => ids.map((id) => ({ id, label: id, start: 0 }));
+  const CNT: WatchMap = { c0: { symbol: "cnt0" }, level: { symbol: "levelnum" } };
+
+  it("counters and 'only if': a door opens only with a key", async () => {
+    const rules: KitRule[] = [
+      { when: { touch: ["hero", "key"] }, then: [{ remove: "second" }, { add: ["keys", 1] }] },
+      { when: { touch: ["hero", "door"] }, if: [{ counter: "keys", op: "gte", value: 1 }], then: [{ remove: "second" }, { take: ["keys", 1] }, { score: 10 }] },
+    ];
+    const types = [hero(), type("key", "still"), type("door", "still")];
+    // Key then door: the door opens and the key is spent. (Slots: hero 0, key 1, door 2.)
+    const open = { ...game(["", "", "", "", "P A B"], types, rules), counters: counters("keys") };
+    await run(open, [{ hold: ["right"], frames: 60 }, { expect: { type1: 255, type2: 255, score: 10, c0: 0 } }], CNT);
+    // No key: walking over the door does nothing.
+    const shut = { ...game(["", "", "", "", "P B"], types, rules), counters: counters("keys") };
+    await run(shut, [{ hold: ["right"], frames: 60 }, { expect: { type1: 2, score: 0, c0: 0 } }], CNT);
+  });
+
+  it("'a counter reaches N' fires once it gets there", async () => {
+    const rules: KitRule[] = [
+      { when: { touch: ["hero", "coin"] }, then: [{ remove: "second" }, { add: ["coins", 1] }] },
+      { when: { reaches: ["coins", 2] }, then: [{ win: true }] },
+    ];
+    const g = { ...game(["", "", "", "", "P A A A"], [hero(), type("coin", "still")], rules), counters: counters("coins") };
+    // The second coin wins, before the third is reached.
+    await run(g, [{ until: { state: 2 }, maxFrames: 120, steps: [{ hold: ["right"], frames: 1 }] }, { expect: { c0: 2, type3: 1 } }], CNT);
+  });
+
+  it("'turn into' for some seconds turns back by itself", async () => {
+    const rules: KitRule[] = [{ when: { touch: ["hero", "button"] }, then: [{ turn: { who: "second", into: "pressed", seconds: 2 } }] }];
+    const g = game(["", "", "", "", "P A"], [hero(), type("button", "still"), type("pressed", "still")], rules);
+    await run(g, [
+      { hold: ["right"], frames: 40 },
+      { expect: { type1: 2 } },
+      { frames: 60 },
+      { expect: { type1: 2 } },
+      { until: { type1: 1 }, maxFrames: 120, steps: [{ frames: 1 }] },
+    ]);
+  });
+
+  it("'turn every' changes every thing of a type, and fleeing things run away", async () => {
+    const rules: KitRule[] = [{ when: { touch: ["hero", "pill"] }, then: [{ remove: "second" }, { turnAll: { type: "ghost", into: "scared", seconds: 3 } }] }];
+    const types = [hero(), type("ghost", "chase", { speed: 1 }), type("pill", "still"), type("scared", "flee", { speed: 2 })];
+    // Ghosts in slots 1 and 2, the pill in 3.
+    const g = game(["", "", "", "", "PB       A    A"], types, rules);
+    await run(g, [
+      { hold: ["right"], frames: 6 },
+      { expect: { type3: 255, type1: 3, type2: 3 } },
+      { frames: 60 },
+      { expect: { x1: { gte: 72 }, x2: { gte: 120 } } },
+      { until: { type1: 1, type2: 1 }, maxFrames: 200, steps: [{ frames: 1 }] },
+    ]);
+  });
+
+  it("'every N seconds' fires on time", async () => {
+    const g = game(["", "", "", "", "P"], [hero()], [{ when: { every: 1 }, then: [{ score: 10 }] }]);
+    await run(g, [{ frames: 200 }, { expect: { score: 30 } }]);
+  });
+
+  it("'next level' starts the room again one level up", async () => {
+    const rules: KitRule[] = [
+      { when: { touch: ["hero", "coin"] }, then: [{ remove: "second" }, { score: 10 }] },
+      { when: { allGone: "coin" }, then: [{ nextLevel: true }] },
+    ];
+    const g = game(["", "", "", "", "P A"], [hero(), type("coin", "still")], rules);
+    await run(g, [{ until: { level: 2 }, maxFrames: 60, steps: [{ hold: ["right"], frames: 1 }] }, { frames: 4 }, { expect: { level: 2, type1: 1, score: 10, x0: { lte: 8 } } }], {
+      ...CNT,
+      x0: { symbol: "ox", offset: 0 },
+    });
+  });
+
+  it("things other than the player move faster every second level", async () => {
+    // Level up each second until level 3, which adds one speed step to the walker (speed 1: a quarter pixel a frame).
+    const rules: KitRule[] = [{ when: { every: 1 }, if: [{ counter: "level", op: "lte", value: 2 }], then: [{ nextLevel: true }] }];
+    const g = game(["", "", "", "", "", "", " A", "", "", "P"], [hero(), type("walker", "patrol-h", { speed: 1 })], rules);
+    // The room restarts at level 3, putting the walker back at x = 8; 60 frames later a half-pixel walker has gone about 30 pixels.
+    await run(g, [{ until: { level: 3 }, maxFrames: 200, steps: [{ frames: 1 }] }, { frames: 60 }, { expect: { x1: { gte: 32, lte: 42 } } }], CNT);
+  });
+
+  it("hazard and goal tiles don't block, and rules notice them", async () => {
+    const hurt = game(["", "", "", "", "P ~"], [hero()], [{ when: { onTile: ["hero", "hazard"] }, then: [{ loseLife: true }] }]);
+    await run(hurt, [{ hold: ["right"], frames: 30 }, { expect: { lives: 2 } }]);
+    const goal = game(["", "", "", "", "P   *  #"], [hero()], [{ when: { onTile: ["hero", "goal"] }, then: [{ win: true }] }]);
+    await run(goal, [{ hold: ["right"], frames: 60 }, { expect: { state: 2 } }]);
+    // Walls still block when there are other tiles: the hero stops at the wall in column 7.
+    const wall = game(["", "", "", "", "P  ~   #"], [hero()], []);
+    await run(wall, [{ hold: ["right"], frames: 90 }, { expect: { heroX: 48 } }]);
   });
 });

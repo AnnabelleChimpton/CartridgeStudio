@@ -1,0 +1,488 @@
+{
+  "kit": 1,
+  "title": "Ghost Panic",
+  "palettes": [
+    {
+      "id": "hero",
+      "colors": [
+        "$1C",
+        "$02",
+        "$46"
+      ]
+    },
+    {
+      "id": "ghost",
+      "colors": [
+        "$56",
+        "$0F",
+        "$02"
+      ]
+    },
+    {
+      "id": "coin",
+      "colors": [
+        "$1E",
+        "$2A",
+        "$00"
+      ]
+    },
+    {
+      "id": "walls",
+      "colors": [
+        "$84",
+        "$82",
+        "$36"
+      ]
+    },
+    {
+      "id": "text",
+      "colors": [
+        "$0F",
+        "$0F",
+        "$0F"
+      ]
+    },
+    {
+      "id": "scared",
+      "colors": [
+        "$86",
+        "$0F",
+        "$02"
+      ]
+    },
+    {
+      "id": "catnip",
+      "colors": [
+        "$C8",
+        "$C4",
+        "$84"
+      ]
+    }
+  ],
+  "background": "$00",
+  "wallPalette": "walls",
+  "textPalette": "text",
+  "lives": 3,
+  "types": [
+    {
+      "id": "cat",
+      "label": "Cat",
+      "width": 8,
+      "height": 12,
+      "frames": [
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11111111",
+          "11133111",
+          "01111110",
+          "00111100",
+          "01111110",
+          "11111111",
+          "10111101",
+          "00100100",
+          "01100110"
+        ]
+      ],
+      "palette": "hero",
+      "behaviour": "player-4way",
+      "speed": 3
+    },
+    {
+      "id": "ghost",
+      "label": "Dust ghost",
+      "width": 8,
+      "height": 12,
+      "frames": [
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "10101010",
+          "00000000"
+        ],
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "01010101",
+          "00000000"
+        ]
+      ],
+      "palette": "ghost",
+      "behaviour": "chase",
+      "speed": 1
+    },
+    {
+      "id": "scared",
+      "label": "Scared ghost",
+      "width": 8,
+      "height": 12,
+      "frames": [
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "10101010",
+          "00000000"
+        ],
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "01010101",
+          "00000000"
+        ]
+      ],
+      "palette": "scared",
+      "behaviour": "flee",
+      "speed": 1
+    },
+    {
+      "id": "fast-ghost",
+      "label": "Fast ghost",
+      "width": 8,
+      "height": 12,
+      "frames": [
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "10101010",
+          "00000000"
+        ],
+        [
+          "00111100",
+          "01111110",
+          "11211211",
+          "11311311",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "11111111",
+          "01010101",
+          "00000000"
+        ]
+      ],
+      "palette": "ghost",
+      "behaviour": "chase",
+      "speed": 2
+    },
+    {
+      "id": "yarn",
+      "label": "Yarn ball",
+      "width": 4,
+      "height": 6,
+      "frames": [
+        [
+          "0110",
+          "1221",
+          "1221",
+          "1221",
+          "1221",
+          "0110"
+        ]
+      ],
+      "palette": "coin",
+      "behaviour": "still",
+      "speed": 1
+    },
+    {
+      "id": "catnip",
+      "label": "Catnip",
+      "width": 8,
+      "height": 8,
+      "palette": "catnip",
+      "behaviour": "still",
+      "speed": 1,
+      "frames": [
+        [
+          "00011000",
+          "00122100",
+          "01222210",
+          "12233221",
+          "01222210",
+          "00122100",
+          "00011000",
+          "00030000"
+        ]
+      ]
+    }
+  ],
+  "room": {
+    "rows": [
+      "####################",
+      "#P  y   N   #  y  G#",
+      "#  ###  ###   ###  #",
+      "#y #            #  #",
+      "#  #  ####  ### # y#",
+      "#        ~     y   #",
+      "# y  ###  ##  ###  #",
+      "#  #       # ~  #  #",
+      "#  #  #######   #y #",
+      "#N                G#",
+      "####################"
+    ],
+    "legend": {
+      "#": "wall",
+      "P": "cat",
+      "G": "ghost",
+      "y": "yarn",
+      "N": "catnip",
+      "~": "hazard"
+    }
+  },
+  "rules": [
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "yarn"
+        ]
+      },
+      "then": [
+        {
+          "remove": "second"
+        },
+        {
+          "score": 10
+        },
+        {
+          "sound": "blip"
+        }
+      ]
+    },
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "catnip"
+        ]
+      },
+      "then": [
+        {
+          "remove": "second"
+        },
+        {
+          "set": [
+            "combo",
+            0
+          ]
+        },
+        {
+          "turnAll": {
+            "type": "ghost",
+            "into": "scared",
+            "seconds": 6
+          }
+        },
+        {
+          "turnAll": {
+            "type": "fast-ghost",
+            "into": "scared",
+            "seconds": 6
+          }
+        },
+        {
+          "sound": "up"
+        }
+      ]
+    },
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "scared"
+        ]
+      },
+      "if": [
+        {
+          "counter": "combo",
+          "op": "gte",
+          "value": 1
+        }
+      ],
+      "then": [
+        {
+          "score": 300
+        },
+        {
+          "sound": "chime"
+        }
+      ]
+    },
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "scared"
+        ]
+      },
+      "then": [
+        {
+          "add": [
+            "combo",
+            1
+          ]
+        },
+        {
+          "score": 200
+        },
+        {
+          "turn": {
+            "who": "second",
+            "into": "ghost"
+          }
+        },
+        {
+          "respawn": "second"
+        },
+        {
+          "sound": "boom"
+        }
+      ]
+    },
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "ghost"
+        ]
+      },
+      "then": [
+        {
+          "loseLife": true
+        },
+        {
+          "sound": "down"
+        }
+      ]
+    },
+    {
+      "when": {
+        "onTile": [
+          "cat",
+          "hazard"
+        ]
+      },
+      "then": [
+        {
+          "loseLife": true
+        },
+        {
+          "sound": "crash"
+        }
+      ]
+    },
+    {
+      "when": {
+        "touch": [
+          "cat",
+          "fast-ghost"
+        ]
+      },
+      "then": [
+        {
+          "loseLife": true
+        },
+        {
+          "sound": "down"
+        }
+      ]
+    },
+    {
+      "when": {
+        "every": 15
+      },
+      "then": [
+        {
+          "turnAll": {
+            "type": "ghost",
+            "into": "fast-ghost",
+            "seconds": 4
+          }
+        },
+        {
+          "sound": "zap"
+        }
+      ]
+    },
+    {
+      "when": {
+        "allGone": "yarn"
+      },
+      "then": [
+        {
+          "sound": "chime"
+        },
+        {
+          "nextLevel": true
+        }
+      ]
+    },
+    {
+      "when": {
+        "reaches": [
+          "level",
+          4
+        ]
+      },
+      "then": [
+        {
+          "win": true
+        }
+      ]
+    }
+  ],
+  "text": {
+    "title": "Ghost Panic",
+    "win": "Three mazes clear!",
+    "lose": "Game over"
+  },
+  "sounds": {},
+  "counters": [
+    {
+      "id": "combo",
+      "label": "Combo",
+      "start": 0
+    }
+  ]
+}

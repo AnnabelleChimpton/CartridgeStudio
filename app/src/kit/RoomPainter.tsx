@@ -23,12 +23,31 @@ const css = (color: string) => {
 function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, cursor: readonly [number, number] | null) {
   ctx.fillStyle = css(g.background);
   ctx.fillRect(0, 0, ROOM_COLS * CELL, ROOM_ROWS * CELL);
-  const wallColor = css(g.palettes.find((p) => p.id === g.wallPalette)?.colors[0] ?? "$0F");
+  const wallColors = (g.palettes.find((p) => p.id === g.wallPalette)?.colors ?? ["$0F", "$0F", "$0F"]).map(css);
   for (let row = 0; row < ROOM_ROWS; row++) {
     for (let col = 0; col < ROOM_COLS; col++) {
-      if (cellAt(g, col, row) === "wall") {
-        ctx.fillStyle = wallColor;
-        ctx.fillRect(col * CELL, row * CELL, CELL, CELL);
+      const c = cellAt(g, col, row);
+      const x = col * CELL;
+      const y = row * CELL;
+      if (c === "wall") {
+        ctx.fillStyle = wallColors[0]!;
+        ctx.fillRect(x, y, CELL, CELL);
+      } else if (c === "hazard") {
+        // Spikes, in the walls' third color.
+        ctx.fillStyle = wallColors[2]!;
+        for (let k = 0; k < 3; k++) {
+          ctx.beginPath();
+          ctx.moveTo(x + 2 + k * 6, y + CELL - 3);
+          ctx.lineTo(x + 5 + k * 6, y + 5);
+          ctx.lineTo(x + 8 + k * 6, y + CELL - 3);
+          ctx.fill();
+        }
+      } else if (c === "goal") {
+        ctx.strokeStyle = wallColors[1]!;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(x + 3, y + 3, CELL - 6, CELL - 6);
+        ctx.setLineDash([]);
       }
     }
   }
@@ -81,6 +100,8 @@ export function RoomPainter() {
   const brushes: { id: Brush; label: string }[] = [
     { id: "wall", label: "Wall" },
     { id: "erase", label: "Eraser" },
+    { id: "hazard", label: "Spikes" },
+    { id: "goal", label: "Goal" },
     ...game.types.map((t) => ({ id: t.id, label: t.label })),
   ];
 
@@ -90,7 +111,7 @@ export function RoomPainter() {
     paint: (col, row, erase, key) => paintTo([col, row], [col, row], erase ? "erase" : brush, key),
     describe: (col, row) => {
       const c = cellAt(game, col, row);
-      const what = c === "wall" ? "Wall" : c ? (game.types.find((t) => t.id === c)?.label ?? c) : "Empty";
+      const what = c === "wall" ? "Wall" : c === "hazard" ? "Spikes" : c === "goal" ? "Goal" : c ? (game.types.find((t) => t.id === c)?.label ?? c) : "Empty";
       return `Column ${col + 1}, row ${row + 1}: ${what}`;
     },
     onOtherKey: (k) => {

@@ -4,6 +4,7 @@
 
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import type { KitAction, KitGame, KitRule, KitTrigger } from "./schema.ts";
+import { editableRule, ruleSentence } from "./sentence.ts";
 import { useKitStore } from "./store.ts";
 
 type TriggerKind = "touch" | "allGone" | "reachesBottom" | "timer";
@@ -86,6 +87,20 @@ export function KitRulesPanel() {
       <p className="muted lead">Rules say what happens in your game. Each one reads as a sentence: change any underlined word.</p>
       <ol className="rules">
         {game.rules.map((rule, i) => {
+          if (!editableRule(rule)) {
+            return (
+              <li key={i} className="rule">
+                <p className="rule-sentence readonly">{ruleSentence(rule, game)}</p>
+                <div className="rule-tools">
+                  <span className="muted small">Uses newer rule words the editor can't change yet.</span>
+                  <span className="spacer" />
+                  <button type="button" className="link danger" onClick={() => edit((d) => void d.rules.splice(i, 1))}>
+                    Delete rule {i + 1}
+                  </button>
+                </div>
+              </li>
+            );
+          }
           const w = rule.when;
           const kind = triggerKind(w);
           const n = i + 1;

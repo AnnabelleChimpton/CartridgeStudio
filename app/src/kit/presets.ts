@@ -15,6 +15,7 @@ export interface KitPreset {
 const DESCRIPTIONS: Record<string, [string, string]> = {
   shooter: ["Shooter", "A formation marches down. Shoot it before it lands."],
   maze: ["Maze", "Collect everything while ghosts chase you through the walls."],
+  "ghost-panic": ["Ghost Panic", "Catnip turns the tables for a few seconds. Mind the spikes; three mazes to clear."],
   dodger: ["Dodger", "Rocks fall from the sky. Catch the stars and survive."],
 };
 

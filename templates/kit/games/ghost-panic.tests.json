@@ -1,0 +1,226 @@
+[
+  {
+    "name": "the cat walks the top corridor: yarn scores, catnip doesn't",
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 90
+      },
+      {
+        "expect": {
+          "score": 10
+        }
+      }
+    ]
+  },
+  {
+    "name": "'only if' sees a counter: catnip pays 50 once the combo is going",
+    "game": {
+      "rules": [
+        {
+          "when": {
+            "touch": [
+              "cat",
+              "yarn"
+            ]
+          },
+          "then": [
+            {
+              "remove": "second"
+            },
+            {
+              "add": [
+                "combo",
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "when": {
+            "touch": [
+              "cat",
+              "catnip"
+            ]
+          },
+          "if": [
+            {
+              "counter": "combo",
+              "op": "gte",
+              "value": 1
+            }
+          ],
+          "then": [
+            {
+              "remove": "second"
+            },
+            {
+              "score": 50
+            },
+            {
+              "turnAll": {
+                "type": "ghost",
+                "into": "scared",
+                "seconds": 2
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "hold": [
+          "right"
+        ],
+        "frames": 90
+      },
+      {
+        "expect": {
+          "score": 50
+        }
+      }
+    ]
+  },
+  {
+    "name": "every second, next level; level 3 wins",
+    "game": {
+      "rules": [
+        {
+          "when": {
+            "every": 1
+          },
+          "then": [
+            {
+              "nextLevel": true
+            }
+          ]
+        },
+        {
+          "when": {
+            "reaches": [
+              "level",
+              3
+            ]
+          },
+          "then": [
+            {
+              "win": true
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "frames": 200
+      },
+      {
+        "expect": {
+          "state": 2,
+          "level": 3
+        }
+      }
+    ]
+  },
+  {
+    "name": "the spikes on row 6 cost a life",
+    "game": {
+      "rules": [
+        {
+          "when": {
+            "onTile": [
+              "cat",
+              "hazard"
+            ]
+          },
+          "then": [
+            {
+              "loseLife": true
+            }
+          ]
+        }
+      ]
+    },
+    "steps": [
+      {
+        "frames": 5
+      },
+      {
+        "hold": [
+          "fire"
+        ],
+        "frames": 2
+      },
+      {
+        "frames": 2
+      },
+      {
+        "until": {
+          "heroY": 96
+        },
+        "maxFrames": 200,
+        "steps": [
+          {
+            "hold": [
+              "down"
+            ],
+            "frames": 1
+          }
+        ]
+      },
+      {
+        "until": {
+          "lives": 2
+        },
+        "maxFrames": 200,
+        "steps": [
+          {
+            "hold": [
+              "right"
+            ],
+            "frames": 1
+          }
+        ]
+      }
+    ]
+  }
+]

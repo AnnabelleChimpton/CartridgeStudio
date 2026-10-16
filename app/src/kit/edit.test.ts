@@ -7,8 +7,8 @@ import { KIT_PRESETS } from "./presets.ts";
 const preset = (id: string) => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
 
 describe("kit presets", () => {
-  it("are the three spike genres, all valid", () => {
-    expect(KIT_PRESETS.map((p) => p.id)).toEqual(["shooter", "maze", "dodger"]);
+  it("are the spike genres and Ghost Panic, all valid", () => {
+    expect(KIT_PRESETS.map((p) => p.id)).toEqual(["shooter", "maze", "ghost-panic", "dodger"]);
     for (const p of KIT_PRESETS) expect(validateKit(p.game, SOUND_LIBRARY).ok, p.id).toBe(true);
   });
 });
@@ -76,5 +76,19 @@ describe("kit editing", () => {
     expect(placements(g).filter((p) => g.types[p.type]!.id === "invader")).toHaveLength(1);
     setBehaviour(g, "invader", "march");
     expect(g.types.find((t) => t.id === "invader")!.shoots).toBeUndefined();
+  });
+});
+
+describe("rule sentences (read-only batch 1 rules)", () => {
+  it("reads Ghost Panic's rules as plain English", async () => {
+    const { ruleSentence, editableRule } = await import("./sentence.ts");
+    const { KitGameSchema } = await import("./schema.ts");
+    const raw = (await import("../../../templates/kit/games/ghost-panic.json")).default;
+    const g = KitGameSchema.parse(raw);
+    const lines = g.rules.map((r) => ruleSentence(r, g));
+    expect(lines).toContain("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.");
+    expect(lines).toContain("Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.");
+    expect(lines).toContain("When the level reaches 4: win the game.");
+    expect(g.rules.filter(editableRule).length).toBeGreaterThan(0);
   });
 });

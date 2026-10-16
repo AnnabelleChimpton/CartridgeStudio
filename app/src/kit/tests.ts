@@ -6,7 +6,7 @@ import type { Builder } from "@cartridge-studio/toolchain";
 import type { CoreHost } from "../emulator/core-host.ts";
 import { BehaviourTestSchema, runRomOnHost, type BehaviourResult, type WatchMap } from "../harness/behaviour.ts";
 import type { SoundEffect } from "../project/schema.ts";
-import { generateKit } from "./generate.ts";
+import { generateKit, type KitOptions } from "./generate.ts";
 import { KitRuleSchema, type KitGame } from "./schema.ts";
 
 /** Variables every kit ROM has. The player is always in slot 0 (placed things are sorted by type, the player's first). */
@@ -20,6 +20,8 @@ export const KIT_WATCH: WatchMap = {
   loops: { symbol: "loopslo", bytes: 2 },
   heroX: { symbol: "ox" },
   heroY: { symbol: "oy" },
+  /** The built-in level counter (1 at the start). */
+  level: { symbol: "levelnum" },
 };
 
 export const KitTestSchema = z
@@ -39,8 +41,8 @@ export function gameFor(test: KitTest, game: KitGame): KitGame {
   return g;
 }
 
-export async function buildKitRom(game: unknown, library: SoundEffect[], builder: Builder, sign = false) {
-  const gen = generateKit(game, library);
+export async function buildKitRom(game: unknown, library: SoundEffect[], builder: Builder, sign = false, opts: KitOptions = {}) {
+  const gen = generateKit(game, library, opts);
   if (!gen.ok) return { ok: false as const, failure: `Game invalid: ${gen.errors.join("; ")}` };
   const built = await builder.build({ ...gen.input, sign });
   if (!built.ok) return { ok: false as const, failure: `Build failed in ${built.stage}: ${built.message}` };
