@@ -1,12 +1,19 @@
 // Cartridge Studio: pick what to make, then edit it while it runs. Kit games
-// (things, rooms and rules on one runtime) and template projects (the classic
-// shooter) each have their own editor, laid out the same way: one job at a
-// time in tabs on the left and the running game on the right. Both rebuild
+// (things, rooms and rules on one runtime), template projects (the classic
+// shooter) and code projects (game.bas by hand, usually ejected from one of
+// the others) each have their own editor, laid out the same way: one job at a
+// time in tabs on the left and the running game on the right. All rebuild
 // the ROM 300 ms after every change and reload the preview.
 
 import { useEffect, useId, useState } from "react";
+import { CodeEditor } from "./code/CodeEditor.tsx";
+import { EjectDialog } from "./code/EjectDialog.tsx";
+import { blankCodeProject, ejectKit, ejectTemplate } from "./code/eject.ts";
+import { CodeTier } from "./code/CodeTier.tsx";
+import { useGeneratedDiff } from "./code/useGeneratedDiff.ts";
+import { useCodeStore } from "./code/store.ts";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
-import { slugify, sourceZip } from "./files/exports.ts";
+import { folderZip, slugify, sourceFiles } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
 import { useGuide } from "./kit/guide.ts";
 import { JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
@@ -18,7 +25,7 @@ import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
 import { loadSession, recoveredMessage, saveMode, saveProject, type EditorMode } from "./project/persist.ts";
 import { useProjectStore } from "./project/store.ts";
-import { TEMPLATES, getTemplate } from "./project/templates.ts";
+import { SOUND_LIBRARY, TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { arrowKeys, tabProps } from "./ui/a11y.ts";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
@@ -39,6 +46,7 @@ const TEMPLATE_TABS = [
   { id: "sounds", label: "Sounds" },
   { id: "settings", label: "Settings" },
   { id: "print", label: "Print" },
+  { id: "code", label: "Code" },
 ] as const;
 type TemplateTab = (typeof TEMPLATE_TABS)[number]["id"];
 
@@ -48,6 +56,9 @@ export function App() {
   const [openError, setOpenError] = useState<string | null>(null);
   /** An "are you sure?" waiting for an answer. */
   const [ask, setAsk] = useState<{ title: string; message: string; yes: string; onYes: () => void } | null>(null);
+  /** Asking before ejecting the kit or template game into a code project. */
+  const [ejecting, setEjecting] = useState<"kit" | "template" | null>(null);
+  const [ejectedFrom, setEjectedFrom] = useState<"kit" | "template" | null>(null);
   const jam = useJamStore((s) => s.brief);
   const only = jam ? offeredPresets(jam, PRESET_IDS) : undefined;
 
@@ -70,8 +81,11 @@ export function App() {
       if (cancelled) return;
       if (s.project) useProjectStore.getState().load(s.project);
       if (s.kit) useKitStore.getState().load(s.kit);
+      if (s.code) useCodeStore.getState().load(s.code);
       setOpenError(recoveredMessage(s.recovered));
-      setMode(s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : null);
+      setMode(
+        s.mode === "kit" && s.kit ? "kit" : s.mode === "template" && s.project ? "template" : s.mode === "code" && s.code ? "code" : null,
+      );
     });
     return () => {
       cancelled = true;
@@ -90,6 +104,10 @@ export function App() {
       // A new game from a starter opens with its getting-started guide.
       useGuide.getState().start(c.preset);
       switchTo("kit");
+    } else if (c.kind === "code") {
+      useCodeStore.getState().load(blankCodeProject());
+      setEjectedFrom(null);
+      switchTo("code");
     } else {
       useProjectStore.getState().load(structuredClone(getTemplate(c.template).sample));
       switchTo("template");
@@ -114,7 +132,7 @@ export function App() {
       setOpenError(`Couldn't open ${file.name}: ${r.errors.join(" ")} Pick a file you made with Save game file.`);
       return;
     }
-    const title = "kit" in r ? r.kit.title : r.project.title;
+    const title = "kit" in r ? r.kit.title : "code" in r ? r.code.title : r.project.title;
     setOpenError(null);
     setAsk({
       title: `Open “${title}”?`,
@@ -125,6 +143,10 @@ export function App() {
           useKitStore.getState().load(r.kit);
           useGuide.getState().start(null, false);
           switchTo("kit");
+        } else if ("code" in r) {
+          useCodeStore.getState().load(r.code);
+          setEjectedFrom(null);
+          switchTo("code");
         } else {
           useProjectStore.getState().load(r.project);
           switchTo("template");
@@ -134,6 +156,31 @@ export function App() {
   };
 
   const onNew = () => setChoosing(true);
+
+  /** Ejects the kit or template game into a code project; the original is kept. */
+  const eject = (from: "kit" | "template") => {
+    setEjecting(null);
+    const code =
+      from === "kit"
+        ? ejectKit(useKitStore.getState().project, SOUND_LIBRARY)
+        : (() => {
+            const p = useProjectStore.getState().project;
+            return ejectTemplate(p, getTemplate(p.template.id));
+          })();
+    useCodeStore.getState().load(code);
+    setEjectedFrom(from);
+    switchTo("code");
+  };
+
+  /** The way back from a code project to the kit or template game it came from (or whichever is around). */
+  const backFrom = (): { label: string; go: () => void } | undefined => {
+    const kit = useKitStore.getState().project;
+    const project = useProjectStore.getState().project;
+    const to = ejectedFrom ?? (kit ? "kit" : project ? "template" : null);
+    if (to === "kit" && kit) return { label: `the kit game “${kit.title || "Untitled"}”`, go: () => switchTo("kit") };
+    if (to === "template" && project) return { label: `“${project.title || "Untitled"}”`, go: () => switchTo("template") };
+    return undefined;
+  };
 
   /** One of the jam's own starting games (a .cartridge in the brief). */
   const openStarter = (name: string, base64: string) => {
@@ -180,9 +227,20 @@ export function App() {
       {banner}
       <JamBanner onNewGame={onNew} onStarter={openStarter} />
       {mode === "kit" ? (
-        <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} />
+        <KitEditor key="kit" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("kit")} />
+      ) : mode === "code" ? (
+        <CodeEditor key="code" onOpen={(f) => void open(f)} onNew={onNew} back={backFrom()} />
       ) : (
-        <TemplateEditor key="template" onOpen={(f) => void open(f)} onNew={onNew} />
+        <TemplateEditor key="template" onOpen={(f) => void open(f)} onNew={onNew} onEditAsCode={() => setEjecting("template")} />
+      )}
+      {ejecting && (
+        <EjectDialog
+          title={(ejecting === "kit" ? useKitStore.getState().project : useProjectStore.getState().project).title}
+          kind={ejecting === "kit" ? "kit game" : "game"}
+          replaces={useCodeStore.getState().project?.title}
+          onConfirm={() => eject(ejecting)}
+          onClose={() => setEjecting(null)}
+        />
       )}
       {choosing && (
         <StartChooser
@@ -204,7 +262,7 @@ export function App() {
   );
 }
 
-function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew: () => void }) {
+function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) => void; onNew: () => void; onEditAsCode: () => void }) {
   const project = useProjectStore((s) => s.project);
   const canUndo = useProjectStore((s) => s.past.length > 0);
   const canRedo = useProjectStore((s) => s.future.length > 0);
@@ -216,6 +274,8 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
   );
   const [tab, setTab] = useState<TemplateTab>("graphics");
   const ids = useId();
+  const [codeKey, setCodeKey] = useState<string | null>(null);
+  const changed = useGeneratedDiff(preview.lastGood?.source);
 
   useEffect(() => {
     window.__cs!.store = useProjectStore;
@@ -274,6 +334,29 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
             {tab === "rules" && <RulesPanel template={template} />}
             {tab === "sounds" && <SoundsPanel template={template} />}
             {tab === "settings" && <SettingsPanel template={template} />}
+            {tab === "code" && (
+              <CodeTier
+                preview={preview}
+                title={project.title}
+                jumps={[
+                  {
+                    heading: "Rules",
+                    items: project.rules.map((r, i) => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, detail: `${r.when} → ${r.then.join(", ")}`, ref: { rule: i + 1 } })),
+                  },
+                ]}
+                selected={codeKey}
+                onSelect={setCodeKey}
+                changed={changed}
+                onExportSource={async () => {
+                  const files = sourceFiles(project, template, {
+                    symbols: preview.lastGood?.symbols,
+                    cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
+                  });
+                  download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
+                }}
+                onEject={onEditAsCode}
+              />
+            )}
             {tab === "print" && (
               <PrintPanel
                 template={template}
@@ -289,17 +372,6 @@ function TemplateEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew
           <PreviewPanel
             preview={preview}
             title={project.title}
-            extraDownloads={
-              <button
-                type="button"
-                className="secondary"
-                title="Your game as 7800basic code, with its pictures, to keep working on by hand"
-                onClick={() => download(sourceZip(project, template), `${slugify(project.title)}-source.zip`)}
-                disabled={preview.result?.kind === "invalid"}
-              >
-                Download the code
-              </button>
-            }
           />
           <ShowItPanel preview={preview} title={project.title} print={() => setTab("print")} />
           <JamEntryPanel

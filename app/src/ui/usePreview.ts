@@ -8,6 +8,8 @@ import { WorkerEmulator } from "../emulator/worker-emulator.ts";
 import type { Screenshot } from "../print/pdf.ts";
 import type { useProjectStore } from "../project/store.ts";
 import type { useKitStore } from "../kit/store.ts";
+import type { useCodeStore } from "../code/store.ts";
+import { isCodeProject } from "../code/schema.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
 
@@ -29,6 +31,7 @@ declare global {
     __cs?: {
       store?: typeof useProjectStore;
       kitStore?: typeof useKitStore;
+      codeStore?: typeof useCodeStore;
       service?: BuildService;
       /** Creates a separate worker service, e.g. with a short timeout. */
       createService?: (opts: ConstructorParameters<typeof WorkerBuildService>[0]) => BuildService;
@@ -175,7 +178,9 @@ export function usePreview(source: GameSource) {
         : result?.kind === "invalid"
           ? "Needs a fix: see below"
           : result?.kind === "failed"
-            ? "We couldn't build this game; your work is saved. See below for what to do."
+            ? isCodeProject(source)
+              ? "Doesn't build yet"
+              : "We couldn't build this game; your work is saved. See below for what to do."
             : "";
 
   const timing = record

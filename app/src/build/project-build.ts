@@ -8,9 +8,12 @@ import { generateKit } from "../kit/generate.ts";
 import type { KitGame } from "../kit/schema.ts";
 import { SOUND_LIBRARY, getTemplate } from "../project/templates.ts";
 import type { Project } from "../project/schema.ts";
+import { codeBuildInput } from "../code/build-input.ts";
+import { buildStats, type BuildStats } from "../code/build-log.ts";
+import { isCodeProject, type CodeProject } from "../code/schema.ts";
 
-/** Anything the app can build: a template project or a kit game. */
-export type GameSource = Project | KitGame;
+/** Anything the app can build: a template project, a kit game or a code project. */
+export type GameSource = Project | KitGame | CodeProject;
 export const isKitGame = (g: GameSource): g is KitGame => "kit" in g;
 import { cacheKey, type RomCache } from "./rom-cache.ts";
 
@@ -30,6 +33,10 @@ export type ProjectBuildResult =
       signed: boolean;
       symbols: string;
       source: string;
+      /** The toolchain's report (ROM space left and so on); absent for older cached ROMs. */
+      log?: string;
+      /** ROM space, zones and stack, from the log (absent for older cached ROMs). */
+      stats?: BuildStats;
       cached: boolean;
     } & Timings)
   /** The project failed validation: creator-facing messages. */
@@ -50,7 +57,11 @@ export async function buildProject(
   { sign = true }: BuildOptions = {},
 ): Promise<ProjectBuildResult> {
   const t0 = performance.now();
-  const gen = isKitGame(project) ? generateKit(project, SOUND_LIBRARY) : generate(project, getTemplate(project.template.id));
+  const gen = isCodeProject(project)
+    ? codeBuildInput(project)
+    : isKitGame(project)
+      ? generateKit(project, SOUND_LIBRARY)
+      : generate(project, getTemplate(project.template.id));
   const generateMs = performance.now() - t0;
   const timings = (buildMs: number) => ({ generateMs, buildMs, totalMs: performance.now() - t0 });
   if (!gen.ok) return { kind: "invalid", errors: gen.errors, ...timings(0) };
@@ -58,7 +69,10 @@ export async function buildProject(
 
   const key = await cacheKey(input, builder.toolchainVersion);
   const hit = await cache?.get(key);
-  if (hit) return { kind: "built", ...hit, signed: sign, source: input.source, cached: true, ...timings(0) };
+  if (hit) {
+    const stats = hit.log === undefined ? undefined : buildStats(hit.log);
+    return { kind: "built", ...hit, stats, signed: sign, source: input.source, cached: true, ...timings(0) };
+  }
 
   const t1 = performance.now();
   const r = await builder.build(input);
@@ -67,7 +81,7 @@ export async function buildProject(
     return { kind: "failed", stage: r.stage, message: r.message, log: r.log, source: input.source, ...timings(buildMs) };
   }
   // Store copies: the originals are transferred to the main thread.
-  await cache?.set(key, { a78: r.a78.slice(), bin: r.bin.slice(), symbols: r.symbols, at: Date.now() });
+  await cache?.set(key, { a78: r.a78.slice(), bin: r.bin.slice(), symbols: r.symbols, log: r.log, at: Date.now() });
   return {
     kind: "built",
     a78: r.a78,
@@ -75,6 +89,8 @@ export async function buildProject(
     signed: r.signed,
     symbols: r.symbols,
     source: input.source,
+    log: r.log,
+    stats: buildStats(r.log),
     cached: false,
     ...timings(buildMs),
   };

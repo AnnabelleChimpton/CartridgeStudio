@@ -1,9 +1,9 @@
-// The Play panel: the emulator, its controls and build status. ROM files,
-// build timings and the generated code are tucked under "For developers".
+// The Play panel: the emulator, its controls and build status, in plain
+// words. ROM files are in Show it; build details and the code are in the
+// Code tab.
 
 import { useState, type ReactNode } from "react";
-import { slugify } from "../files/exports.ts";
-import { download, type Preview } from "./usePreview.ts";
+import type { Preview } from "./usePreview.ts";
 
 /** How to play, in the editor and on the TV alike. */
 const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to fire. Esc to stop playing.";
@@ -13,29 +13,16 @@ interface Props {
   title: string;
   /** Shown under the game, e.g. the kit's busy meter. */
   meter?: ReactNode;
-  extraDownloads?: ReactNode;
   /** A build error in plain words, and what to do about it when the error itself doesn't say. */
   explainError?: (error: string) => { text: string; help: string | null };
+  /** What to say when the build fails (default: our bug, with what to do; details in the Code tab). */
+  failure?: ReactNode;
 }
 
-export function PreviewPanel({ preview, title, meter, extraDownloads, explainError }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
+export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
-  const [exporting, setExporting] = useState(false);
-
-  // Downloads are always signed, so they boot on a real console.
-  const exportRom = async (format: "a78" | "bin") => {
-    setExporting(true);
-    try {
-      const rom = await buildSigned();
-      download(format === "a78" ? rom.a78 : rom.bin, `${slugify(title)}.${format}`);
-    } catch (e) {
-      setError(`${e instanceof Error ? e.message : String(e)} Fix anything listed under the game, then try again.`);
-    } finally {
-      setExporting(false);
-    }
-  };
 
   return (
     <section className="panel preview" aria-labelledby="preview-h">
@@ -103,7 +90,8 @@ export function PreviewPanel({ preview, title, meter, extraDownloads, explainErr
           </ul>
         </>
       )}
-      {result?.kind === "failed" && (
+      {result?.kind === "failed" &&
+        (failure ?? (
         <div className="broken small" data-testid="build-failed">
           <p>
             Something went wrong on our side, not yours. Your work is saved
@@ -112,38 +100,12 @@ export function PreviewPanel({ preview, title, meter, extraDownloads, explainErr
           <ul>
             <li>Press Undo to take back your last change, and the game should build again.</li>
             <li>If it still doesn't, reload the page: your game comes back as you left it.</li>
-            <li>To help us fix it, use Save game file and send us the file with the details below.</li>
+            <li>To help us fix it, use Save game file and send us the file with the details from the Code tab.</li>
           </ul>
         </div>
-      )}
-      {result?.kind === "failed" && (
-        <details className="small">
-          <summary>Details for the Cartridge Studio team</summary>
-          <pre className="log">{`${result.stage}: ${result.message}\n${result.log}`}</pre>
-        </details>
-      )}
+        ))}
       {error && <p className="error">{error}</p>}
       {meter}
-      <details className="dev">
-        <summary>For developers</summary>
-        <p className="muted small" data-testid="build-timing">
-          {timing}
-        </p>
-        <div className="toolbar">
-          <button type="button" className="secondary" disabled={!lastGood || exporting} onClick={() => void exportRom("a78")}>
-            Download .a78
-          </button>
-          <button type="button" className="secondary" disabled={!lastGood || exporting} onClick={() => void exportRom("bin")}>
-            Download .bin
-          </button>
-          {extraDownloads}
-          {exporting && <span className="muted small">Preparing download…</span>}
-        </div>
-        <details className="code">
-          <summary>View code</summary>
-          <pre data-testid="game-bas">{lastGood?.source ?? ""}</pre>
-        </details>
-      </details>
     </section>
   );
 }

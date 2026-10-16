@@ -1,8 +1,13 @@
-// The kit editor: one job at a time on the left (things, the room, rules or
-// game settings, each with room to work), and the running game on the right
-// with every way to show it off. A starter game opens with a short guide.
+// The kit editor: one job at a time on the left (things, the room, rules,
+// game settings or the code they become, each with room to work), and the
+// running game on the right with every way to show it off. A starter game
+// opens with a short guide.
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { GraphicThumbs } from "../code/BasicEditor.tsx";
+import { CodeTier, type CodeJump } from "../code/CodeTier.tsx";
+import { ejectKit } from "../code/eject.ts";
+import { useGeneratedDiff } from "../code/useGeneratedDiff.ts";
 import { writeCartridgeFile } from "../files/cartridge-file.ts";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { KIT_TOOLCHAIN, folderZip, kitSourceFiles, slugify } from "../files/exports.ts";
@@ -27,17 +32,22 @@ import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
 import { KIT_PRESETS, type KitIdea, type KitTab } from "./presets.ts";
 import { RoomPainter } from "./RoomPainter.tsx";
+import { ruleSentence } from "./sentence.ts";
 import { ThingsPanel } from "./ThingsPanel.tsx";
 import type { KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
 
-const TABS: { id: KitTab; label: string }[] = [
+/** The editor's tabs: the ones a guide step or idea can open, plus the code they become. */
+type Tab = KitTab | "code";
+
+const TABS: { id: Tab; label: string }[] = [
   { id: "things", label: "Things" },
   { id: "room", label: "Room" },
   { id: "rules", label: "Rules" },
   { id: "game", label: "Game" },
+  { id: "code", label: "Code" },
 ];
 
 /** Each thing's frames by id, to tell whether any pixel of an existing thing changed. */
@@ -48,16 +58,55 @@ function drawn(a: KitGame, b: KitGame) {
   });
 }
 
-export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onNew: () => void }) {
+interface Props {
+  onOpen: (file: File) => void;
+  onNew: () => void;
+  /** Makes a code project from this game (after asking). */
+  onEditAsCode?: () => void;
+}
+
+export function KitEditor({ onOpen, onNew, onEditAsCode }: Props) {
   const game = useKitStore((s) => s.project);
   const canUndo = useKitStore((s) => s.past.length > 0);
   const canRedo = useKitStore((s) => s.future.length > 0);
   const { edit, undo, redo } = useKitStore.getState();
   const preview = usePreview(game);
   const [selected, setSelected] = useState<string | null>(() => (game.types.find(isPlayer) ?? game.types[0])?.id ?? null);
-  const [tab, setTab] = useState<KitTab>("things");
+  const [tab, setTab] = useState<Tab>("things");
   const [brush, setBrush] = useState<Brush>("wall");
   const ids = useId();
+  /** What the Code tab marks: the chosen thing, or the rule last clicked or focused (`thing:<id>`, `rule:<n>`). */
+  const [codeKey, setCodeKey] = useState<string | null>(null);
+  const selectThing = (id: string | null) => {
+    setSelected(id);
+    setCodeKey(id && `thing:${id}`);
+  };
+  /** Rules are cards in a list; whichever one is clicked or focused is the selected rule. */
+  const noticeRule = (e: React.SyntheticEvent) => {
+    const li = (e.target as Element).closest?.("ol.rules > li");
+    if (!li?.parentElement) return;
+    setCodeKey(`rule:${[...li.parentElement.children].indexOf(li) + 1}`);
+  };
+  const jumps = useMemo(
+    () => [
+      { heading: "Things", items: game.types.map((t): CodeJump => ({ key: `thing:${t.id}`, name: t.label, ref: { thing: t.label, palette: t.palette } })) },
+      { heading: "Rules", items: game.rules.map((r, i): CodeJump => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, detail: ruleSentence(r, game), ref: { rule: i + 1 } })) },
+    ],
+    [game],
+  );
+  const changed = useGeneratedDiff(preview.lastGood?.source);
+  // The graphics as the gutter shows them; only worked out while the Code tab is open.
+  const thumbs = useMemo<GraphicThumbs | undefined>(() => {
+    if (tab !== "code") return undefined;
+    try {
+      const code = ejectKit(game, SOUND_LIBRARY);
+      return Object.fromEntries(
+        code.graphics.map((g) => [g.name.toLowerCase(), { rows: g.rows, colors: code.palettes.find((p) => p.id === g.palette)?.colors ?? [] }]),
+      );
+    } catch {
+      return undefined; // a game that doesn't generate has no graphics to show
+    }
+  }, [tab, game]);
 
   // The getting-started guide.
   const guideId = useGuide((s) => s.current);
@@ -135,6 +184,13 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
     const shot = await preview.screenshot().catch(() => undefined);
     return writeCartridgeFile(game, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
   };
+  const exportSource = async () => {
+    const files = kitSourceFiles(game, SOUND_LIBRARY, {
+      symbols: preview.lastGood?.symbols,
+      cartridge: { name: `${slugify(game.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
+    });
+    download(folderZip(game.title, "source", files), `${slugify(game.title)}-source.zip`);
+  };
   const save = async () => download(await cartridgeFile(), `${slugify(game.title)}${CARTRIDGE_EXTENSION}`);
 
   return (
@@ -209,7 +265,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             {tab === "things" && (
               <ThingsPanel
                 selected={selected}
-                onSelect={setSelected}
+                onSelect={selectThing}
                 onPlace={(id) => {
                   setBrush(id);
                   openTab("room", '[aria-label="Room grid"]');
@@ -217,8 +273,25 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
               />
             )}
             {tab === "room" && <RoomPainter brush={brush} setBrush={setBrush} />}
-            {tab === "rules" && <KitRulesPanel />}
+            {tab === "rules" && (
+              <div onFocusCapture={noticeRule} onClickCapture={noticeRule}>
+                <KitRulesPanel />
+              </div>
+            )}
             {tab === "game" && <KitSettingsPanel />}
+            {tab === "code" && (
+              <CodeTier
+                preview={preview}
+                title={game.title}
+                jumps={jumps}
+                selected={codeKey ?? (selected && `thing:${selected}`)}
+                onSelect={setCodeKey}
+                changed={changed}
+                graphics={thumbs}
+                onExportSource={() => void exportSource()}
+                onEject={() => onEditAsCode?.()}
+              />
+            )}
           </div>
         </div>
         <div className={`play-column${guideOpen && current === "tv" ? " guide-play" : ""}`}>
@@ -227,17 +300,6 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
             title={game.title}
             meter={<CpuMeter onGo={(t) => openTab(t)} />}
             explainError={explainError}
-            extraDownloads={
-              <button
-                type="button"
-                className="secondary"
-                title="Your game as 7800basic code, with its pictures, to keep working on by hand"
-                disabled={preview.result?.kind === "invalid"}
-                onClick={() => download(folderZip(game.title, "source", kitSourceFiles(game, SOUND_LIBRARY)), `${slugify(game.title)}-source.zip`)}
-              >
-                Download the code
-              </button>
-            }
           />
           <ShowItPanel
             preview={preview}

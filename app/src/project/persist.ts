@@ -1,6 +1,6 @@
 // Keeps the game being edited in IndexedDB so work survives reloads (no
-// account). Template projects and kit games are kept separately, plus which
-// one was open last.
+// account). Template projects, kit games and code projects are kept
+// separately, plus which one was open last.
 //
 // A save this version can't read (damaged, or from a newer version) is never
 // overwritten: it's moved to a `recovered-<time>-<kind>` key and the editor
@@ -8,6 +8,7 @@
 // rest of the visit.
 
 import { createStore, del, get, set } from "idb-keyval";
+import { CodeProjectSchema, type CodeProject } from "../code/schema.ts";
 import { loadKit } from "../kit/migrations.ts";
 import type { KitGame } from "../kit/schema.ts";
 import { loadProject } from "./load.ts";
@@ -15,9 +16,10 @@ import type { Project, Template } from "./schema.ts";
 
 const CURRENT = "current";
 const CURRENT_KIT = "current-kit";
+const CURRENT_CODE = "current-code";
 const MODE = "mode";
 
-export type EditorMode = "template" | "kit";
+export type EditorMode = "template" | "kit" | "code";
 
 /** The storage loadSession and the save functions use (IndexedDB in the app, a Map in tests). */
 export interface KeyValue {
@@ -35,7 +37,7 @@ const storage = () => (kv ??= idb());
 
 /** A save that couldn't be read, and where it was put. */
 export interface Recovered {
-  kind: "kit game" | "game";
+  kind: "kit game" | "game" | "code project";
   /** The key it was moved to, or null if it couldn't be moved (it was left where it was). */
   key: string | null;
   errors: string[];
@@ -45,6 +47,7 @@ export interface Session {
   mode: EditorMode | null;
   project: Project | null;
   kit: KitGame | null;
+  code: CodeProject | null;
   recovered: Recovered[];
 }
 
@@ -65,15 +68,15 @@ async function setAside(store: KeyValue, key: string, raw: unknown, kind: Recove
 
 /** What was being edited, each part only if it still loads. */
 export async function loadSession(templates: Record<string, Template>, store: KeyValue = storage()): Promise<Session> {
-  const session: Session = { mode: null, project: null, kit: null, recovered: [] };
-  let raw: [unknown, unknown, unknown];
+  const session: Session = { mode: null, project: null, kit: null, code: null, recovered: [] };
+  let raw: [unknown, unknown, unknown, unknown];
   try {
-    raw = await Promise.all([store.get(CURRENT), store.get(CURRENT_KIT), store.get(MODE)]);
+    raw = await Promise.all([store.get(CURRENT), store.get(CURRENT_KIT), store.get(MODE), store.get(CURRENT_CODE)]);
   } catch {
     // Private windows can refuse IndexedDB; start fresh.
     return session;
   }
-  const [rawProject, rawKit, mode] = raw;
+  const [rawProject, rawKit, mode, rawCode] = raw;
   if (rawProject !== undefined) {
     let r: ReturnType<typeof loadProject>;
     try {
@@ -89,7 +92,12 @@ export async function loadSession(templates: Record<string, Template>, store: Ke
     if (r.ok) session.kit = r.game;
     else session.recovered.push(await setAside(store, CURRENT_KIT, rawKit, "kit game", r.errors));
   }
-  if (mode === "template" || mode === "kit") session.mode = mode;
+  if (rawCode !== undefined) {
+    const r = CodeProjectSchema.safeParse(rawCode);
+    if (r.success) session.code = r.data;
+    else session.recovered.push(await setAside(store, CURRENT_CODE, rawCode, "code project", r.error.issues.map((i) => i.message)));
+  }
+  if (mode === "template" || mode === "kit" || mode === "code") session.mode = mode;
   // Saves from before the kit had no mode: they were template projects.
   if (!session.mode && session.project) session.mode = "template";
   return session;
@@ -118,4 +126,5 @@ async function put(key: string, value: unknown) {
 
 export const saveProject = (project: Project) => put(CURRENT, project);
 export const saveKitGame = (game: KitGame) => put(CURRENT_KIT, game);
+export const saveCodeProject = (project: CodeProject) => put(CURRENT_CODE, project);
 export const saveMode = (mode: EditorMode) => put(MODE, mode);

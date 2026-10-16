@@ -8,3 +8,8 @@ export { M0_SPRITES } from "./fixtures/m0-test.ts";
 
 /** File name of the packed toolchain this app version pins. */
 export const TOOLCHAIN_PACK_FILE = `${lock.name}-${lock.version}.pack`;
+
+/** The toolchain this app version pins, as people write it ("7800basic 0.41"). */
+export const TOOLCHAIN_NAME = `${lock.name} ${lock.version}`;
+/** Where that release comes from. */
+export const TOOLCHAIN_URL = lock.url;

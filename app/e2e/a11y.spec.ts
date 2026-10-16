@@ -39,8 +39,9 @@ test("the start screen and both editors pass axe", async ({ page }) => {
     expect(await axe(page), `Ghost Panic ${name}`).toEqual([]);
   }
   await page.getByRole("button", { name: /^Background/ }).first().click();
-  await page.locator("details.dev").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  expect(await axe(page)).toEqual([]);
+  await openTab(page, "Code");
+  await expect(page.locator(".cm-editor")).toBeVisible();
+  expect(await axe(page), "Ghost Panic Code").toEqual([]);
 
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("button", { name: "Classic shooter" }).click();

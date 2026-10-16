@@ -5,7 +5,7 @@ import type { KitGame } from "../kit/schema.ts";
 import { Dialog } from "./Dialog.tsx";
 import { SpritePreview } from "./SpritePreview.tsx";
 
-export type StartChoice = { kind: "kit"; preset: string } | { kind: "template"; template: string };
+export type StartChoice = { kind: "kit"; preset: string } | { kind: "template"; template: string } | { kind: "code" };
 
 function Cast({ game }: { game: KitGame }) {
   return (
@@ -42,6 +42,13 @@ function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?
           <strong>Classic shooter</strong>
           <span className="chooser-kind small">A shooter, in the older editor</span>
           <span className="muted small">Change the art, sounds and speeds of one ready-made game. Fewer things to change.</span>
+        </button>
+      )}
+      {!only && (
+        <button type="button" className="chooser-card classic" onClick={() => onChoose({ kind: "code" })}>
+          <strong>Write code</strong>
+          <span className="chooser-kind small">For coders</span>
+          <span className="muted small">A small 7800basic program to start from, with the same live preview.</span>
         </button>
       )}
     </div>

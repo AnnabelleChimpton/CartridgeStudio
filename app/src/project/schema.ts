@@ -15,33 +15,34 @@ export const PaletteSchema = z.object({
   colors: z.tuple([ColorSchema, ColorSchema, ColorSchema]),
 });
 
+// Every string and array has a ceiling: game files come from anywhere (cartridge-file.ts).
 export const SpriteSchema = z.object({
   id: IdSchema,
-  role: z.string(),
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-  palette: z.string(),
+  role: z.string().max(32),
+  width: z.number().int().positive().max(256),
+  height: z.number().int().positive().max(256),
+  palette: z.string().max(32),
   /** frames[f][y] is one row of palette indices: `0` transparent, `1`–`3` colors. */
-  frames: z.array(z.array(z.string())).min(1),
+  frames: z.array(z.array(z.string().max(256)).max(256)).min(1).max(16),
 });
 
 export const RuleSchema = z.object({
-  when: z.string(),
-  then: z.array(z.string()).min(1),
+  when: z.string().max(64),
+  then: z.array(z.string().max(64)).min(1).max(16),
 });
 
 export const ProjectSchema = z.object({
   schema: z.literal(CURRENT_SCHEMA),
-  id: z.string().min(1),
+  id: z.string().min(1).max(64),
   title: z.string().max(60),
-  template: z.object({ id: z.string(), version: z.string() }),
-  palettes: z.array(PaletteSchema),
-  sprites: z.array(SpriteSchema),
+  template: z.object({ id: z.string().max(32), version: z.string().max(32) }),
+  palettes: z.array(PaletteSchema).max(16),
+  sprites: z.array(SpriteSchema).max(32),
   background: z.object({ color: ColorSchema, tiles: z.null() }),
-  params: z.record(z.string(), z.number()),
-  rules: z.array(RuleSchema),
-  sounds: z.record(z.string(), z.string()),
-  cartridge: z.object({ boxStyle: z.string(), manualText: z.string().nullable() }),
+  params: z.record(z.string().max(64), z.number()),
+  rules: z.array(RuleSchema).max(64),
+  sounds: z.record(z.string().max(64), z.string().max(64)),
+  cartridge: z.object({ boxStyle: z.string().max(32), manualText: z.string().max(20_000).nullable() }),
 });
 
 export type Project = z.infer<typeof ProjectSchema>;
