@@ -55,7 +55,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, facts, runtim
         gameTitle,
         build: { app: APP_VERSION, runtime, toolchain },
         facts,
-        player: await buildPlayerHtml(title, rom.a78),
+        player: await buildPlayerHtml(title, rom.a78, preview.source()),
         a78: rom.a78,
         bin: rom.bin,
         cartridge,

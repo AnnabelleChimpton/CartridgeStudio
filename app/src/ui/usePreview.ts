@@ -12,6 +12,13 @@ import type { useCodeStore } from "../code/store.ts";
 import { isCodeProject } from "../code/schema.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
+/** In TV mode, holding Select this long leaves (a short press plays again). */
+const HOLD_TO_LEAVE_MS = 1000;
+/** In TV mode the mouse pointer shows for this long after it moves, then hides while the game plays. */
+const POINTER_SHOWS_MS = 2000;
+/** Standard gamepad mapping: Select (Back, View, Share) and Start (Menu, Options). */
+const SELECT = 8;
+const START = 9;
 
 export type Built = Extract<ProjectBuildResult, { kind: "built" }>;
 
@@ -65,6 +72,10 @@ export function usePreview(source: GameSource) {
   const counter = useRef(0);
   const sourceRef = useRef(source);
   sourceRef.current = source;
+  const [paused, setPausedState] = useState(false);
+  const pausedRef = useRef(false);
+  /** Whether the game is full screen in TV mode. */
+  const [tv, setTv] = useState(false);
 
   // Build service and emulator, once per editor.
   useEffect(() => {
@@ -189,6 +200,70 @@ export function usePreview(source: GameSource) {
       (ready ? ` · ${ready.toolchainVersion}` : "")
     : "";
 
+  const setPaused = (p: boolean) => {
+    emulator.current?.pause(p);
+    pausedRef.current = p;
+    setPausedState(p);
+  };
+  /** Back to the title screen, playing. */
+  const restart = () => {
+    if (pausedRef.current) setPaused(false);
+    emulator.current?.reset();
+  };
+  const restartRef = useRef(restart);
+  restartRef.current = restart;
+  const setPausedRef = useRef(setPaused);
+  setPausedRef.current = setPaused;
+
+  useEffect(() => {
+    const changed = () => setTv(!!stage.current && document.fullscreenElement === stage.current);
+    document.addEventListener("fullscreenchange", changed);
+    return () => document.removeEventListener("fullscreenchange", changed);
+  }, []);
+
+  // TV mode from the sofa: Start pauses, Select plays again from the title, holding Select leaves.
+  // The mouse pointer hides while the game plays and comes back when it moves.
+  useEffect(() => {
+    const el = stage.current;
+    if (!tv || !el) return;
+    let was: boolean[] = [];
+    let selectAt = 0;
+    let selectUsed = false;
+    let raf = 0;
+    const poll = () => {
+      raf = requestAnimationFrame(poll);
+      const pad = navigator.getGamepads?.().find((g) => g?.connected);
+      if (!pad) return;
+      const b = (i: number) => !!pad.buttons[i]?.pressed;
+      const now = performance.now();
+      if (b(START) && !was[START]) setPausedRef.current(!pausedRef.current);
+      if (b(SELECT) && !was[SELECT]) {
+        selectAt = now;
+        selectUsed = false;
+      }
+      if (b(SELECT) && !selectUsed && now - selectAt >= HOLD_TO_LEAVE_MS) {
+        selectUsed = true;
+        void document.exitFullscreen?.().catch(() => {});
+      }
+      if (!b(SELECT) && was[SELECT] && !selectUsed) restartRef.current();
+      was = pad.buttons.map((_, i) => b(i));
+    };
+    raf = requestAnimationFrame(poll);
+    let hide: ReturnType<typeof setTimeout> | undefined;
+    const moved = () => {
+      el.classList.add("pointer-awake");
+      clearTimeout(hide);
+      hide = setTimeout(() => el.classList.remove("pointer-awake"), POINTER_SHOWS_MS);
+    };
+    el.addEventListener("mousemove", moved);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(hide);
+      el.removeEventListener("mousemove", moved);
+      el.classList.remove("pointer-awake");
+    };
+  }, [tv]);
+
   /** TV mode: the game full screen with its title and a controller prompt, ready to play. */
   const enterTv = () => {
     const el = stage.current;
@@ -197,7 +272,29 @@ export function usePreview(source: GameSource) {
     el.querySelector("canvas")?.focus();
   };
 
-  return { emuContainer, stage, enterTv, emulator, ready, result, lastGood, status, timing, error, setError, buildSigned, screenshot };
+  /** The game as it is now, e.g. for the offline player's controls and box art. */
+  const currentSource = () => sourceRef.current;
+
+  return {
+    emuContainer,
+    stage,
+    enterTv,
+    tv,
+    paused,
+    setPaused,
+    restart,
+    source: currentSource,
+    emulator,
+    ready,
+    result,
+    lastGood,
+    status,
+    timing,
+    error,
+    setError,
+    buildSigned,
+    screenshot,
+  };
 }
 
 export type Preview = ReturnType<typeof usePreview>;

@@ -8,6 +8,9 @@ import type { Preview } from "./usePreview.ts";
 
 /** How to play, in the editor and on the TV alike. */
 const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to fire. Esc to stop playing.";
+/** On the TV, for the gamepad in someone's hands. */
+const TV_HINT = "Stick or d-pad to move, any face button to fire. Start pauses. Select plays again. Hold Select, or press Esc, to leave.";
+const TV_PAUSED = "Paused. Press Start to carry on. Hold Select, or press Esc, to leave.";
 
 interface Props {
   preview: Preview;
@@ -21,35 +24,31 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error } = preview;
-  const [paused, setPaused] = useState(false);
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error, paused, setPaused, restart } = preview;
   const [muted, setMuted] = useState(false);
 
   return (
     <section className="panel preview" aria-labelledby="preview-h">
       <h2 id="preview-h">Play</h2>
-      <div ref={stage} className="tv-stage">
+      <div ref={stage} className={`tv-stage${paused ? " tv-paused" : ""}`}>
         <p className="tv-title" aria-hidden="true">
           {title}
         </p>
         <div ref={emuContainer} className="emu" />
         <p className="tv-hint" aria-hidden="true">
-          {PLAY_HINT}
+          {paused ? TV_PAUSED : TV_HINT}
         </p>
       </div>
       <div className="emu-controls">
         <button
           type="button"
           className="secondary"
-          onClick={() => {
-            emulator.current?.pause(!paused);
-            setPaused(!paused);
-          }}
+          onClick={() => setPaused(!paused)}
         >
           <Icon name={paused ? "play" : "pause"} />
           {paused ? "Resume" : "Pause"}
         </button>
-        <button type="button" className="secondary" onClick={() => emulator.current?.reset()}>
+        <button type="button" className="secondary" onClick={restart}>
           <Icon name="restart" />
           Restart
         </button>

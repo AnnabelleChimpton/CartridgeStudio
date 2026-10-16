@@ -47,8 +47,8 @@ export function ShowItPanel({ preview, title, print }: Props) {
     setSaved("");
     try {
       const { buildPlayerHtml } = await import("../player/player.ts");
-      download(new TextEncoder().encode(await buildPlayerHtml(title, built.a78)), `${slug}.html`);
-      setSaved(`Saved “${slug}.html”: your game in one file. Open it on a laptop or desktop to play, even without the internet.`);
+      download(new TextEncoder().encode(await buildPlayerHtml(title, built.a78, preview.source())), `${slug}.html`);
+      setSaved(`Saved “${slug}.html”: your game in one file. It plays on a computer or an Android phone, even without the internet. iPhones and iPads can't run it.`);
     } catch (e) {
       setError(`We couldn't make the game file (${e instanceof Error ? e.message : String(e)}). Try again in a moment; if it keeps happening, reload the page.`);
     } finally {
@@ -79,7 +79,7 @@ export function ShowItPanel({ preview, title, print }: Props) {
         <ShowButton
           icon="send"
           title={busy === "player" ? "Making the file…" : "Send to family"}
-          detail="One file that plays in a laptop or desktop web browser"
+          detail="One file that plays on a computer or an Android phone"
           disabled={!ready || busy !== null}
           onClick={() => void sendToFamily()}
         />
@@ -232,19 +232,17 @@ function TvGuide({ onPlay }: { onPlay: () => void }) {
       <p>Three ways to get your game onto the big screen:</p>
       <ol>
         <li>
-          <strong>Laptop to TV.</strong> Plug an HDMI cable from your laptop into the TV, then press <em>Play on a TV</em>. A USB or
-          Bluetooth gamepad lets you play from the sofa.
+          <strong>Laptop to TV.</strong> Plug the laptop into the TV with HDMI, then press <em>Play on a TV</em>. On a USB or Bluetooth
+          gamepad, Start pauses, Select plays again, and holding Select comes back here. So does Esc.
         </li>
         <li>
-          <strong>Another computer.</strong> Use <em>Send to family</em> to make a game file, then open it in a laptop or desktop web
-          browser, with no internet needed. On a phone or tablet, open it in Safari or Chrome to see it; it has no touch controls yet,
-          so playing needs a keyboard or gamepad.
+          <strong>Someone else's computer or phone.</strong> <em>Send to family</em> makes one file that plays offline on a computer,
+          or in Chrome on Android with buttons on the screen. iPhones and iPads only preview the file, so the game doesn't start there.
         </li>
         <li>
           <strong>A real console.</strong> See <em>Put it on a console</em>.
         </li>
       </ol>
-      <p className="muted small">In TV mode, press Esc to come back.</p>
       <div className="toolbar">
         <button type="button" onClick={onPlay}>
           Play on a TV now

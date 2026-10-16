@@ -41,7 +41,7 @@ export function KitPrint({ screenshot, buildSigned, cartridgeFile, onDownload }:
           ...rom,
           pdf,
           cartridgeFile: file,
-          player: await buildPlayerHtml(game.title, rom.a78),
+          player: await buildPlayerHtml(game.title, rom.a78, game),
           clip: useRecentClip.getState().gif,
         });
         return pkg.zip;

@@ -16,7 +16,7 @@ const STEPS: Record<GuideStep, { title: string; detail: (hero: string) => string
   },
   tv: {
     title: "Play it on the TV",
-    detail: () => "With a laptop plugged into the TV, this fills the screen. Arrow keys move and Space fires; a gamepad works too.",
+    detail: () => "With a laptop plugged into the TV, this fills the screen. Play with the keyboard or a gamepad: Start pauses, Select plays again, and holding Select comes back.",
     go: "Play",
     done: "You played your own game!",
   },

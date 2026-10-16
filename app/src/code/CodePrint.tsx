@@ -65,7 +65,7 @@ export function CodePrint({ title, preview, cartridgeFile }: { title: string; pr
           ...rom,
           pdf,
           cartridgeFile: file,
-          player: await buildPlayerHtml(project.title, rom.a78),
+          player: await buildPlayerHtml(project.title, rom.a78, project),
           clip: useRecentClip.getState().gif,
         });
         return pkg.zip;
