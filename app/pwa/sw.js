@@ -1,16 +1,18 @@
 // Cartridge Studio's service worker: after the first visit the whole app —
-// editor, 7800basic/dasm toolchain, js7800 emulator core, audio worklet and
-// fonts — comes from one versioned cache, so making, building and playing
-// games works with no network.
+// editor, 7800basic/dasm toolchain, js7800 emulator core and audio worklet —
+// comes from one versioned cache, so making, building and playing games works
+// with no network.
 //
-// The build (pwa/vite-plugin.ts) replaces the two placeholders below with the
-// list of every file in dist/ and a hash of their contents. A new build means
+// The build (pwa/vite-plugin.ts) replaces the placeholders below with the
+// files to cache at install, the big extras to cache on first use (print PDF
+// code and fonts), and a hash of all their contents. A new build means
 // a new cache: it installs alongside the old one and waits until the page
 // asks it to take over ("A new version is ready"), so a running editor never
 // mixes files from two builds.
 
 const VERSION = "__CS_VERSION__";
 const PRECACHE = /* __CS_PRECACHE__ */ [];
+const LAZY = new Set(/* __CS_LAZY__ */ [].map((path) => new URL(path, self.location.href).href));
 const CACHE = `cartridge-studio-${VERSION}`;
 const INDEX = new URL("./", self.location.href).href;
 
@@ -53,7 +55,10 @@ self.addEventListener("fetch", (event) => {
     (async () => {
       const cache = await caches.open(CACHE);
       const hit = await cache.match(key);
-      return hit ?? fetch(req);
+      if (hit) return hit;
+      const res = await fetch(req);
+      if (res.ok && LAZY.has(key)) await cache.put(key, res.clone());
+      return res;
     })(),
   );
 });

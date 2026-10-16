@@ -12,16 +12,23 @@ async function firstVisit(page: Page) {
   expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 }
 
-test("the first visit caches the toolchain, emulator, audio and fonts", async ({ page }) => {
-  await firstVisit(page);
-  const cached = await page.evaluate(async () => {
+const cachedPaths = (page: Page) =>
+  page.evaluate(async () => {
     const names = await caches.keys();
     const cache = await caches.open(names.find((n) => n.startsWith("cartridge-studio-"))!);
     return (await cache.keys()).map((r) => new URL(r.url).pathname);
   });
-  for (const re of [/^\/$/, /^\/toolchain\/.+\.pack$/, /^\/vendor\/js7800-core\/js7800-core\.js$/, /^\/audio\//, /^\/fonts\/.+\.ttf$/, /^\/assets\/build\.worker-/]) {
+
+test("the first visit caches the toolchain, emulator and audio; print extras wait for first use", async ({ page }) => {
+  await firstVisit(page);
+  const cached = await cachedPaths(page);
+  for (const re of [/^\/$/, /^\/toolchain\/.+\.pack$/, /^\/vendor\/js7800-core\/js7800-core\.js$/, /^\/audio\//, /^\/assets\/build\.worker-/]) {
     expect(cached.some((p) => re.test(p)), String(re)).toBe(true);
   }
+  expect(cached.filter((p) => /^\/fonts\/|^\/assets\/pdf-/.test(p))).toEqual([]);
+
+  await page.evaluate(() => fetch("/fonts/press-start-2p.ttf").then((r) => r.arrayBuffer()));
+  expect(await cachedPaths(page)).toContain("/fonts/press-start-2p.ttf");
 });
 
 test("after one visit the app builds and saves a ROM offline", async ({ page, context, browserName }) => {

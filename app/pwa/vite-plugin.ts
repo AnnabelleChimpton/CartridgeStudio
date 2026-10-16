@@ -1,8 +1,10 @@
 /// <reference types="node" />
 // Writes dist/sw.js after a production build: pwa/sw.js with the list of every
 // file in dist/ (the app shell plus public/: toolchain, js7800 core, audio
-// worklet, fonts, icons) and a version hashed from their contents, so each
-// build gets its own cache and an unchanged build keeps the old one.
+// worklet, icons) and a version hashed from their contents, so each build gets
+// its own cache and an unchanged build keeps the old one. Files matching
+// `lazy` (big extras such as the print PDF code and its fonts) stay out of the
+// install and are cached the first time the app fetches them.
 
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -19,7 +21,7 @@ function listFiles(dir: string, base = dir): string[] {
   });
 }
 
-export function serviceWorker(): Plugin {
+export function serviceWorker({ lazy = [] }: { lazy?: RegExp[] } = {}): Plugin {
   let config: ResolvedConfig;
   return {
     name: "cartridge-studio-service-worker",
@@ -34,18 +36,21 @@ export function serviceWorker(): Plugin {
         const files = listFiles(outDir)
           .filter((f) => !SKIP.some((re) => re.test(f)))
           .sort();
+        const isLazy = (f: string) => lazy.some((re) => re.test(f));
         const hash = createHash("sha256");
         for (const f of files) hash.update(f).update("\0").update(fs.readFileSync(path.join(outDir, f)));
         const source = fs.readFileSync(SW_SOURCE, "utf8");
         hash.update(source);
         const version = hash.digest("hex").slice(0, 12);
         // Paths are relative to sw.js, which sits at the base URL.
-        const precache = ["./", ...files.map((f) => `./${f}`)];
+        const precache = ["./", ...files.filter((f) => !isLazy(f)).map((f) => `./${f}`)];
+        const onFirstUse = files.filter(isLazy).map((f) => `./${f}`);
         const sw = source
           .replace('"__CS_VERSION__"', JSON.stringify(version))
-          .replace("/* __CS_PRECACHE__ */ []", JSON.stringify(precache, null, 1));
+          .replace("/* __CS_PRECACHE__ */ []", JSON.stringify(precache, null, 1))
+          .replace("/* __CS_LAZY__ */ []", JSON.stringify(onFirstUse, null, 1));
         fs.writeFileSync(path.join(outDir, "sw.js"), sw);
-        config.logger.info(`sw.js: ${files.length} files precached, version ${version}`);
+        config.logger.info(`sw.js: ${precache.length} files precached, ${onFirstUse.length} cached on first use, version ${version}`);
       },
     },
   };
