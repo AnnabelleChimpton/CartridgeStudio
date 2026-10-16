@@ -1,0 +1,246 @@
+{{#if vars}}
+ rem ---- music player variables (templates/kit/audio.bas.hbs) ----
+ rem musicstate: 0 off, 1 a jingle (plays once, owns its voices),
+ rem 2 a loop (repeats, steps aside on a voice while a sound effect uses it)
+ dim musicstate = {{hex ram 0}}
+ dim musicclock = {{hex ram 1}}
+ dim musictune = {{hex ram 2}}
+ dim muslo = {{hex ram 3}}
+ dim mushi = {{hex ram 5}}
+ dim musstartlo = {{hex ram 7}}
+ dim musstarthi = {{hex ram 9}}
+ dim mustimer = {{hex ram 11}}
+ dim musvol = {{hex ram 13}}
+ dim musenv = {{hex ram 15}}
+ dim musctl = {{hex ram 17}}
+ dim musfreq = {{hex ram 19}}
+ rem musown: 1 while TIA holds what the player last wrote to that voice
+ dim musown = {{hex ram 21}}
+{{/if}}
+{{#if code}}
+ rem ---- music player (templates/kit/audio.bas.hbs) ----
+ rem Two TIA voices, each reading 3-byte notes: frames, volume*16+AUDC,
+ rem envelope*32+AUDF; a 0 frame count ends the voice. It runs once a
+ rem frame from the interrupt, so the tempo holds even when a frame runs
+ rem long. Call it with: musictune = n : gosub musicplay
+ rem It shares the two voices with 7800basic's playsfx sound driver: see
+ rem mus_write below for which one wins.
+{{#if ownInterrupt}}
+userinterrupt
+ gosub musictick
+ return
+{{/if}}
+
+musicplay
+ asm
+ lda #0
+ sta musicstate
+ sta musicclock
+ sta AUDV0
+ sta AUDV1
+ ldx musictune
+ lda mustunes0lo,x
+ sta muslo
+ sta musstartlo
+ lda mustunes0hi,x
+ sta mushi
+ sta musstarthi
+ lda mustunes1lo,x
+ sta muslo+1
+ sta musstartlo+1
+ lda mustunes1hi,x
+ sta mushi+1
+ sta musstarthi+1
+ lda #0
+ sta musown
+ sta musown+1
+ lda #1
+ sta mustimer
+ sta mustimer+1
+ lda mustunemode,x
+ sta musicstate
+end
+ return
+
+musicstop
+ asm
+ lda #0
+ sta musicstate
+ sta mushi
+ sta mushi+1
+ ldx #1
+mus_stoploop
+ lda sfx1pointhi,x
+ bne mus_stopnext
+ sta AUDV0,x
+mus_stopnext
+ dex
+ bpl mus_stoploop
+end
+ return
+
+musictick
+ asm
+ ifconst PAUSESILENT
+ lda pausestate
+ beq mus_awake
+ ; pausing mutes TIA, so every voice is rewritten on the way out
+ lda #0
+ sta musown
+ sta musown+1
+ rts
+mus_awake
+ endif
+ lda musicstate
+ bne mus_on
+ rts
+mus_on
+ inc musicclock
+ ldx #1
+mus_voice
+ lda mushi,x
+ bne mus_live
+ jmp mus_next
+mus_live
+ dec mustimer,x
+ bne mus_sustain
+ jmp mus_fetch
+mus_sustain
+ ; the note goes on: step its envelope when the clock says so
+ ldy musenv,x
+ lda musicclock
+ and mus_envmask,y
+ bne mus_same
+ lda musvol,x
+ sec
+ sbc mus_envstep,y
+ bcs mus_volok
+ lda #0
+mus_volok
+ sta musvol,x
+ cpy #6
+ bcc mus_write
+ bne mus_rise
+ lda musfreq,x
+ cmp #31
+ bcs mus_write
+ inc musfreq,x
+ bcc mus_write
+mus_rise
+ lda musfreq,x
+ beq mus_write
+ dec musfreq,x
+ jmp mus_write
+mus_same
+ ; nothing changed: TIA needs no writes (they're slow) unless something else used the voice
+ lda sfx1pointhi,x
+ bne mus_write
+ lda musown,x
+ bne mus_next
+mus_write
+ ; a jingle takes its voices from sound effects; a loop gives way to them
+ lda sfx1pointhi,x
+ beq mus_regs
+ lda musicstate
+ cmp #2
+ bne mus_take
+ lda #0
+ sta musown,x
+ beq mus_next
+mus_take
+ lda sfxschedulelock
+ bne mus_regs
+ lda #0
+ sta sfx1pointlo,x
+ sta sfx1pointhi,x
+mus_regs
+ lda musctl,x
+ sta AUDC0,x
+ lda musfreq,x
+ sta AUDF0,x
+ lda musvol,x
+ sta AUDV0,x
+ lda #1
+ sta musown,x
+mus_next
+ dex
+ bmi mus_voicesdone
+ jmp mus_voice
+mus_voicesdone
+ lda musicstate
+ cmp #1
+ bne mus_done
+ lda mushi
+ ora mushi+1
+ bne mus_done
+ sta musicstate
+mus_done
+ rts
+mus_fetch
+ lda muslo,x
+ sta inttemp5
+ lda mushi,x
+ sta inttemp6
+ ldy #0
+ lda (inttemp5),y
+ bne mus_note
+ lda musicstate
+ cmp #2
+ bne mus_voiceend
+ lda musstartlo,x
+ sta muslo,x
+ sta inttemp5
+ lda musstarthi,x
+ sta mushi,x
+ sta inttemp6
+ lda (inttemp5),y
+mus_note
+ sta mustimer,x
+ iny
+ lda (inttemp5),y
+ pha
+ and #$0F
+ sta musctl,x
+ pla
+ lsr
+ lsr
+ lsr
+ lsr
+ sta musvol,x
+ iny
+ lda (inttemp5),y
+ pha
+ and #$1F
+ sta musfreq,x
+ pla
+ lsr
+ lsr
+ lsr
+ lsr
+ lsr
+ sta musenv,x
+ lda muslo,x
+ clc
+ adc #3
+ sta muslo,x
+ bcc mus_fetched
+ inc mushi,x
+mus_fetched
+ jmp mus_write
+mus_voiceend
+ lda #0
+ sta mushi,x
+ sta musvol,x
+ jmp mus_write
+end
+ return
+
+ asm
+ ; envelopes: hold, fade, pluck, short, drum, hat, slide down, slide up
+mus_envmask
+ .byte 255, 7, 3, 1, 0, 0, 1, 1
+mus_envstep
+ .byte 0, 1, 1, 1, 1, 3, 0, 0
+{{{tunes}}}
+end
+{{/if}}
