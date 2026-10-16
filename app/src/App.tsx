@@ -37,6 +37,7 @@ import { ConfirmDialog } from "./ui/Dialog.tsx";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
 import { toast } from "./ui/Toaster.tsx";
 import { TopBar } from "./ui/TopBar.tsx";
+import { useTier } from "./ui/prefs.ts";
 import { download, usePreview } from "./ui/usePreview.ts";
 
 const SAVE_DEBOUNCE_MS = 500;
@@ -269,7 +270,11 @@ function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) 
   const [selectedSprite, setSelectedSprite] = useState<string | null>(
     () => template.manifest.sprites.find((s) => s.editable)?.role ?? null,
   );
-  const [tab, setTab] = useState<TemplateTab>("graphics");
+  const [chosenTab, setTab] = useState<TemplateTab>("graphics");
+  // The Code tab is for the Coder tier, as in the kit editor.
+  const tier = useTier();
+  const tabs = TEMPLATE_TABS.filter((t) => tier === "coder" || t.id !== "code");
+  const tab = tabs.some((t) => t.id === chosenTab) ? chosenTab : "graphics";
   const ids = useId();
   const [codeKey, setCodeKey] = useState<string | null>(null);
   const changed = useGeneratedDiff(preview.lastGood?.source);
@@ -307,7 +312,7 @@ function TemplateEditor({ onOpen, onNew, onEditAsCode }: { onOpen: (file: File) 
       <main className="workspace-layout">
         <div className="workspace">
           <div className="workspace-tabs" role="tablist" aria-label="Edit" onKeyDown={arrowKeys("tab")}>
-            {TEMPLATE_TABS.map((t) => (
+            {tabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
