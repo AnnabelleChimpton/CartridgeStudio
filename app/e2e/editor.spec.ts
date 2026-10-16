@@ -406,3 +406,66 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
   await page.getByRole("button", { name: "Reset to draft" }).click();
   await expect(manual).toHaveValue(/You start with 5 lives\./);
 });
+
+async function downloadBytes(page: Page, button: string) {
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 60_000 }),
+    page.getByRole("button", { name: button, exact: true }).click(),
+  ]);
+  const chunks: Buffer[] = [];
+  for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
+  return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
+}
+
+test("saves a game file and opens it again", async ({ page }) => {
+  await open(page);
+  await page.getByLabel("Game title").fill("Moth Patrol");
+  await page.getByLabel("Lives").fill("6");
+  const saved = await downloadBytes(page, "Save game file");
+  expect(saved.name).toBe("moth-patrol.cartridge");
+
+  const { unzipSync } = await import("fflate");
+  expect(Object.keys(unzipSync(saved.bytes)).sort()).toEqual(["cartridge.json", "project.json", "thumbnail.png"]);
+
+  await page.getByLabel("Game title").fill("Something Else");
+  await page.getByLabel("Lives").fill("2");
+  page.once("dialog", (d) => void d.accept());
+  await page.getByLabel("Open game file").setInputFiles({ name: saved.name, mimeType: "application/zip", buffer: saved.bytes });
+  await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
+  await expect(page.getByLabel("Lives")).toHaveValue("6");
+
+  // Something that isn't a game file is refused with a message.
+  await page.getByLabel("Open game file").setInputFiles({ name: "notes.cartridge", mimeType: "text/plain", buffer: Buffer.from("hi") });
+  await expect(page.getByText("Couldn't open notes.cartridge")).toBeVisible();
+  await expect(page.getByLabel("Game title")).toHaveValue("Moth Patrol");
+});
+
+test("exports the source and the submission package", async ({ page }) => {
+  await open(page);
+  const { unzipSync } = await import("fflate");
+
+  const source = await downloadBytes(page, "Export source");
+  expect(source.name).toBe("cat-vs-vacuums-source.zip");
+  expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
+
+  const pkg = await downloadBytes(page, "Download submission package");
+  expect(pkg.name).toBe("cat-vs-vacuums-submission.zip");
+  const files = unzipSync(pkg.bytes);
+  const root = "cat-vs-vacuums-submission/";
+  for (const f of ["CHECKLIST.txt", "rom/cat-vs-vacuums.bin", "rom/cat-vs-vacuums.a78", "print/cat-vs-vacuums-print.pdf", "project/cat-vs-vacuums.cartridge", "source/game.bas"]) {
+    expect(files[root + f], f).toBeDefined();
+  }
+  expect(Buffer.from(files[`${root}print/cat-vs-vacuums-print.pdf`]!.subarray(0, 5)).toString("latin1")).toBe("%PDF-");
+
+  // The packaged ROM is signed: it differs from the unsigned preview in the signature only.
+  const preview = await page.evaluate(() => {
+    const last = window.__cs!.last!;
+    return last.kind === "built" ? Array.from(last.bin) : [];
+  });
+  const bin = files[`${root}rom/cat-vs-vacuums.bin`]!;
+  expect(bin.length).toBe(32768);
+  let differing = 0;
+  for (let i = 0; i < bin.length; i++) if (bin[i] !== preview[i]) differing++;
+  expect(differing).toBeGreaterThan(0);
+  expect(differing).toBeLessThanOrEqual(120);
+});

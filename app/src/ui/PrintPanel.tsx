@@ -6,6 +6,7 @@ import type { Template } from "../project/schema.ts";
 import { useProjectStore } from "../project/store.ts";
 import { draftManual } from "../print/manual.ts";
 import type { Paper, PrintFonts, Screenshot } from "../print/pdf.ts";
+import { slugify, submissionZip } from "../files/exports.ts";
 
 const PAPER_KEY = "cartridge-studio:paper";
 
@@ -39,14 +40,18 @@ interface Props {
   template: Template;
   /** The preview's current picture, for the box back. */
   screenshot: () => Promise<Screenshot | undefined>;
+  /** A signed build of the current project. */
+  buildSigned: () => Promise<{ a78: Uint8Array; bin: Uint8Array }>;
+  /** The current project as a .cartridge file. */
+  cartridgeFile: () => Promise<Uint8Array>;
   onDownload: (bytes: Uint8Array, name: string) => void;
 }
 
-export function PrintPanel({ template, screenshot, onDownload }: Props) {
+export function PrintPanel({ template, screenshot, buildSigned, cartridgeFile, onDownload }: Props) {
   const project = useProjectStore((s) => s.project);
   const edit = useProjectStore((s) => s.edit);
   const [paper, setPaper] = useState<Paper>(defaultPaper);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<null | "pdf" | "package">(null);
   const [error, setError] = useState<string | null>(null);
 
   const edited = project.cartridge.manualText !== null;
@@ -61,18 +66,26 @@ export function PrintPanel({ template, screenshot, onDownload }: Props) {
     }
   };
 
-  const download = async () => {
-    setBusy(true);
+  const makePdf = async () => {
+    const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
+    return buildPrintPdf({ project, template, paper, fonts, screenshot: shot });
+  };
+
+  const run = async (what: "pdf" | "package") => {
+    setBusy(what);
     setError(null);
+    const slug = slugify(project.title);
     try {
-      const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
-      const bytes = await buildPrintPdf({ project, template, paper, fonts, screenshot: shot });
-      const slug = project.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "game";
-      onDownload(bytes, `${slug}-print.pdf`);
+      if (what === "pdf") {
+        onDownload(await makePdf(), `${slug}-print.pdf`);
+      } else {
+        const [pdf, rom, file] = await Promise.all([makePdf(), buildSigned(), cartridgeFile()]);
+        onDownload(submissionZip({ project, template, ...rom, pdf, cartridgeFile: file }), `${slug}-submission.zip`);
+      }
     } catch (e) {
-      setError(`We couldn't make the PDF: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`We couldn't make the ${what === "pdf" ? "PDF" : "package"}: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -120,9 +133,15 @@ export function PrintPanel({ template, screenshot, onDownload }: Props) {
             <option value="a4">A4</option>
           </select>
         </label>
-        <button type="button" onClick={() => void download()} disabled={busy}>
-          {busy ? "Making PDF…" : "Download print PDF"}
+        <button type="button" onClick={() => void run("pdf")} disabled={busy !== null}>
+          {busy === "pdf" ? "Making PDF…" : "Download print PDF"}
         </button>
+      </div>
+      <div className="toolbar">
+        <button type="button" className="secondary" onClick={() => void run("package")} disabled={busy !== null}>
+          {busy === "package" ? "Packing…" : "Download submission package"}
+        </button>
+        <span className="muted small">Signed ROMs, this PDF, your game file, source and a checklist, in one ZIP.</span>
       </div>
       {error && <p className="error">{error}</p>}
     </section>

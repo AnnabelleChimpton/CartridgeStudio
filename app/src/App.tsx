@@ -11,6 +11,10 @@ import { TEMPLATES, getTemplate } from "./project/templates.ts";
 import { SpriteEditor } from "./sprite/SpriteEditor.tsx";
 import { GraphicsPanel, RulesPanel, SettingsPanel, SoundsPanel } from "./ui/panels.tsx";
 import { PrintPanel } from "./ui/PrintPanel.tsx";
+import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
+import { slugify as slug, sourceZip } from "./files/exports.ts";
+import { encodeRgbaPng } from "./files/png.ts";
+import type { Screenshot } from "./print/pdf.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
 const SAVE_DEBOUNCE_MS = 500;
@@ -50,7 +54,6 @@ function download(data: Uint8Array, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "game";
 
 function isTextField(t: EventTarget | null) {
   return t instanceof HTMLTextAreaElement || (t instanceof HTMLInputElement && t.type !== "range" && t.type !== "checkbox");
@@ -177,17 +180,52 @@ function Editor() {
 
   // Downloads are always signed, so they boot on a real console. They run on a
   // separate worker so they don't cancel the preview build.
-  const exportRom = async (format: "a78" | "bin") => {
-    setExporting(true);
+  /** A signed build of the current project, on its own worker so the preview isn't cancelled. */
+  const buildSigned = async (): Promise<{ a78: Uint8Array; bin: Uint8Array }> => {
     const exporter = new WorkerBuildService();
     try {
       const r = await exporter.build(project, { sign: true });
-      if (r.kind === "built" && r.signed) download(format === "a78" ? r.a78 : r.bin, `${slug(project.title)}.${format}`);
-      else if (r.kind === "invalid") setError(r.errors.join(" "));
-      else setError("We couldn't build this game for download; your work is saved.");
+      if (r.kind === "built" && r.signed) return { a78: r.a78, bin: r.bin };
+      if (r.kind === "invalid") throw new Error(r.errors.join(" "));
+      throw new Error("We couldn't build this game for download; your work is saved.");
     } finally {
       exporter.dispose();
+    }
+  };
+
+  const exportRom = async (format: "a78" | "bin") => {
+    setExporting(true);
+    try {
+      const rom = await buildSigned();
+      download(format === "a78" ? rom.a78 : rom.bin, `${slug(project.title)}.${format}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
       setExporting(false);
+    }
+  };
+
+  const screenshot = async (): Promise<Screenshot | undefined> => {
+    const emu = emulator.current;
+    if (!emu || !lastGood) return undefined;
+    return { width: 320, height: 240, rgba: await emu.readPixels(0, 0, 320, 240) };
+  };
+
+  const cartridgeFile = async () => {
+    const shot = await screenshot().catch(() => undefined);
+    return writeCartridgeFile(project, shot && encodeRgbaPng(shot.width, shot.height, shot.rgba));
+  };
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const openFile = async (file: File) => {
+    const opened = readCartridgeFile(new Uint8Array(await file.arrayBuffer()), TEMPLATES);
+    if (!opened.result.ok) {
+      setError(`Couldn't open ${file.name}: ${opened.result.errors.join(" ")}`);
+      return;
+    }
+    if (confirm(`Open "${opened.result.project.title}"? The game you're editing will be replaced.`)) {
+      setError(null);
+      load(opened.result.project);
     }
   };
 
@@ -239,6 +277,28 @@ function Editor() {
         </button>
         <button type="button" className="secondary" onClick={redo} disabled={!canRedo} title="Redo (⇧⌘Z)">
           Redo
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept={CARTRIDGE_EXTENSION}
+          hidden
+          aria-label="Open game file"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) void openFile(file);
+          }}
+        />
+        <button type="button" className="secondary" onClick={() => fileInput.current?.click()}>
+          Open…
+        </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={async () => download(await cartridgeFile(), `${slug(project.title)}${CARTRIDGE_EXTENSION}`)}
+        >
+          Save game file
         </button>
         <button
           type="button"
@@ -335,16 +395,23 @@ function Editor() {
               >
                 Download .bin
               </button>
+              <button
+                type="button"
+                className="secondary"
+                title="game.bas and its graphics, for 7800basic"
+                onClick={() => download(sourceZip(project, template), `${slug(project.title)}-source.zip`)}
+                disabled={result?.kind === "invalid"}
+              >
+                Export source
+              </button>
               {exporting && <span className="muted small">Preparing download…</span>}
             </div>
           </section>
           <PrintPanel
             template={template}
-            screenshot={async () => {
-              const emu = emulator.current;
-              if (!emu || !lastGood) return undefined;
-              return { width: 320, height: 240, rgba: await emu.readPixels(0, 0, 320, 240) };
-            }}
+            screenshot={screenshot}
+            buildSigned={buildSigned}
+            cartridgeFile={cartridgeFile}
             onDownload={download}
           />
           <details className="panel code">
