@@ -29,7 +29,8 @@ const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState
 async function dragRule(page: Page, browserName: string, from: number, to: number) {
   const handle = page.locator("li.rule").nth(from).getByRole("button", { name: `Move rule ${from + 1}`, exact: true });
   const target = page.locator("li.rule").nth(to);
-  await handle.scrollIntoViewIfNeeded();
+  // Both rules on screen, away from the edges (the guide can push the list down).
+  await page.locator("li.rule").nth(Math.round((from + to) / 2)).evaluate((el) => el.scrollIntoView({ block: "center" }));
   if (browserName !== "chromium") return handle.dragTo(target);
   const a = (await handle.boundingBox())!;
   const b = (await target.boundingBox())!;
@@ -43,6 +44,7 @@ async function dragRule(page: Page, browserName: string, from: number, to: numbe
 /** Drags across room cells (col, row) on the 20×11 room canvas. */
 async function paint(page: Page, from: [number, number], to: [number, number], button: "left" | "right" = "left") {
   await openTab(page, "Room");
+  await page.getByLabel("Room grid").scrollIntoViewIfNeeded();
   const box = (await page.getByLabel("Room grid").boundingBox())!;
   const at = ([c, r]: [number, number]) => ({ x: box.x + ((c + 0.5) * box.width) / 20, y: box.y + ((r + 0.5) * box.height) / 11 });
   const a = at(from);
@@ -57,7 +59,8 @@ test("starts from a kit preset and plays it", async ({ page }) => {
   await start(page, "Maze");
   await expect(page.getByLabel("Game title")).toHaveValue("Yarn Hunt");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
-  await expect(page.getByTestId("cpu-meter")).toContainText("%");
+  await expect(page.getByTestId("cpu-meter")).toContainText("How busy the game is");
+  await expect(page.getByRole("meter", { name: "How busy the game is" })).toHaveAttribute("aria-valuetext", /Room to spare|Nearly full/);
   // Animation alternates frames every 16 frames: sample across 48.
   const pictures = await page.evaluate(async () => {
     const e = window.__cs!.emulator!;
@@ -91,7 +94,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
   await start(page, "Dodger");
   await page.getByRole("button", { name: "Add a thing" }).click();
   await page.getByLabel("Thing name").fill("Comet");
-  await page.getByLabel("Behaviour").selectOption({ label: "Chases the player" });
+  await page.getByLabel("How it moves").selectOption({ label: "Chases the player" });
   await openTab(page, "Room");
   await page.getByRole("radio", { name: "Paint Comet" }).click();
   const n = await buildCount(page);
@@ -129,7 +132,10 @@ test("the CPU meter stops a game that's too busy", async ({ page }) => {
   await page.getByRole("radio", { name: "Paint Dust ghost" }).click();
   await paint(page, [10, 5], [12, 5]);
   await expect(page.getByTestId("cpu-meter")).toContainText("Too busy");
+  // The meter names the changes that would make it fit.
+  await expect(page.getByTestId("cpu-meter")).toContainText("Dust ghosts out of the room");
   await expect(page.getByTestId("build-errors")).toContainText("too busy for the console", { timeout: 30_000 });
+  await expect(page.getByTestId("build-errors")).toContainText("The meter under the game lists what to take out.");
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 });

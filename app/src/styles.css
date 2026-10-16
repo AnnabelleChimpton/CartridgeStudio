@@ -312,3 +312,43 @@ details.dev { margin-top: 10px; }
 .tv-stage:fullscreen .emu { width: min(100vw, calc(84vh * 4 / 3)); border-radius: 0; }
 .tv-stage:fullscreen .emu:focus-within { box-shadow: none; }
 .tv-stage:fullscreen .emu::after { font-size: 2.4vh; }
+
+/* Getting started (kit editor): three steps, then ideas for the starter. */
+.kit-guide { margin: 8px 8px 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 8px; background: #241f17; }
+.kit-guide:focus { outline: none; }
+.kit-guide:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kit-guide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kit-guide-head h2 { font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; }
+.guide-steps { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.guide-steps li {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 6px 10px; align-items: start;
+  padding: 8px; border-radius: 6px; border: 1px solid var(--line);
+}
+.guide-steps li > button { grid-column: 2; justify-self: start; }
+.guide-steps li.current { background: #2e2719; border-color: var(--accent); }
+.guide-num {
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
+  border: 2px solid var(--field-line); color: var(--text);
+}
+.guide-steps li.current .guide-num { border-color: var(--accent); color: var(--accent); }
+.guide-steps li.done .guide-num { background: var(--ok); border-color: var(--ok); color: #0d1f10; }
+.guide-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.guide-ideas h3 { font-size: 14px; margin: 12px 0 4px; }
+.guide-ideas ul { margin: 0; padding-left: 18px; }
+.guide-ideas li { margin-bottom: 4px; }
+.workspace-tabs button.guide-target { color: var(--text); box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px 6px 0 0; }
+.guide-play .tv-stage { box-shadow: 0 0 0 3px var(--accent); border-radius: 4px; }
+
+/* Empty and broken states: what's missing, and what to do about it. */
+.empty-state { border: 1px dashed var(--field-line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; color: var(--text); }
+.broken { border: 1px solid var(--error); border-radius: 8px; padding: 8px 12px; margin: 6px 0; }
+.broken p { margin: 0 0 4px; }
+.broken ul { margin: 0; padding-left: 18px; }
+.error-help { color: var(--text); }
+.cpu-word.ok { color: var(--ok); }
+.cpu-word.near { color: var(--accent); }
+.cpu-word.over { color: var(--error); }
+.cpu-word { font-weight: 700; }
+.busy-fixes p { margin: 6px 0 4px; }
+.busy-fixes ul { margin: 0; padding-left: 18px; }
+.busy-fixes li { margin-bottom: 4px; }

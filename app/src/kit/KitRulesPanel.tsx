@@ -271,6 +271,12 @@ export function KitRulesPanel() {
       <p role="status" className="visually-hidden">
         {moved}
       </p>
+      {game.rules.length === 0 && (
+        <p className="empty-state" data-testid="rules-empty">
+          No rules yet, so things can move but nothing happens when they meet. Press Add rule to start one, like “When the{" "}
+          {game.types.find(isPlayer)?.label ?? game.types[0]!.label} touches something, add 10 points”.
+        </p>
+      )}
       <ol className="rules" ref={list}>
         {game.rules.map((rule, i) => {
           const n = i + 1;
@@ -334,7 +340,7 @@ export function KitRulesPanel() {
                   <p className="rule-sentence readonly">{ruleSentence(rule, game)}</p>
                 </div>
                 <div className="rule-tools">
-                  <span className="muted small">Uses rule words this editor doesn't know.</span>
+                  <span className="muted small">This rule came from a newer Cartridge Studio, so it can't be changed here. It still works in the game.</span>
                   <span className="spacer" />
                   <button type="button" className="link danger" onClick={() => edit((d) => void d.rules.splice(i, 1))}>
                     Delete rule {n}

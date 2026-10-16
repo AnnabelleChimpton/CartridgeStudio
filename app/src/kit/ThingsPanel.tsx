@@ -81,12 +81,13 @@ export function ThingsPanel({ selected, onSelect }: { selected: string | null; o
           </button>
           {game.types.length >= MAX_TYPES && <span className="muted small">A game can have {MAX_TYPES} kinds of thing.</span>}
         </div>
+        {counts.size === 0 && <p className="empty-state small">None of these are in the room yet. Open the Room tab to put them in.</p>}
       </div>
 
       {thing ? (
         <ThingEditor key={thing.id} thing={thing} onDeleted={() => onSelect(null)} />
       ) : (
-        <p className="muted">Pick a thing to draw it and choose how it moves.</p>
+        <p className="empty-state">Pick a thing on the left to draw it and choose how it moves, or press Add a thing to make a new one.</p>
       )}
     </section>
   );
@@ -138,7 +139,7 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
         <label>
           <span>How it moves</span>
           <select
-            aria-label="Behaviour"
+            aria-label="How it moves"
             value={thing.behaviour}
             onChange={(e) => edit((d) => setBehaviour(d, thing.id, e.target.value as Behaviour))}
           >

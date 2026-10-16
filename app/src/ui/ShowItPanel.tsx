@@ -43,7 +43,7 @@ export function ShowItPanel({ preview, title, print }: Props) {
       const { buildPlayerHtml } = await import("../player/player.ts");
       download(new TextEncoder().encode(await buildPlayerHtml(title, built.a78)), `${slug}.html`);
     } catch (e) {
-      setError(`We couldn't make the game file: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`We couldn't make the game file (${e instanceof Error ? e.message : String(e)}). Try again in a moment; if it keeps happening, reload the page.`);
     } finally {
       setBusy(null);
     }
@@ -69,6 +69,7 @@ export function ShowItPanel({ preview, title, print }: Props) {
           onClick={(e) => (typeof print === "function" ? print() : openFrom("print")(e))}
         />
       </div>
+      {!ready && <p className="muted small">These light up once your game is ready to play.</p>}
       <p className="muted small">
         <button type="button" className="link" onClick={openFrom("tv")}>
           How do I connect a TV?
@@ -149,11 +150,11 @@ function ClipRecorder({
     setState("saving");
     try {
       const { frames, palette } = await emu.stopClip();
-      if (frames.length < 2) throw new Error("Play for a moment first: the clip was empty.");
+      if (frames.length < 2) throw new Error("The clip was empty. Press Make a clip, play for a few seconds, then click it again to save.");
       const { encodeClip } = await import("../files/clip.ts");
       download(encodeClip(frames, { palette, delayMs: (1000 / 60) * CLIP_EVERY }), `${slug}-clip.gif`);
     } catch (e) {
-      onError(e instanceof Error ? e.message : String(e));
+      onError(`We couldn't save the clip (${e instanceof Error ? e.message : String(e)}). Try again.`);
     } finally {
       setState("idle");
       onBusy(false);
@@ -230,7 +231,7 @@ function ConsoleGuide({ preview, slug }: { preview: Preview; slug: string }) {
       const rom = await preview.buildSigned();
       download(format === "a78" ? rom.a78 : rom.bin, `${slug}.${format}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(`${e instanceof Error ? e.message : String(e)} Fix anything listed under the game, then try again.`);
     } finally {
       setBusy(false);
     }
@@ -238,25 +239,26 @@ function ConsoleGuide({ preview, slug }: { preview: Preview; slug: string }) {
   return (
     <div className="guide">
       <p>
-        Your game is a real cartridge program. To play it on an Atari 7800+, 2600+ or an original 7800, the console needs a{" "}
+        Your game is a real cartridge game. To play it on an Atari 7800+, 2600+ or an original 7800, the console needs a{" "}
         <strong>flash cartridge</strong>: a cartridge with a memory card slot that loads game files.
       </p>
       <ol>
         <li>Get a flash cartridge that plays 7800 games. Check that its seller lists 7800 games, not only 2600 ones.</li>
-        <li>Download your game below and copy it onto the cartridge's memory card.</li>
+        <li>Download your game below and copy the file onto the cartridge's memory card.</li>
         <li>Put the cartridge in the console, switch on, and pick your game from the cartridge's menu.</li>
       </ol>
       <div className="toolbar">
         <button type="button" disabled={busy} onClick={() => void get("a78")}>
-          {busy ? "Preparing…" : "Download for a flash cart (.a78)"}
+          {busy ? "Preparing…" : "Download for a flash cartridge (.a78)"}
         </button>
         <button type="button" className="secondary" disabled={busy} onClick={() => void get("bin")}>
-          Plain ROM (.bin)
+          Other kind (.bin)
         </button>
       </div>
       <p className="muted small">
-        Most 7800 flash cartridges read .a78 files; use .bin if your cartridge's instructions ask for it. We test every game in two
-        emulators, but not yet on every console and firmware: if something goes wrong, note which console and cartridge you used.
+        Most flash cartridges want the .a78 file; use the other kind only if your cartridge's instructions ask for a .bin. We test
+        every game on two console simulators, but not yet on every console: if something goes wrong, note which console and cartridge
+        you used and tell us.
       </p>
       {error && <p className="error">{error}</p>}
     </div>

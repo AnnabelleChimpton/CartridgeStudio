@@ -118,7 +118,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
         <button type="button" className="secondary" onClick={() => void run("package")} disabled={busy !== null}>
           {busy === "package" ? "Packing…" : "Download submission package"}
         </button>
-        <span className="muted small">Signed ROMs, this PDF, your game file, source and a checklist, in one ZIP.</span>
+        <span className="muted small">Everything in one zip file: the game for a console, this PDF, your game file, its code and a checklist.</span>
       </div>
       {error && <p className="error">{error}</p>}
     </>

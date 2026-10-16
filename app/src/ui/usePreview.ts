@@ -79,7 +79,7 @@ export function usePreview(source: GameSource) {
         window.__cs!.ready = info;
         setReady(info);
       },
-      (e: unknown) => setError(`The game builder couldn't start: ${String(e)}`),
+      (e: unknown) => setError(`The game builder couldn't start (${String(e)}). Reload the page to try again; your work is saved.`),
     );
     // A canvas can hand its drawing to a worker only once, so each mount gets a fresh one.
     const canvas = document.createElement("canvas");
@@ -128,7 +128,7 @@ export function usePreview(source: GameSource) {
         try {
           await emulator.current?.load(r.a78, "a78");
         } catch (e) {
-          setError(`The preview couldn't start this ROM: ${String(e)}`);
+          setError(`The game couldn't start (${String(e)}). Press Restart, or reload the page; your work is saved.`);
         }
         setLastGood(r);
       } else if (r.kind === "failed") {
@@ -150,7 +150,7 @@ export function usePreview(source: GameSource) {
       const r = await exporter.build(sourceRef.current, { sign: true });
       if (r.kind === "built" && r.signed) return { a78: r.a78, bin: r.bin };
       if (r.kind === "invalid") throw new Error(r.errors.join(" "));
-      throw new Error("We couldn't build this game for download; your work is saved.");
+      throw new Error("We couldn't make the download; your work is saved. Try again, or reload the page.");
     } finally {
       exporter.dispose();
     }
@@ -169,9 +169,9 @@ export function usePreview(source: GameSource) {
       : result?.kind === "built"
         ? "Up to date"
         : result?.kind === "invalid"
-          ? "Needs a fix"
+          ? "Needs a fix: see below"
           : result?.kind === "failed"
-            ? "We couldn't build this game; your work is saved."
+            ? "We couldn't build this game; your work is saved. See below for what to do."
             : "";
 
   const timing = record

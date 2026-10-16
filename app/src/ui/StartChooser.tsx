@@ -26,7 +26,10 @@ export function StartChooser({ onChoose, onCancel }: { onChoose: (c: StartChoice
     <div className={onCancel ? "chooser-backdrop" : "page"} role={onCancel ? "dialog" : undefined} aria-modal={onCancel ? true : undefined} aria-labelledby="chooser-h">
       <div className="chooser">
         <h2 id="chooser-h">What do you want to make?</h2>
-        <p className="muted">Pick a starting game. You can change everything in it: the art, how things move, the room and the rules.</p>
+        <p className="muted">
+          Pick a starting game. You can change everything in it: the art, how things move, the room and the rules. Three short steps
+          will show you how.
+        </p>
         <div className="chooser-grid">
           {KIT_PRESETS.map((p) => (
             <button key={p.id} type="button" className="chooser-card" onClick={() => onChoose({ kind: "kit", preset: p.id })}>

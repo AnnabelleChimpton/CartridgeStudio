@@ -8,6 +8,7 @@ import { useEffect, useId, useState } from "react";
 import { CARTRIDGE_EXTENSION, readCartridgeFile, writeCartridgeFile } from "./files/cartridge-file.ts";
 import { slugify, sourceZip } from "./files/exports.ts";
 import { encodeRgbaPng } from "./files/png.ts";
+import { useGuide } from "./kit/guide.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
 import { useKitStore } from "./kit/store.ts";
@@ -62,6 +63,8 @@ export function App() {
     setChoosing(false);
     if (c.kind === "kit") {
       useKitStore.getState().load(structuredClone(KIT_PRESETS.find((p) => p.id === c.preset)!.game));
+      // A new game from a starter opens with its getting-started guide.
+      useGuide.getState().start(c.preset);
       switchTo("kit");
     } else {
       useProjectStore.getState().load(structuredClone(getTemplate(c.template).sample));
@@ -81,6 +84,7 @@ export function App() {
     setOpenError(null);
     if ("kit" in r) {
       useKitStore.getState().load(r.kit);
+      useGuide.getState().start(null, false);
       switchTo("kit");
     } else {
       useProjectStore.getState().load(r.project);
