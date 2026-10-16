@@ -6,8 +6,7 @@
 // Easier means other things move one speed step slower and the lives counter
 // starts two higher. The player, and what the player shoots, keep their speed.
 //
-// The setting lives on the game as `assist`. The kit schema doesn't list it
-// yet, so loadKit carries it through by hand (see readAssist).
+// The setting lives on the game as `assist` (in the kit schema).
 
 import { livesOf, shootsOf } from "./edit.ts";
 import { isControlled } from "./parts.ts";

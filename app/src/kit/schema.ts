@@ -400,6 +400,8 @@ export const KitGameSchema = z
     code: CodeSchema.optional(),
     /** The print kit's manual: the creator's own text, or null to follow the draft. */
     cartridge: z.object({ manualText: z.string().max(20000).nullable() }).default({ manualText: null }),
+    /** The "easier" assist for younger players, worked by the left difficulty switch (kit/assist.ts). */
+    assist: z.object({ easier: z.boolean() }).strict().optional(),
   })
   .strict();
 export type KitGame = z.infer<typeof KitGameSchema>;

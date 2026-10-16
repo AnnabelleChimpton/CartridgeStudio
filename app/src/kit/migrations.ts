@@ -4,7 +4,7 @@
 // Frozen copies of each old version's presets live in kit/fixtures/v<n>/ and
 // must keep migrating and building (migrations.test.ts).
 
-import { readAssist, setEasier } from "./assist.ts";
+import { readAssist } from "./assist.ts";
 import { BEHAVIOURS, PLAYER_BEHAVIOURS, presetParts, presetRule, type Behaviour } from "./parts.ts";
 import { KIT_VERSION, KitGameSchema, LEVEL, LIVES, SCORE, type KitAction, type KitCompare, type KitCounter, type KitGame, type KitHud, type KitRule, type KitType } from "./schema.ts";
 import { KitGameV1Schema, type KitActionV1, type KitConditionV1, type KitGameV1, type KitRuleV1, type KitTriggerV1, type KitTypeV1 } from "./schema-v1.ts";
@@ -233,10 +233,8 @@ export function loadKit(input: unknown): KitLoad {
     }
     version++;
   }
-  // The easier assist isn't in the (strict) schema yet: take it out for the
-  // parse and put it back after (see assist.ts).
-  const assist = readAssist(game);
-  if (assist) {
+  // A malformed assist (an older build stored it loosely) is dropped rather than damaging the game.
+  if ("assist" in game && !readAssist(game)) {
     game = { ...game };
     delete game.assist;
   }
@@ -244,7 +242,6 @@ export function loadKit(input: unknown): KitLoad {
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((i) => `This game file is damaged (${i.path.join(".")}: ${i.message}).`) };
   }
-  if (assist?.easier) setEasier(parsed.data, true);
   return { ok: true, game: parsed.data, migrated: from !== KIT_VERSION };
 }
 
