@@ -1,6 +1,6 @@
 // The editor's top bar: title, undo/redo, game files and starting a new game.
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 
 function isTextField(t: EventTarget | null) {
@@ -18,9 +18,11 @@ interface Props {
   onOpen: (file: File) => void;
   onSave: () => void;
   onNew: () => void;
+  /** Editor-specific buttons, before Undo (e.g. the kit's guide). */
+  extra?: ReactNode;
 }
 
-export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onOpen, onSave, onNew }: Props) {
+export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onOpen, onSave, onNew, extra }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Undo / redo shortcuts (text fields keep their own undo).
@@ -47,6 +49,7 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
       />
       <span className="muted small">{kind}</span>
       <span className="spacer" />
+      {extra}
       <button type="button" className="secondary" onClick={undo} disabled={!canUndo} title="Undo (⌘Z)">
         Undo
       </button>
@@ -65,10 +68,10 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
           if (file) onOpen(file);
         }}
       />
-      <button type="button" className="secondary" onClick={() => fileInput.current?.click()}>
+      <button type="button" className="secondary" title="Open a game you saved with Save game file" onClick={() => fileInput.current?.click()}>
         Open…
       </button>
-      <button type="button" className="secondary" onClick={onSave}>
+      <button type="button" className="secondary" title="Keep a copy of your game on this computer, to open again or share" onClick={onSave}>
         Save game file
       </button>
       <button type="button" className="secondary" onClick={onNew}>

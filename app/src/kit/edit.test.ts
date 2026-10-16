@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { addCounter, addThing, cellAt, moveRule, paintCell, placements, removeCounter, removeThing, resizeThing, setAnimated, setBehaviour, showCounter } from "./edit.ts";
+import { addCounter, addThing, cellAt, makePlayer, moveRule, paintCell, placements, removeCounter, removeThing, resizeThing, setAnimated, setBehaviour, showCounter } from "./edit.ts";
 import { validateKit } from "./generate.ts";
 import { KIT_PRESETS } from "./presets.ts";
 
@@ -129,5 +129,26 @@ describe("rule sentences", () => {
     expect(lines).toContain("When the level reaches 4: win the game.");
     expect(g.rules.every(editableRule)).toBe(true);
     expect(editableRule({ when: { someday: 1 }, then: [{ win: true }] } as never)).toBe(false);
+  });
+});
+
+describe("makePlayer", () => {
+  it("gives the player the thing's look, and keeps rules, room and movement as they were", () => {
+    const g = preset("maze");
+    const before = structuredClone(g);
+    const ghost = g.types.find((t) => t.id === "ghost")!;
+    const look = { label: ghost.label, frames: ghost.frames, palette: ghost.palette };
+    expect(makePlayer(g, "ghost")).toBe("cat");
+    const cat = g.types.find((t) => t.id === "cat")!;
+    expect({ label: cat.label, frames: cat.frames, palette: cat.palette }).toEqual(look);
+    expect(cat.behaviour).toBe("player-4way");
+    expect(g.types.find((t) => t.id === "ghost")!.label).toBe("Cat");
+    expect(g.rules).toEqual(before.rules);
+    expect(g.room).toEqual(before.room);
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+  });
+
+  it("does nothing for the player itself", () => {
+    expect(makePlayer(preset("maze"), "cat")).toBeNull();
   });
 });

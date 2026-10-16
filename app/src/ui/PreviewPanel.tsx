@@ -5,15 +5,20 @@ import { useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { download, type Preview } from "./usePreview.ts";
 
+/** How to play, in the editor and on the TV alike. */
+const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to fire. Esc to stop playing.";
+
 interface Props {
   preview: Preview;
   title: string;
-  /** Shown under the game, e.g. the console-time meter. */
+  /** Shown under the game, e.g. the kit's busy meter. */
   meter?: ReactNode;
   extraDownloads?: ReactNode;
+  /** A build error in plain words, and what to do about it when the error itself doesn't say. */
+  explainError?: (error: string) => { text: string; help: string | null };
 }
 
-export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
+export function PreviewPanel({ preview, title, meter, extraDownloads, explainError }: Props) {
   const { emuContainer, stage, enterTv, emulator, result, lastGood, status, timing, error, setError, buildSigned } = preview;
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -26,7 +31,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
       const rom = await buildSigned();
       download(format === "a78" ? rom.a78 : rom.bin, `${slugify(title)}.${format}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(`${e instanceof Error ? e.message : String(e)} Fix anything listed under the game, then try again.`);
     } finally {
       setExporting(false);
     }
@@ -41,7 +46,7 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
         </p>
         <div ref={emuContainer} className="emu" />
         <p className="tv-hint" aria-hidden="true">
-          Joystick or arrow keys to move · Fire button or Space · Esc to leave
+          {PLAY_HINT}
         </p>
       </div>
       <div className="emu-controls">
@@ -73,18 +78,43 @@ export function PreviewPanel({ preview, title, meter, extraDownloads }: Props) {
           Full screen
         </button>
         <span className="hint" id="emu-hint">
-          Arrows move, Space fires, Tab leaves. Gamepads work too.
+          {PLAY_HINT}
         </span>
       </div>
       <p className={`status ${result?.kind ?? ""}`} data-testid="build-status" role="status">
         {status}
       </p>
       {result?.kind === "invalid" && (
-        <ul className="errors" data-testid="build-errors">
-          {result.errors.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
+        <>
+          <p className="small">
+            {lastGood ? "The game keeps running the last version that worked. To play your changes, fix " : "To play the game, fix "}
+            {result.errors.length > 1 ? "these" : "this"}:
+          </p>
+          <ul className="errors" data-testid="build-errors">
+            {result.errors.map((e) => {
+              const { text, help } = explainError?.(e) ?? { text: e, help: null };
+              return (
+                <li key={e}>
+                  {text}
+                  {help && <span className="error-help"> {help}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+      {result?.kind === "failed" && (
+        <div className="broken small" data-testid="build-failed">
+          <p>
+            Something went wrong on our side, not yours. Your work is saved
+            {lastGood ? " and the game keeps running the last version that worked." : "."}
+          </p>
+          <ul>
+            <li>Press Undo to take back your last change, and the game should build again.</li>
+            <li>If it still doesn't, reload the page: your game comes back as you left it.</li>
+            <li>To help us fix it, use Save game file and send us the file with the details below.</li>
+          </ul>
+        </div>
       )}
       {result?.kind === "failed" && (
         <details className="small">

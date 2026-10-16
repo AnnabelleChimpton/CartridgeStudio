@@ -195,6 +195,7 @@ export function KitRulesPanel() {
   const [moved, setMoved] = useState("");
   const focusAfterMove = useRef<number | null>(null);
   const list = useRef<HTMLOListElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (focusAfterMove.current === null) return;
@@ -258,6 +259,17 @@ export function KitRulesPanel() {
     />
   );
 
+  /** Deletes a rule, says so, and puts focus on the rule that took its place (or Add rule), not on the page. */
+  const deleteRule = (i: number) => {
+    const left = game.rules.length - 1;
+    edit((d) => void d.rules.splice(i, 1));
+    setMoved(`Rule ${i + 1} deleted. Undo brings it back.`);
+    requestAnimationFrame(() => {
+      const next = left > 0 ? list.current?.querySelector<HTMLElement>(`[data-rule-handle="${Math.min(i, left - 1)}"]`) : null;
+      (next ?? addButton.current)?.focus();
+    });
+  };
+
   return (
     <section className="panel" aria-labelledby="kit-rules-h">
       <h2 id="kit-rules-h" className="visually-hidden">Rules</h2>
@@ -271,6 +283,12 @@ export function KitRulesPanel() {
       <p role="status" className="visually-hidden">
         {moved}
       </p>
+      {game.rules.length === 0 && (
+        <p className="empty-state" data-testid="rules-empty">
+          No rules yet, so things can move but nothing happens when they meet. Press Add rule to start one, like “When the{" "}
+          {game.types.find(isPlayer)?.label ?? game.types[0]!.label} touches something, add 10 points”.
+        </p>
+      )}
       <ol className="rules" ref={list}>
         {game.rules.map((rule, i) => {
           const n = i + 1;
@@ -334,9 +352,9 @@ export function KitRulesPanel() {
                   <p className="rule-sentence readonly">{ruleSentence(rule, game)}</p>
                 </div>
                 <div className="rule-tools">
-                  <span className="muted small">Uses rule words this editor doesn't know.</span>
+                  <span className="muted small">This rule came from a newer Cartridge Studio, so it can't be changed here. It still works in the game.</span>
                   <span className="spacer" />
-                  <button type="button" className="link danger" onClick={() => edit((d) => void d.rules.splice(i, 1))}>
+                  <button type="button" className="link danger" onClick={() => deleteRule(i)}>
                     Delete rule {n}
                   </button>
                 </div>
@@ -615,7 +633,7 @@ export function KitRulesPanel() {
                   </button>
                 )}
                 <span className="spacer" />
-                <button type="button" className="link danger" onClick={() => edit((d) => void d.rules.splice(i, 1))}>
+                <button type="button" className="link danger" onClick={() => deleteRule(i)}>
                   Delete rule {n}
                 </button>
               </div>
@@ -624,6 +642,7 @@ export function KitRulesPanel() {
         })}
       </ol>
       <button
+        ref={addButton}
         type="button"
         className="secondary"
         disabled={game.rules.length >= 16 || game.types.length === 0}

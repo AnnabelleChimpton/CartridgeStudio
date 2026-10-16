@@ -3,13 +3,16 @@
 
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
 import { SOUND_LIBRARY } from "../project/templates.ts";
+import { useId, useState } from "react";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
+import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import {
   BEHAVIOUR_LABELS,
   SPEED_LABELS,
   addThing,
   isPlayer,
+  makePlayer,
   placements,
   removeThing,
   resizeThing,
@@ -57,7 +60,14 @@ function asSprite(t: KitType) {
   };
 }
 
-export function ThingsPanel({ selected, onSelect }: { selected: string | null; onSelect: (id: string | null) => void }) {
+interface Props {
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+  /** Opens the room with this thing's brush picked. */
+  onPlace: (id: string) => void;
+}
+
+export function ThingsPanel({ selected, onSelect, onPlace }: Props) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
   const counts = new Map<number, number>();
@@ -105,18 +115,38 @@ export function ThingsPanel({ selected, onSelect }: { selected: string | null; o
           </button>
           {game.types.length >= MAX_TYPES && <span className="muted small">A game can have {MAX_TYPES} kinds of thing.</span>}
         </div>
+        {counts.size === 0 && <p className="empty-state small">None of these are in the room yet. Open the Room tab to put them in.</p>}
       </div>
 
       {thing ? (
-        <ThingEditor key={thing.id} thing={thing} onDeleted={() => onSelect(null)} />
+        <ThingEditor
+          key={thing.id}
+          thing={thing}
+          placed={counts.get(game.types.indexOf(thing)) ?? 0}
+          onDeleted={() => onSelect(null)}
+          onPlace={() => onPlace(thing.id)}
+          onSelect={onSelect}
+        />
       ) : (
-        <p className="muted">Pick a thing to draw it and choose how it moves.</p>
+        <p className="empty-state">Pick a thing on the left to draw it and choose how it moves, or press Add a thing to make a new one.</p>
       )}
     </section>
   );
 }
 
-function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => void }) {
+function ThingEditor({
+  thing,
+  placed,
+  onDeleted,
+  onPlace,
+  onSelect,
+}: {
+  thing: KitType;
+  placed: number;
+  onDeleted: () => void;
+  onPlace: () => void;
+  onSelect: (id: string) => void;
+}) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
   const index = game.types.findIndex((t) => t.id === thing.id);
@@ -124,6 +154,10 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
   const sharedWith = paletteUsers(game, thing);
   const canSplit = game.palettes.length < MAX_PALETTES;
   const others = game.types.filter((t) => t.id !== thing.id);
+  const player = game.types.find(isPlayer);
+  const [deleting, setDeleting] = useState(false);
+  const ids = useId();
+  const launchedBy = game.types.find((t) => t.shoots === thing.id || t.drops?.type === thing.id);
   const change = (recipe: (t: KitType) => void, key?: string) =>
     edit((d) => {
       const t = d.types.find((x) => x.id === thing.id);
@@ -134,7 +168,6 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
     <label>
       <span>Shoots</span>
       <select
-        aria-label="Shoots"
         value={thing.shoots ?? ""}
         onChange={(e) => change((t) => (e.target.value ? (t.shoots = e.target.value) : delete t.shoots))}
       >
@@ -149,8 +182,8 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
   );
 
   const sizeField = (
-    <label>
-      <span>Size</span>
+    <div className="field" role="group" aria-labelledby={`${ids}-size`}>
+      <span id={`${ids}-size`}>Size</span>
       <span className="inline">
         <select
           aria-label="Width"
@@ -175,16 +208,46 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
           ))}
         </select>
       </span>
-    </label>
+    </div>
   );
 
   return (
     <div className="thing-editor">
+      {(placed === 0 || !isPlayer(thing)) && (
+        <div className="thing-actions">
+          {placed === 0 &&
+            (launchedBy ? (
+              <span className="muted small">
+                {launchedBy.shoots === thing.id ? `Appears when ${launchedBy.label} shoots.` : `Appears when ${launchedBy.label} drops one.`}
+              </span>
+            ) : (
+              <>
+                <span className="small">None in the room yet.</span>
+                <button type="button" className="secondary" onClick={onPlace}>
+                  Put it in the room
+                </button>
+              </>
+            ))}
+          {!isPlayer(thing) && (
+            <button
+              type="button"
+              className="secondary"
+              title={player ? `${thing.label} takes over as the hero, and ${player.label}'s look moves here` : undefined}
+              onClick={() => {
+                let id: string | null = null;
+                edit((d) => void (id = makePlayer(d, thing.id)));
+                if (id) onSelect(id);
+              }}
+            >
+              Make this my player
+            </button>
+          )}
+        </div>
+      )}
       <div className="field-grid">
         <label>
           <span>Name</span>
           <input
-            aria-label="Thing name"
             value={thing.label}
             maxLength={30}
             onChange={(e) => change((t) => void (t.label = e.target.value || "Thing"), `label:${thing.id}`)}
@@ -193,7 +256,6 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
         <label>
           <span>How it moves</span>
           <select
-            aria-label="Behaviour"
             value={thing.behaviour}
             onChange={(e) => edit((d) => setBehaviour(d, thing.id, e.target.value as Behaviour))}
           >
@@ -277,7 +339,7 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
         <div className="field-grid">
           <label>
             <span>Speed</span>
-            <select aria-label="Speed" value={thing.speed} onChange={(e) => change((t) => void (t.speed = Number(e.target.value)))}>
+            <select value={thing.speed} onChange={(e) => change((t) => void (t.speed = Number(e.target.value)))}>
               {[1, 2, 3, 4].map((s) => (
                 <option key={s} value={s}>
                   {SPEED_LABELS[s]}
@@ -286,11 +348,11 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
             </select>
           </label>
           {!isPlayer(thing) && sizeField}
-          <label>
-            <span>Drops</span>
+          <div className="field" role="group" aria-labelledby={`${ids}-drops`}>
+            <span id={`${ids}-drops`}>Drops</span>
             <span className="inline">
               <select
-                aria-label="Drops"
+                aria-label="What it drops"
                 value={thing.drops?.type ?? ""}
                 onChange={(e) =>
                   change((t) =>
@@ -321,21 +383,29 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
                 />
               )}
             </span>
-          </label>
+          </div>
         </div>
         <div className="toolbar">
           <button
             type="button"
             className="secondary danger"
-            onClick={() => {
-              if (confirm(`Delete "${thing.label}"? It's removed from the room and from any rules that mention it.`)) {
-                edit((d) => removeThing(d, thing.id));
-                onDeleted();
-              }
-            }}
+            onClick={() => setDeleting(true)}
           >
             Delete {thing.label}
           </button>
+          {deleting && (
+            <ConfirmDialog
+              title={`Delete “${thing.label}”?`}
+              message="It's taken out of the room and out of any rules that mention it. Undo brings it back."
+              yes={`Delete ${thing.label}`}
+              danger
+              onClose={() => setDeleting(false)}
+              onYes={() => {
+                edit((d) => removeThing(d, thing.id));
+                onDeleted();
+              }}
+            />
+          )}
         </div>
       </details>
     </div>

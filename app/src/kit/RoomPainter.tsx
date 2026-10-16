@@ -2,7 +2,7 @@
 // cell is 8×16 game pixels, which on screen is square (160A pixels are wide).
 // A drag is one undo step.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { linePoints } from "../sprite/pixels.ts";
 import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
@@ -86,15 +86,16 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, 
   if (cursor) drawCursor(ctx, cursor[0] * CELL, cursor[1] * CELL, CELL, CELL);
 }
 
-export function RoomPainter() {
+/** The brush lives with the editor, so other tabs can pick one ("Put it in the room"). */
+export function RoomPainter({ brush, setBrush }: { brush: Brush; setBrush: (b: Brush) => void }) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
-  const [brush, setBrush] = useState<Brush>("wall");
   const canvas = useRef<HTMLCanvasElement>(null);
   const stroke = useRef<{ key: string; last: readonly [number, number]; brush: Brush } | null>(null);
 
+  const placed = placements(game);
   const perRow = new Map<number, number>();
-  for (const p of placements(game)) perRow.set(p.row, (perRow.get(p.row) ?? 0) + 1);
+  for (const p of placed) perRow.set(p.row, (perRow.get(p.row) ?? 0) + 1);
   const busyRows = new Set([...perRow].filter(([, n]) => n > ZONE_BUDGET).map(([r]) => r));
 
   const brushes: { id: Brush; label: string }[] = [
@@ -142,6 +143,12 @@ export function RoomPainter() {
   return (
     <section className="panel" aria-labelledby="room-h">
       <h2 id="room-h">Room</h2>
+      {placed.length === 0 && (
+        <p className="empty-state" data-testid="room-empty">
+          The room is empty, so there's nothing to play yet. Pick one of your things below, like {game.types.find(isPlayer)?.label ?? game.types[0]!.label}, and
+          click a square to put it there.
+        </p>
+      )}
       <div className="se-toolbar brushes" role="radiogroup" aria-label="Brush" onKeyDown={arrowKeys("radio")}>
         {brushes.map((b) => {
           const t = game.types.find((x) => x.id === b.id);
@@ -210,7 +217,7 @@ export function RoomPainter() {
       <p className="muted small">
         Drag to paint; right-click erases. Things start in the square you put them in.
         {busyRows.size > 0 && (
-          <span className="error"> Rows in red have more than {ZONE_BUDGET} things side by side.</span>
+          <span className="error"> Rows in red have more than {ZONE_BUDGET} things side by side: move some up or down a row.</span>
         )}
       </p>
     </section>

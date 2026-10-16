@@ -82,7 +82,7 @@ test("kit games print a box and manual, and pack a submission with source", asyn
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(pdf.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
 
-  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download submission package" }).click());
+  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download everything" }).click());
   const names = Object.keys(unzipSync(new Uint8Array(pkg.bytes))).map((n) => n.replace("ghost-panic-submission/", ""));
   expect(names).toEqual(
     expect.arrayContaining(["CHECKLIST.txt", "rom/ghost-panic.a78", "rom/ghost-panic.bin", "print/ghost-panic-print.pdf", "project/ghost-panic.cartridge", "source/game.bas"]),

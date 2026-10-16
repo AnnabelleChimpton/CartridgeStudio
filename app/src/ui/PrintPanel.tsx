@@ -105,7 +105,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
       <div className="toolbar">
         <label className="print-paper">
           <span className="muted small">Paper</span>
-          <select aria-label="Paper size" value={paper} onChange={(e) => choosePaper(e.target.value as Paper)}>
+          <select value={paper} onChange={(e) => choosePaper(e.target.value as Paper)}>
             <option value="letter">US Letter</option>
             <option value="a4">A4</option>
           </select>
@@ -116,9 +116,9 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
       </div>
       <div className="toolbar">
         <button type="button" className="secondary" onClick={() => void run("package")} disabled={busy !== null}>
-          {busy === "package" ? "Packing…" : "Download submission package"}
+          {busy === "package" ? "Packing…" : "Download everything"}
         </button>
-        <span className="muted small">Signed ROMs, this PDF, your game file, source and a checklist, in one ZIP.</span>
+        <span className="muted small">Everything in one zip file: the game for a console, this PDF, your game file, its code and a checklist.</span>
       </div>
       {error && <p className="error">{error}</p>}
     </>
