@@ -3,6 +3,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { colorName } from "../src/ui/ntsc.ts";
 
 async function start(page: Page, choice: RegExp) {
   await page.goto("/");
@@ -128,7 +129,10 @@ test("sprites can be drawn from the keyboard", async ({ page }) => {
   await page.keyboard.press("Enter");
   const thing = await page.evaluate(() => window.__cs!.kitStore!.getState().project.types[0]!);
   expect(thing.frames[0]![0]![1]).toBe("3");
-  await expect(page.getByText("Column 2, row 1: Color 3")).toBeAttached();
+  // The cursor says the pixel's color by name, not by number.
+  const project = await game(page);
+  const name = colorName(project.palettes.find((p) => p.id === thing.palette)!.colors[2]!);
+  await expect(page.getByText(`Column 2, row 1: ${name}`, { exact: true })).toBeAttached();
 
   // The color group is one Tab stop; arrows move within it.
   await page.getByRole("radio", { name: "Color 3" }).focus();

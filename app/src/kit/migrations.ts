@@ -4,6 +4,7 @@
 // Frozen copies of each old version's presets live in kit/fixtures/v<n>/ and
 // must keep migrating and building (migrations.test.ts).
 
+import { readAssist, setEasier } from "./assist.ts";
 import { KIT_VERSION, KitGameSchema, type KitGame } from "./schema.ts";
 
 type Migration = (game: Record<string, unknown>) => Record<string, unknown>;
@@ -38,5 +39,7 @@ export function loadKit(input: unknown): KitLoad {
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((i) => `This game file is damaged (${i.path.join(".")}: ${i.message}).`) };
   }
+  // Not in the schema yet, so the parse drops it; keep it (see assist.ts).
+  if (readAssist(game)?.easier) setEasier(parsed.data, true);
   return { ok: true, game: parsed.data, migrated: from !== KIT_VERSION };
 }

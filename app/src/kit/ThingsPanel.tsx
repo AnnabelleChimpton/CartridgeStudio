@@ -19,6 +19,8 @@ import {
   setAnimated,
   setBehaviour,
 } from "./edit.ts";
+import { thingContrast } from "./contrast.ts";
+import { ContrastNotes } from "./ContrastNotes.tsx";
 import { BEHAVIOURS, MAX_TYPES, type Behaviour, type KitGame, type KitType } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
@@ -333,6 +335,7 @@ function ThingEditor({
           {sharedWith.length > 0 && <span className="muted small">Shared with {sharedWith.join(", ")}.</span>}
         </div>
       )}
+      {palette && <ContrastNotes warnings={[thingContrast(game, thing)].filter((w) => w !== null)} id="thing-contrast" />}
 
       <details className="more">
         <summary>More options</summary>
