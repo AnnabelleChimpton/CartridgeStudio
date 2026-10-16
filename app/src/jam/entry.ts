@@ -24,6 +24,8 @@ export interface EntryInput {
   /** The .cartridge game file, when the game has one; its thumbnail becomes the entry's. */
   cartridge?: Uint8Array;
   clip?: Uint8Array | null;
+  /** tests.json, when the game has creator tests. */
+  tests?: Uint8Array;
 }
 
 export const entryTitle = (words: EntryWords, gameTitle: string) => words.title.trim() || gameTitle.trim() || "My game";
@@ -50,7 +52,7 @@ ${m.credits ? `\nBy ${m.credits}\n` : ""}${m.description ? `\n${m.description}\n
   rom/             signed ROMs: .a78 for emulators and flash carts, .bin for flash carts
   project/         the game file; open it in Cartridge Studio to see how it's made
   media/           a screenshot, and a clip if there is one
-  manifest.json    these details, the licence and the build, for the jam's gallery builder
+${m.files.tests ? "  tests.json       the creator's own checks: joystick input from power-on, and what should be true after it\n" : ""}  manifest.json    these details, the licence and the build, for the jam's gallery builder
 
 Made with Cartridge Studio. Not affiliated with or endorsed by Atari.
 `;
@@ -80,6 +82,7 @@ export async function jamEntryZip(i: EntryInput): Promise<{ zip: Uint8Array; man
     player: i.player,
     cartridgeFile: i.cartridge,
     clip: i.clip,
+    tests: i.tests,
     jam,
   };
   const first = await packageZip({ ...base, notes: { name: "README.txt", text: "" } });

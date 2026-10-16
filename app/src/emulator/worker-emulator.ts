@@ -4,7 +4,7 @@
 // Space and Z keep working everywhere else on the page (WCAG 2.1.4).
 
 import type { Emulator, JoystickState } from "./emulator.ts";
-import type { EmuRequest, EmuResponse } from "./protocol.ts";
+import type { EmuRequest, EmuResponse, Peek, Recording } from "./protocol.ts";
 
 const CORE_URL = () => new URL(`${import.meta.env.BASE_URL}vendor/js7800-core/js7800-core.js`, location.href).href;
 const WORKLET_URL = () => new URL(`${import.meta.env.BASE_URL}audio/emulator-audio.worklet.js`, location.href).href;
@@ -161,6 +161,21 @@ export class WorkerEmulator implements Emulator {
   stopClip(): Promise<{ frames: Uint8Array[]; palette: number[] }> {
     this.clipFullListeners.clear();
     return this.request({ type: "clip-stop", id: this.nextId++ });
+  }
+
+  /** Reads several ranges of memory in one round trip (the debugger's watch list and object table). */
+  peek(ranges: [address: number, length: number][]): Promise<Peek> {
+    return this.request({ type: "peek", id: this.nextId++, ranges });
+  }
+
+  /** Restarts the game from power-on and records the joystick from there (a creator test). */
+  startRecording(): Promise<void> {
+    return this.request({ type: "record-start", id: this.nextId++ });
+  }
+
+  /** Stops recording. Null if there was none, or a new build ended it. */
+  stopRecording(): Promise<Recording | null> {
+    return this.request({ type: "record-stop", id: this.nextId++ });
   }
 
   setMuted(muted: boolean) {

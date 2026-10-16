@@ -16,6 +16,8 @@ export interface SourceFolderInput {
   symbols?: string;
   /** The game file, to keep editing in Cartridge Studio. */
   cartridge?: { name: string; bytes: Uint8Array };
+  /** tests.json, when the game has creator tests. */
+  tests?: Uint8Array;
 }
 
 const GENERATED_NOTE = /Do not edit; regenerate from the project\./;
@@ -24,19 +26,20 @@ export const YOURS_TO_EDIT = "Yours to edit: this copy no longer follows the pro
 /** The generated header says "Do not edit"; a copy that leaves the app says the opposite. */
 export const yoursToEdit = (source: string) => source.replace(GENERATED_NOTE, YOURS_TO_EDIT);
 
-export function sourceFolder({ title, madeFrom, files, symbols, cartridge }: SourceFolderInput): Record<string, Uint8Array> {
+export function sourceFolder({ title, madeFrom, files, symbols, cartridge, tests }: SourceFolderInput): Record<string, Uint8Array> {
   const source = yoursToEdit(strFromU8(files["game.bas"]!));
   const out: Record<string, Uint8Array> = { ...files, "game.bas": strToU8(source) };
-  out["README.txt"] = strToU8(readme(title || "Untitled", madeFrom, cartridge?.name));
+  out["README.txt"] = strToU8(readme(title || "Untitled", madeFrom, cartridge?.name, !!tests));
   out["PITFALLS.txt"] = strToU8(PITFALLS);
   out["build.sh"] = strToU8(BUILD_SH);
   out["build.bat"] = strToU8(BUILD_BAT.replace(/\n/g, "\r\n"));
   out["RUNTIME.txt"] = strToU8(runtimeMap(source, symbols));
   if (cartridge) out[cartridge.name] = cartridge.bytes;
+  if (tests) out["tests.json"] = tests;
   return out;
 }
 
-function readme(title: string, madeFrom: string, cartridge?: string): string {
+function readme(title: string, madeFrom: string, cartridge?: string, tests = false): string {
   return `${title} - source
 ${"=".repeat(title.length + 9)}
 
@@ -47,7 +50,7 @@ Made with Cartridge Studio from ${madeFrom}.
   build.sh       builds it on macOS and Linux
   build.bat      builds it on Windows
   RUNTIME.txt    the program's labels, variables and memory map
-  PITFALLS.txt   things 7800basic ${TOOLCHAIN_NAME.split(" ")[1]} gets wrong, and how to avoid them${cartridge ? `\n  ${cartridge.padEnd(14)} open it in Cartridge Studio to keep editing there` : ""}
+  PITFALLS.txt   things 7800basic ${TOOLCHAIN_NAME.split(" ")[1]} gets wrong, and how to avoid them${tests ? "\n  tests.json     your checks: joystick input from power-on, then what should be true;\n                 variables are named by dasm symbol in its \"watch\" map" : ""}${cartridge ? `\n  ${cartridge.padEnd(14)} open it in Cartridge Studio to keep editing there` : ""}
 
 To build it, install ${TOOLCHAIN_NAME}
 (${TOOLCHAIN_URL})

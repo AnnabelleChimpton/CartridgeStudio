@@ -16,7 +16,26 @@ export type EmuRequest =
   /** Stops a clip; replies with its frames and the palette (RGB triples). */
   | { type: "clip-stop"; id: number }
   /** Test hook (window.__cs): the next frame throws, to exercise fault recovery. */
-  | { type: "inject-fault" };
+  | { type: "inject-fault" }
+  /** Reads several ranges of memory at once; replies with a Peek. */
+  | { type: "peek"; id: number; ranges: [address: number, length: number][] }
+  /** Reloads the ROM from power-on and records the joystick from there, frame by frame. */
+  | { type: "record-start"; id: number }
+  /** Stops recording; replies with the Recording. */
+  | { type: "record-stop"; id: number };
+
+/** Memory read in one go, with the frame it was read after. */
+export interface Peek {
+  frame: number;
+  /** One array per requested range, in order. */
+  bytes: Uint8Array[];
+}
+
+/** Joystick input from power-on: runs of frames with the same controls held. */
+export interface Recording {
+  frames: number;
+  runs: { hold: (keyof JoystickInput)[]; frames: number }[];
+}
 
 export type EmuResponse =
   | { type: "ready" }

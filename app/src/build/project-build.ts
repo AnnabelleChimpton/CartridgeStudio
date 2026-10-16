@@ -32,6 +32,8 @@ export type ProjectBuildResult =
       /** Only signed ROMs pass the console's cartridge check; previews skip signing. */
       signed: boolean;
       symbols: string;
+      /** dasm's assembly listing, when the build asked for one. */
+      listing?: string;
       source: string;
       /** The toolchain's report (ROM space left and so on); absent for older cached ROMs. */
       log?: string;
@@ -48,13 +50,15 @@ export type ProjectBuildResult =
 export interface BuildOptions {
   /** Sign the ROM (default true). Previews pass false; downloads must be signed. */
   sign?: boolean;
+  /** Ask dasm for its listing too (the debugger). Such builds skip the ROM cache, which doesn't keep listings. */
+  listing?: boolean;
 }
 
 export async function buildProject(
   builder: Builder,
   project: GameSource,
   cache?: RomCache,
-  { sign = true }: BuildOptions = {},
+  { sign = true, listing = false }: BuildOptions = {},
 ): Promise<ProjectBuildResult> {
   const t0 = performance.now();
   const gen = isCodeProject(project)
@@ -66,6 +70,7 @@ export async function buildProject(
   const timings = (buildMs: number) => ({ generateMs, buildMs, totalMs: performance.now() - t0 });
   if (!gen.ok) return { kind: "invalid", errors: gen.errors, ...timings(0) };
   const input = { ...gen.input, sign };
+  if (listing) cache = undefined;
 
   const key = await cacheKey(input, builder.toolchainVersion);
   const hit = await cache?.get(key);
@@ -75,7 +80,7 @@ export async function buildProject(
   }
 
   const t1 = performance.now();
-  const r = await builder.build(input);
+  const r = await builder.build(listing ? { ...input, listing } : input);
   const buildMs = performance.now() - t1;
   if (!r.ok) {
     return { kind: "failed", stage: r.stage, message: r.message, log: r.log, source: input.source, ...timings(buildMs) };
@@ -88,6 +93,7 @@ export async function buildProject(
     bin: r.bin,
     signed: r.signed,
     symbols: r.symbols,
+    ...(r.listing === undefined ? {} : { listing: r.listing }),
     source: input.source,
     log: r.log,
     stats: buildStats(r.log),

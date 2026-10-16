@@ -15,6 +15,8 @@ export interface BuildInput {
    * previews can skip it. Anything a creator downloads must be signed.
    */
   sign?: boolean;
+  /** Also ask dasm for its assembly listing (`-l`). It's large, so only on request. */
+  listing?: boolean;
 }
 
 export interface StageTiming {
@@ -31,6 +33,8 @@ export interface BuildSuccess {
   signed: boolean;
   /** dasm symbol table, for reading RAM addresses in tests. */
   symbols: string;
+  /** dasm's assembly listing, when `listing` was asked for. */
+  listing?: string;
   log: string;
   timings: StageTiming[];
   totalMs: number;

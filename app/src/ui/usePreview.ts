@@ -10,6 +10,7 @@ import type { Screenshot } from "../print/pdf.ts";
 import type { useKitStore } from "../kit/store.ts";
 import type { useCodeStore } from "../code/store.ts";
 import { isCodeProject } from "../code/schema.ts";
+import { parseBuildLog } from "../code/build-log.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
 /** In TV mode, holding Select this long leaves (a short press plays again). */
@@ -199,6 +200,24 @@ export function usePreview(source: GameSource) {
     }
   };
 
+  /** dasm's listing of the current game, from a build of its own (the preview keeps running). */
+  const buildListing = async (): Promise<string> => {
+    const lister = new WorkerBuildService({ timeoutMs: 30_000 });
+    try {
+      const r = await lister.build(sourceRef.current, { sign: false, listing: true });
+      if (r.kind === "built" && r.listing !== undefined) return r.listing;
+      if (r.kind === "invalid") throw new Error(r.errors.join(" "));
+      if (r.kind === "failed") {
+        const p = parseBuildLog(r.log).find((x) => x.severity === "error");
+        const where = p ? `${p.line !== undefined ? `, line ${p.line}` : ""}: ${p.message}` : `: ${r.message}`;
+        throw new Error(`No listing: ${r.stage} stopped${where}. Fix game.bas, then make the listing again.`);
+      }
+      throw new Error("The listing build was cancelled. Try again.");
+    } finally {
+      lister.dispose();
+    }
+  };
+
   const screenshot = async (): Promise<Screenshot | undefined> => {
     const emu = emulator.current;
     if (!emu || !lastGood) return undefined;
@@ -320,6 +339,7 @@ export function usePreview(source: GameSource) {
     emuFault,
     restartPreview,
     buildSigned,
+    buildListing,
     screenshot,
   };
 }

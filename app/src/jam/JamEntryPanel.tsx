@@ -17,6 +17,8 @@ interface Props {
   gameTitle: string;
   /** The .cartridge game file, with its thumbnail; games without one leave it out. */
   cartridgeFile?: () => Promise<Uint8Array>;
+  /** tests.json, when the game has creator tests. */
+  tests?: () => Uint8Array | undefined;
   /** For the brief's limits. */
   facts: GameFacts;
   /** The runtime and toolchain that build this game, for the manifest. */
@@ -26,7 +28,7 @@ interface Props {
 
 type TextKey = "title" | "credits" | "description" | "controls";
 
-export function JamEntryPanel({ preview, gameTitle, cartridgeFile, facts, runtime, toolchain }: Props) {
+export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts, runtime, toolchain }: Props) {
   const brief = useJamStore((s) => s.brief);
   const words = useJamStore((s) => s.words);
   const clip = useRecentClip((s) => s.gif);
@@ -60,6 +62,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, facts, runtim
         bin: rom.bin,
         cartridge,
         clip,
+        tests: tests?.(),
       });
       download(entry.zip, entry.name);
       setDone(entry.name);

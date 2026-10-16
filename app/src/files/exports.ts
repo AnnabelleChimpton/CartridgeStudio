@@ -19,7 +19,7 @@ const MTIME = new Date("2026-01-01T00:00:00Z");
 export const slugify = (title: string) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "game";
 
-export type SourceExtras = Pick<SourceFolderInput, "symbols" | "cartridge">;
+export type SourceExtras = Pick<SourceFolderInput, "symbols" | "cartridge" | "tests">;
 
 /** The source folder (code/export.ts): game.bas, its PNGs, build scripts and notes (paths relative to the folder). */
 export function sourceFiles(project: Project, template: Template, extras: SourceExtras = {}): Record<string, Uint8Array> {

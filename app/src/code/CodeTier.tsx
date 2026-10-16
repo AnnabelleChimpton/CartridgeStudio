@@ -40,11 +40,13 @@ interface Props {
   onEject: () => void;
   /** Extra stats for this kind of game (the kit's console-time meter). */
   meter?: ReactNode;
+  /** The debugger drawer and the creator tests, under the code. */
+  tools?: ReactNode;
 }
 
 const describe = (ranges: LineRange[]) => ranges.map((r) => (r.from === r.to ? `line ${r.from}` : `lines ${r.from}–${r.to}`)).join(", ");
 
-export function CodeTier({ preview, title, jumps, selected, onSelect, changed, graphics, onExportSource, onEject, meter }: Props) {
+export function CodeTier({ preview, title, jumps, selected, onSelect, changed, graphics, onExportSource, onEject, meter, tools }: Props) {
   const ids = useId();
   const { result, lastGood, timing } = preview;
   const source = lastGood?.source;
@@ -117,6 +119,7 @@ export function CodeTier({ preview, title, jumps, selected, onSelect, changed, g
           />
         </div>
       </div>
+      {tools}
       <h3 className="section-h">Cartridge</h3>
       <CartridgeSpace stats={lastGood?.stats} source={source} />
       {meter}

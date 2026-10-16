@@ -181,7 +181,7 @@ test("the code editor, See the code and the eject dialog pass axe", async ({ pag
   await expect(status(page)).toContainText("Doesn't build yet", { timeout: 30_000 });
   await page.keyboard.press("ControlOrMeta+f");
   expect(await axe(page), "Code with an error and search").toEqual([]);
-  for (const name of ["Graphics", "Reference"]) {
+  for (const name of ["Graphics", "Tests", "Reference"]) {
     await page.getByRole("tab", { name }).click();
     expect(await axe(page), name).toEqual([]);
   }

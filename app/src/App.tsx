@@ -29,6 +29,7 @@ import {
   flushSave,
   loadGame,
   loadSession,
+  loadTests,
   recoveredMessage,
   renameGame,
   renamed,
@@ -39,6 +40,7 @@ import {
 import { SOUND_LIBRARY, TEMPLATES } from "./project/templates.ts";
 import { ContextItem } from "./ui/ContextStrip.tsx";
 import type { LibraryActions } from "./ui/MyGames.tsx";
+import type { TestsFile } from "./code/creator-tests.ts";
 import { StartChooser, type StartChoice } from "./ui/StartChooser.tsx";
 import { toast } from "./ui/Toaster.tsx";
 
@@ -109,9 +111,9 @@ export function App() {
   }, []);
 
   /** Adds a game to My games and opens it. */
-  const addAndOpen = async (data: GameData, thumbnail?: Uint8Array, preset?: string) => {
+  const addAndOpen = async (data: GameData, thumbnail?: Uint8Array, preset?: string, tests?: TestsFile) => {
     await flushSave();
-    const id = await addGame(data, thumbnail);
+    const id = await addGame(data, thumbnail, tests);
     if (data.kind === "kit") {
       // A new game from a starter opens with its getting-started guide.
       if (preset) useGuide.getState().start(preset, true, id);
@@ -203,7 +205,7 @@ export function App() {
       setNotice(classicNotice(data.game.title));
     }
     setOpenError(null);
-    await addAndOpen(data, opened.thumbnail);
+    await addAndOpen(data, opened.thumbnail, undefined, opened.tests);
     toast(`Opened “${data.game.title || "Untitled"}”. It's in My games now.`);
   };
 
@@ -218,7 +220,8 @@ export function App() {
     if (current === "loading" || !current) return;
     const kit = useKitStore.getState().project;
     const from = { id: current.id, title: kit.title };
-    await addAndOpen({ kind: "code", game: ejectKit(kit, SOUND_LIBRARY) });
+    // The kit game's creator tests carry over: the code is the same program, with the same symbols.
+    await addAndOpen({ kind: "code", game: ejectKit(kit, SOUND_LIBRARY) }, undefined, undefined, (await loadTests(current.id)) ?? undefined);
     setEjectedFrom(from);
   };
 
@@ -238,7 +241,7 @@ export function App() {
       return;
     }
     setOpenError(null);
-    void addAndOpen({ kind: "kit", game: r.result.kit }, r.thumbnail);
+    void addAndOpen({ kind: "kit", game: r.result.kit }, r.thumbnail, undefined, r.tests);
   };
 
   if (current === "loading") return <div className="page loading">Loading…</div>;
