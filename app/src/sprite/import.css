@@ -1,0 +1,25 @@
+/* The "Import a picture" dialog (ImportPicture.tsx). */
+.ip { display: flex; flex-direction: column; gap: 8px; border-radius: 8px; }
+.ip.dropping { outline: 2px dashed var(--accent); outline-offset: 4px; }
+.ip-drop {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+  border: 2px dashed var(--field-line); border-radius: 8px; padding: 28px 16px;
+}
+.ip-drop p { margin: 0; }
+.ip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.ip-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ip-h { font-size: 13px; margin: 6px 0 0; text-transform: none; letter-spacing: 0; color: var(--text); }
+.ip-crop { max-width: 100%; align-self: flex-start; border-radius: 4px; cursor: move; touch-action: none; }
+.ip-stack { display: flex; flex-direction: column; align-items: stretch; gap: 4px; }
+.ip-stack button.active, .ip .se-group button.active { background: var(--accent); color: #1a1205; }
+.ip-previews { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.ip-previews figure { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.ip-preview, .ip-actual { max-width: 100%; image-rendering: pixelated; border-radius: 4px; background: #0f1115; }
+.ip-swatch {
+  display: inline-block; width: 16px; height: 16px; border-radius: 4px; vertical-align: middle;
+  margin-right: 4px; box-shadow: 0 0 0 1px var(--field-line);
+}
+.ip-bg { margin: 0; }
+.ip-note { margin: 0; color: var(--accent); }
+.ip-error { margin: 0; color: var(--error); }
+.ip-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }

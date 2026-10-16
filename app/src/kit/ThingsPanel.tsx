@@ -175,6 +175,12 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
             Animate (2 frames)
           </label>
         }
+        setColors={
+          palette && {
+            sharedWith,
+            apply: (colors, key) => edit((d) => void (d.palettes.find((p) => p.id === palette.id)!.colors = colors), key),
+          }
+        }
         hint="Right-click erases."
       />
 

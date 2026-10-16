@@ -5,6 +5,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { arrowKeys, drawCursor, radioProps, tabProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscCss } from "../ui/ntsc.ts";
+import { ImportPicture } from "./ImportPicture.tsx";
 import {
   clearFrame,
   floodFill,
@@ -39,12 +40,18 @@ export interface PixelEditorProps {
   hint?: string;
   /** Widest the drawing canvas gets, in CSS pixels. */
   maxWidth?: number;
+  /**
+   * Lets "Import a picture" set colors 1-3 too; `sharedWith` names the other
+   * things using the palette. Called with the frame's undo key, so both are one step.
+   */
+  setColors?: { apply: (colors: [string, string, string], key: string) => void; sharedWith: readonly string[] };
 }
 
-export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360 }: PixelEditorProps) {
+export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360, setColors }: PixelEditorProps) {
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState<PixelValue>(1);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [importing, setImporting] = useState<HTMLElement | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stroke = useRef<{ key: string; last: [number, number]; value: PixelValue } | null>(null);
 
@@ -252,11 +259,31 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
           ↓
         </button>
         <span className="spacer" />
+        <button type="button" className="secondary" onClick={(e) => setImporting(e.currentTarget)}>
+          Import a picture
+        </button>
         <button type="button" className="secondary" onClick={() => update(clearFrame)}>
           Clear
         </button>
       </div>
       {hint && <p className="muted small">{hint}</p>}
+      {importing && (
+        <ImportPicture
+          label={label}
+          width={width}
+          height={height}
+          colors={colors}
+          frameName={frames.length > 1 ? `frame ${current + 1}` : undefined}
+          colorsSharedWith={setColors?.sharedWith}
+          returnTo={importing}
+          onClose={() => setImporting(null)}
+          onApply={(next, newColors) => {
+            const key = `import:${++strokeCounter}`;
+            if (newColors?.length === 3) setColors?.apply(newColors as [string, string, string], key);
+            update(() => next, key);
+          }}
+        />
+      )}
     </>
   );
 }

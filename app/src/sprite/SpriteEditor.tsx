@@ -48,6 +48,14 @@ export function SpriteEditor({ template, role }: { template: Template; role: str
             </select>
           </label>
         }
+        setColors={
+          palette && {
+            sharedWith: project.sprites
+              .filter((s) => s.role !== role && s.palette === sprite.palette)
+              .map((s) => template.manifest.sprites.find((d) => d.role === s.role)?.label ?? s.role),
+            apply: (colors, key) => edit((d) => void (d.palettes.find((p) => p.id === palette.id)!.colors = colors), key),
+          }
+        }
         hint="Right-click erases. Colors come from the palette; change them in Graphics."
       />
     </section>
