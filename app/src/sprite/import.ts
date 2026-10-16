@@ -382,3 +382,15 @@ export function convert(src: Pixels, o: ConvertOptions): { frame: Frame; small: 
   const small = toSpriteSize(prepare(src, o), o.width, o.height);
   return { frame: quantize(small, o.colors, o.dither), small };
 }
+
+/**
+ * The biggest sprite size whose on-screen shape is nearest the picture's:
+ * the tallest height, and the width that shows (2:1) closest to the picture's
+ * width over height. Ties go to the wider size.
+ */
+export function bestSize(srcW: number, srcH: number, widths: readonly number[], heights: readonly number[]): [number, number] {
+  const height = Math.max(...heights);
+  const off = (w: number) => Math.abs(Math.log(displayAspect(w, height) / (srcW / srcH)));
+  const width = [...widths].sort((a, b) => b - a).reduce((best, w) => (off(w) < off(best) - 1e-9 ? w : best));
+  return [width, height];
+}

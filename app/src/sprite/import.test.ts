@@ -3,6 +3,7 @@ import { toColor } from "../ui/ntsc.ts";
 import {
   NTSC,
   bestColors,
+  bestSize,
   colorDistance,
   convert,
   cropRect,
@@ -47,6 +48,15 @@ describe("crop and 2:1 resampling", () => {
     expect(cropRect(100, 100, 2, "fit")).toEqual({ x: -50, y: 0, w: 200, h: 100 });
     // A tall 4×16 sprite (shown 8×16) on a wide picture.
     expect(cropRect(200, 100, 0.5, "fill")).toEqual({ x: 75, y: 0, w: 50, h: 100 });
+  });
+
+  it("picks the biggest size shaped like the picture", () => {
+    const widths = [4, 8, 12, 16];
+    const heights = [4, 8, 16];
+    expect(bestSize(200, 100, widths, heights)).toEqual([16, 16]); // wide: shows 32×16
+    expect(bestSize(100, 100, widths, heights)).toEqual([8, 16]); // square: shows 16×16
+    expect(bestSize(300, 400, widths, heights)).toEqual([8, 16]); // phone photo, upright
+    expect(bestSize(100, 400, widths, heights)).toEqual([4, 16]);
   });
 
   it("zooms around a centre and keeps the crop on the picture", () => {

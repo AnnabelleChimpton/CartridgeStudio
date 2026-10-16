@@ -41,13 +41,15 @@ export interface PixelEditorProps {
   /** Widest the drawing canvas gets, in CSS pixels. */
   maxWidth?: number;
   /**
-   * Lets "Import a picture" set colors 1-3 too; `sharedWith` names the other
-   * things using the palette. Called with the frame's undo key, so both are one step.
+   * Lets "Import a picture" set colors 1-3 too; `note` says what that does to
+   * other things. Called with the frame's undo key, so it's all one step.
    */
-  setColors?: { apply: (colors: [string, string, string], key: string) => void; sharedWith: readonly string[] };
+  setColors?: { apply: (colors: [string, string, string], key: string) => void; note?: string; affectsOthers: boolean };
+  /** Lets "Import a picture" change the sprite's size, with the frame's undo key. */
+  resize?: { widths: readonly number[]; heights: readonly number[]; apply: (width: number, height: number, key: string) => void };
 }
 
-export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360, setColors }: PixelEditorProps) {
+export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360, setColors, resize }: PixelEditorProps) {
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState<PixelValue>(1);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -274,11 +276,13 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
           height={height}
           colors={colors}
           frameName={frames.length > 1 ? `frame ${current + 1}` : undefined}
-          colorsSharedWith={setColors?.sharedWith}
+          newColors={setColors}
+          sizes={resize}
           returnTo={importing}
           onClose={() => setImporting(null)}
-          onApply={(next, newColors) => {
+          onApply={(next, newColors, size) => {
             const key = `import:${++strokeCounter}`;
+            if (size) resize?.apply(size[0], size[1], key);
             if (newColors?.length === 3) setColors?.apply(newColors as [string, string, string], key);
             update(() => next, key);
           }}

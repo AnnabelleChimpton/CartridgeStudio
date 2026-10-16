@@ -9,6 +9,7 @@ import { ntscCss } from "../ui/ntsc.ts";
 import { radioProps, arrowKeys } from "../ui/a11y.ts";
 import {
   bestColors,
+  bestSize,
   cropRect,
   detectBackground,
   displayAspect,
@@ -39,9 +40,11 @@ export interface ImportPictureProps {
   colors: readonly string[];
   /** Names the frame being replaced when there are several, e.g. "frame 2". */
   frameName?: string;
-  /** When set, the user can choose new colors for the palette; these are the other things that use it. */
-  colorsSharedWith?: readonly string[] | null;
-  onApply: (frame: Frame, colors?: string[]) => void;
+  /** Whether the user can choose new colors from the picture (and what that does to other things). */
+  newColors?: { note?: string; affectsOthers: boolean } | null;
+  /** Sizes the user can choose from; the biggest shaped like the picture is picked when it loads. */
+  sizes?: { widths: readonly number[]; heights: readonly number[] } | null;
+  onApply: (frame: Frame, colors?: string[], size?: [number, number]) => void;
   onClose: () => void;
   returnTo?: HTMLElement | null;
 }
@@ -95,7 +98,9 @@ function paintFrame(canvas: HTMLCanvasElement | null, frame: Frame, colors: read
   );
 }
 
-export function ImportPicture({ label, width, height, colors, frameName, colorsSharedWith, onApply, onClose, returnTo }: ImportPictureProps) {
+export function ImportPicture(props: ImportPictureProps) {
+  const { label, colors, frameName, sizes, onApply, onClose, returnTo } = props;
+  const canPickColors = props.newColors;
   const ids = useId();
   const [source, setSource] = useState<Pixels | null>(null);
   const [error, setError] = useState("");
@@ -105,7 +110,9 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
   const [center, setCenter] = useState<[number, number] | null>(null);
   const [keepBackground, setKeepBackground] = useState(false);
   const [tolerance, setTolerance] = useState(35);
-  const [newColors, setNewColors] = useState(false);
+  const [[width, height], setSize] = useState<[number, number]>([props.width, props.height]);
+  // New colors by default, unless that would recolor other things.
+  const [newColors, setNewColors] = useState(!!canPickColors && !canPickColors.affectsOthers);
   const [dither, setDither] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const cropCanvas = useRef<HTMLCanvasElement>(null);
@@ -124,6 +131,7 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
     try {
       const p = await decode(file);
       setSource(p);
+      if (sizes) setSize(bestSize(p.width, p.height, sizes.widths, sizes.heights));
       setCenter(null);
       setZoom(1);
       setError("");
@@ -246,7 +254,6 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
   const endDrag = () => void (drag.current = null);
 
   const changing = frameName ? `${label} ${frameName}` : label;
-  const shared = colorsSharedWith?.length ? colorsSharedWith.join(", ") : null;
 
   return (
     <Dialog title="Import a picture" onClose={onClose} returnTo={returnTo} wide>
@@ -284,7 +291,7 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
         {!source ? (
           <div className="ip-drop">
             <p>
-              Turn a photo or a drawing into <strong>{changing}</strong>. It becomes {width}×{height} pixels in 3 colors.
+              Turn a photo or a drawing into <strong>{changing}</strong>. {sizes ? "You can choose its size next." : `It becomes ${width}×${height} pixels in 3 colors.`}
             </p>
             <button type="button" onClick={() => fileInput.current?.click()}>
               Choose a picture
@@ -296,6 +303,25 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
           view && (
             <div className="ip-grid">
               <div className="ip-col">
+                {sizes && (
+                  <div className="inline ip-size">
+                    <span>Size</span>
+                    <select aria-label="Sprite width" value={width} onChange={(e) => setSize([Number(e.target.value), height])}>
+                      {sizes.widths.map((w) => (
+                        <option key={w} value={w}>
+                          {w} wide
+                        </option>
+                      ))}
+                    </select>
+                    <select aria-label="Sprite height" value={height} onChange={(e) => setSize([width, Number(e.target.value)])}>
+                      {sizes.heights.map((h) => (
+                        <option key={h} value={h}>
+                          {h} tall
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <h3 className="ip-h">Choose the part to use</h3>
                 <canvas
                   ref={cropCanvas}
@@ -366,7 +392,7 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
                 )}
 
                 <h3 className="ip-h">Colors</h3>
-                {colorsSharedWith ? (
+                {canPickColors ? (
                   <div className="ip-stack" role="radiogroup" aria-label="Colors" onKeyDown={arrowKeys("radio")}>
                     {[false, true].map((pick) => (
                       <button
@@ -383,7 +409,7 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
                 ) : (
                   <p className="muted small">Uses the sprite's 3 colors.</p>
                 )}
-                {newColors && shared && <p className="small ip-note">This also changes the colors of {shared}.</p>}
+                {newColors && canPickColors?.note && <p className="small ip-note">{canPickColors.note}</p>}
                 <label className="inline">
                   <input type="checkbox" checked={dither} onChange={(e) => setDither(e.target.checked)} />
                   Mix colors with a dot pattern
@@ -456,7 +482,11 @@ export function ImportPicture({ label, width, height, colors, frameName, colorsS
             disabled={!result}
             onClick={() => {
               if (!result) return;
-              onApply(result.frame, newColors ? result.palette : undefined);
+              onApply(
+                result.frame,
+                newColors ? result.palette : undefined,
+                width !== props.width || height !== props.height ? [width, height] : undefined,
+              );
               onClose();
             }}
           >

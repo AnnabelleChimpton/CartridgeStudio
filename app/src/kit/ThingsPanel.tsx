@@ -16,11 +16,35 @@ import {
   setAnimated,
   setBehaviour,
 } from "./edit.ts";
-import { BEHAVIOURS, MAX_TYPES, type Behaviour, type KitType } from "./schema.ts";
+import { BEHAVIOURS, MAX_TYPES, type Behaviour, type KitGame, type KitType } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const WIDTHS = [4, 8, 12, 16];
+const MAX_PALETTES = 8;
 const HEIGHTS = [4, 6, 8, 10, 12, 14, 16];
+
+/** Labels of what else uses a thing's palette (other things, the walls, the text). */
+function paletteUsers(g: KitGame, thing: KitType): string[] {
+  const users = g.types.filter((t) => t.id !== thing.id && t.palette === thing.palette).map((t) => t.label);
+  if (g.wallPalette === thing.palette) users.push("the walls");
+  if (g.textPalette === thing.palette) users.push("the score text");
+  return users;
+}
+
+/** Sets a thing's colors, first giving it a palette of its own if it shares one and there's room. */
+function setOwnColors(g: KitGame, id: string, colors: [string, string, string]) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  if (paletteUsers(g, t).length && g.palettes.length < MAX_PALETTES) {
+    const base = t.id.slice(0, 20);
+    let pid = base;
+    for (let n = 2; g.palettes.some((p) => p.id === pid); n++) pid = `${base}-${n}`;
+    g.palettes.push({ id: pid, colors });
+    t.palette = pid;
+  } else {
+    g.palettes.find((p) => p.id === t.palette)!.colors = colors;
+  }
+}
 
 function asSprite(t: KitType) {
   return {
@@ -97,7 +121,8 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
   const edit = useKitStore((s) => s.edit);
   const index = game.types.findIndex((t) => t.id === thing.id);
   const palette = game.palettes.find((p) => p.id === thing.palette);
-  const sharedWith = game.types.filter((t) => t.id !== thing.id && t.palette === thing.palette).map((t) => t.label);
+  const sharedWith = paletteUsers(game, thing);
+  const canSplit = game.palettes.length < MAX_PALETTES;
   const others = game.types.filter((t) => t.id !== thing.id);
   const change = (recipe: (t: KitType) => void, key?: string) =>
     edit((d) => {
@@ -120,6 +145,36 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
           </option>
         ))}
       </select>
+    </label>
+  );
+
+  const sizeField = (
+    <label>
+      <span>Size</span>
+      <span className="inline">
+        <select
+          aria-label="Width"
+          value={thing.width}
+          onChange={(e) => edit((d) => resizeThing(d, thing.id, Number(e.target.value), thing.height))}
+        >
+          {WIDTHS.map((w) => (
+            <option key={w} value={w}>
+              {w} wide
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Height"
+          value={thing.height}
+          onChange={(e) => edit((d) => resizeThing(d, thing.id, thing.width, Number(e.target.value)))}
+        >
+          {HEIGHTS.map((h) => (
+            <option key={h} value={h}>
+              {h} tall
+            </option>
+          ))}
+        </select>
+      </span>
     </label>
   );
 
@@ -150,6 +205,7 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
           </select>
         </label>
         {shootsField}
+        {isPlayer(thing) && sizeField}
       </div>
 
       <PixelEditor
@@ -177,10 +233,21 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
         }
         setColors={
           palette && {
-            sharedWith,
-            apply: (colors, key) => edit((d) => void (d.palettes.find((p) => p.id === palette.id)!.colors = colors), key),
+            // A shared palette is split off so the picture's colors don't change other things.
+            note: sharedWith.length
+              ? canSplit
+                ? `${thing.label} gets its own colors, so ${sharedWith.join(", ")} won't change.`
+                : `There's no room for more colors, so this also changes ${sharedWith.join(", ")}.`
+              : undefined,
+            affectsOthers: sharedWith.length > 0 && !canSplit,
+            apply: (colors, key) => edit((d) => setOwnColors(d, thing.id, colors), key),
           }
         }
+        resize={{
+          widths: WIDTHS,
+          heights: HEIGHTS,
+          apply: (w, h, key) => edit((d) => resizeThing(d, thing.id, w, h), key),
+        }}
         hint="Right-click erases."
       />
 
@@ -218,33 +285,7 @@ function ThingEditor({ thing, onDeleted }: { thing: KitType; onDeleted: () => vo
               ))}
             </select>
           </label>
-          <label>
-            <span>Size</span>
-            <span className="inline">
-              <select
-                aria-label="Width"
-                value={thing.width}
-                onChange={(e) => edit((d) => resizeThing(d, thing.id, Number(e.target.value), thing.height))}
-              >
-                {WIDTHS.map((w) => (
-                  <option key={w} value={w}>
-                    {w} wide
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Height"
-                value={thing.height}
-                onChange={(e) => edit((d) => resizeThing(d, thing.id, thing.width, Number(e.target.value)))}
-              >
-                {HEIGHTS.map((h) => (
-                  <option key={h} value={h}>
-                    {h} tall
-                  </option>
-                ))}
-              </select>
-            </span>
-          </label>
+          {!isPlayer(thing) && sizeField}
           <label>
             <span>Drops</span>
             <span className="inline">
