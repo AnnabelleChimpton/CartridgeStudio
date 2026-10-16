@@ -13,6 +13,9 @@ export function SpriteEditor({ template, role }: { template: Template; role: str
   const spriteIndex = project.sprites.findIndex((s) => s.role === role);
   const sprite = project.sprites[spriteIndex]!;
   const palette = project.palettes.find((p) => p.id === sprite.palette);
+  const sharedWith = project.sprites
+    .filter((s) => s.role !== role && s.palette === sprite.palette)
+    .map((s) => template.manifest.sprites.find((d) => d.role === s.role)?.label ?? s.role);
 
   return (
     <section className="panel sprite-editor" aria-labelledby="sprite-editor-h">
@@ -47,6 +50,13 @@ export function SpriteEditor({ template, role }: { template: Template; role: str
               ))}
             </select>
           </label>
+        }
+        setColors={
+          palette && {
+            note: sharedWith.length ? `This also changes the colors of ${sharedWith.join(", ")}.` : undefined,
+            affectsOthers: sharedWith.length > 0,
+            apply: (colors, key) => edit((d) => void (d.palettes.find((p) => p.id === palette.id)!.colors = colors), key),
+          }
         }
         hint="Right-click erases. Colors come from the palette; change them in Graphics."
       />

@@ -15,6 +15,7 @@ import { ShowItPanel } from "../ui/ShowItPanel.tsx";
 import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
+import { isPlayer } from "./edit.ts";
 import { KitPrint } from "./KitPrint.tsx";
 import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
@@ -38,7 +39,7 @@ export function KitEditor({ onOpen, onNew }: { onOpen: (file: File) => void; onN
   const canRedo = useKitStore((s) => s.future.length > 0);
   const { edit, undo, redo } = useKitStore.getState();
   const preview = usePreview(game);
-  const [selected, setSelected] = useState<string | null>(() => game.types[0]?.id ?? null);
+  const [selected, setSelected] = useState<string | null>(() => (game.types.find(isPlayer) ?? game.types[0])?.id ?? null);
   const [tab, setTab] = useState<Tab>("things");
   const ids = useId();
 
