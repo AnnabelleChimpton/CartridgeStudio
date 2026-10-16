@@ -22,6 +22,24 @@ async function viewCode(page: Page) {
 }
 const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState().project);
 
+/**
+ * Drags a rule by its handle onto another rule. Chrome needs real mouse moves
+ * to start a drag; WebKit only drops after dragTo's single jump.
+ */
+async function dragRule(page: Page, browserName: string, from: number, to: number) {
+  const handle = page.locator("li.rule").nth(from).getByRole("button", { name: `Move rule ${from + 1}`, exact: true });
+  const target = page.locator("li.rule").nth(to);
+  await handle.scrollIntoViewIfNeeded();
+  if (browserName !== "chromium") return handle.dragTo(target);
+  const a = (await handle.boundingBox())!;
+  const b = (await target.boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2 + 10, { steps: 3 });
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 5 });
+  await page.mouse.up();
+}
+
 /** Drags across room cells (col, row) on the 20×11 room canvas. */
 async function paint(page: Page, from: [number, number], to: [number, number], button: "left" | "right" = "left") {
   await openTab(page, "Room");
@@ -138,13 +156,141 @@ test("a kit game survives a reload and round-trips through a game file", async (
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
 });
 
-test("Ghost Panic opens, builds, and shows its newer rules as sentences", async ({ page }) => {
+test("Ghost Panic opens, builds, and every rule can be edited", async ({ page }) => {
   await start(page, "Ghost Panic");
   await expect(page.getByLabel("Game title")).toHaveValue("Ghost Panic");
   await openTab(page, "Rules");
-  await expect(page.getByText("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.")).toBeVisible();
-  // Plain rules stay editable.
-  await expect(page.getByLabel("Rule 1 trigger")).toHaveValue("touch");
+  const g = await game(page);
+  await expect(page.locator("li.rule")).toHaveCount(g.rules.length);
+  await expect(page.locator(".rule-sentence.readonly")).toHaveCount(0);
+  // The combo bonus: only if, a counter test and its value.
+  await expect(page.getByLabel("Rule 3 condition 1 counter")).toHaveValue("combo");
+  await expect(page.getByLabel("Rule 3 condition 1 test")).toHaveValue("gte");
+  await expect(page.getByLabel("Rule 3 action 1 points")).toHaveValue("300");
+  // Catnip: set the combo, and turn every ghost for 6 seconds.
+  await expect(page.getByLabel("Rule 2 action 3", { exact: true })).toHaveValue("turnAll");
+  await expect(page.getByLabel("Rule 2 action 3 seconds")).toHaveValue("6");
+  await expect(page.getByLabel("Rule 6 trigger")).toHaveValue("onHazard");
+  await expect(page.getByLabel("Rule 8 trigger")).toHaveValue("every");
+  await expect(page.getByLabel("Rule 10 counter")).toHaveValue("level");
+
+  // Changing one word changes just that word.
+  await page.getByLabel("Rule 2 action 3 seconds").fill("8");
+  expect((await game(page)).rules[1]!.then[2]).toEqual({ turnAll: { type: "ghost", into: "scared", seconds: 8 } });
   await openTab(page, "Room");
   await expect(page.getByRole("radio", { name: "Paint Spikes" })).toBeVisible();
+});
+
+test("builds a key-and-door rule with a counter and only if", async ({ page }) => {
+  await start(page, "Dodger");
+  for (const name of ["Key", "Door"]) {
+    await page.getByRole("button", { name: "Add a thing" }).click();
+    await page.getByLabel("Thing name").fill(name);
+  }
+  await openTab(page, "Room");
+  await page.getByRole("radio", { name: "Paint Key" }).click();
+  await paint(page, [3, 8], [3, 8]);
+  await page.getByRole("radio", { name: "Paint Door" }).click();
+  await paint(page, [16, 8], [16, 8]);
+
+  await openTab(page, "Game");
+  await page.getByRole("button", { name: "Add counter" }).click();
+  await page.getByLabel("Counter 1 name").fill("Keys");
+  await page.getByLabel("Show on screen").check();
+
+  await openTab(page, "Rules");
+  const before = (await game(page)).rules.length;
+  const key = before + 1;
+  const door = before + 2;
+  await page.getByRole("button", { name: "Add rule" }).click();
+  await page.getByLabel(`Rule ${key} second thing`).selectOption({ label: "Key" });
+  await page.getByLabel(`Rule ${key} action 1`, { exact: true }).selectOption({ label: "remove" });
+  await page.getByLabel(`Rule ${key} action 1 which`).selectOption({ label: "the Key" });
+  await page.locator("li.rule").nth(key - 1).getByRole("button", { name: "+ another action" }).click();
+  await page.getByLabel(`Rule ${key} action 2`, { exact: true }).selectOption({ label: "add" });
+  await expect(page.getByLabel(`Rule ${key} action 2 counter`)).toHaveValue("counter-1");
+
+  await page.getByRole("button", { name: "Add rule" }).click();
+  await page.getByLabel(`Rule ${door} second thing`).selectOption({ label: "Door" });
+  const doorRule = page.locator("li.rule").nth(door - 1);
+  await doorRule.getByRole("button", { name: "+ only if" }).click();
+  await page.getByLabel(`Rule ${door} condition 1 counter`).selectOption({ label: "Keys" });
+  await page.getByLabel(`Rule ${door} condition 1 test`).selectOption({ label: "is at least" });
+  await page.getByLabel(`Rule ${door} condition 1 value`).fill("1");
+  await page.getByLabel(`Rule ${door} action 1`, { exact: true }).selectOption({ label: "remove" });
+  await doorRule.getByRole("button", { name: "+ another action" }).click();
+  await page.getByLabel(`Rule ${door} action 2`, { exact: true }).selectOption({ label: "take away" });
+  await doorRule.getByRole("button", { name: "+ another action" }).click();
+  await page.getByLabel(`Rule ${door} action 3`, { exact: true }).selectOption({ label: "add points" });
+  const n = await buildCount(page);
+  await page.getByLabel(`Rule ${door} action 3 points`).selectOption("100");
+
+  const g = await game(page);
+  const ids = Object.fromEntries(g.types.map((t) => [t.label, t.id]));
+  expect(g.counters).toEqual([{ id: "counter-1", label: "Keys", start: 0, show: true }]);
+  expect(g.rules[key - 1]).toEqual({ when: { touch: ["ship", ids.Key] }, then: [{ remove: "second" }, { add: ["counter-1", 1] }] });
+  expect(g.rules[door - 1]).toEqual({
+    when: { touch: ["ship", ids.Door] },
+    if: [{ counter: "counter-1", op: "gte", value: 1 }],
+    then: [{ remove: "second" }, { take: ["counter-1", 1] }, { score: 100 }],
+  });
+  expect((await nextBuild(page, n)).kind).toBe("built");
+
+  // Removing the counter takes its conditions and actions with it.
+  await openTab(page, "Game");
+  await page.getByRole("button", { name: "Remove Keys" }).click();
+  const after = await game(page);
+  expect(after.rules[door - 1]).toEqual({ when: { touch: ["ship", ids.Door] }, then: [{ remove: "second" }, { score: 100 }] });
+});
+
+test("turns, timed turns and the newer triggers can be chosen", async ({ page }) => {
+  await start(page, "Ghost Panic");
+  await openTab(page, "Rules");
+  // Rule 5: Cat touches Dust ghost. Make it every 20 seconds, turning every Dust ghost into a Scared ghost for 3 seconds.
+  await page.getByLabel("Rule 5 trigger").selectOption({ label: "every" });
+  await page.getByLabel("Rule 5 seconds").fill("20");
+  await page.getByLabel("Rule 5 action 1", { exact: true }).selectOption({ label: "turn every" });
+  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Scared ghost" });
+  await page.getByRole("button", { name: "Rule 5 action 1: only for some seconds" }).click();
+  await page.getByLabel("Rule 5 action 1 seconds").fill("3");
+  expect((await game(page)).rules[4]).toEqual({
+    when: { every: 20 },
+    then: [{ turnAll: { type: "ghost", into: "scared", seconds: 3 } }, { sound: "down" }],
+  });
+  // A thing on a goal, turning into something else for good.
+  await page.getByLabel("Rule 5 trigger").selectOption({ label: "is on a goal" });
+  await page.getByLabel("Rule 5 thing").selectOption({ label: "Dust ghost" });
+  await page.getByLabel("Rule 5 action 1", { exact: true }).selectOption({ label: "turn" });
+  await expect(page.getByLabel("Rule 5 action 1 which")).toHaveValue("first");
+  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Fast ghost" });
+  // A counter reaching a number.
+  await page.getByLabel("Rule 7 trigger").selectOption({ label: "reaches" });
+  await page.getByLabel("Rule 7 counter").selectOption({ label: "Combo" });
+  await page.getByLabel("Rule 7 target").fill("5");
+  await page.getByLabel("Rule 7 action 1", { exact: true }).selectOption({ label: "go to the next level" });
+  const g = await game(page);
+  expect(g.rules[4]!.when).toEqual({ onTile: ["ghost", "goal"] });
+  expect(g.rules[4]!.then[0]).toEqual({ turn: { who: "first", into: "fast-ghost" } });
+  expect(g.rules[6]).toEqual({ when: { reaches: ["combo", 5] }, then: [{ nextLevel: true }, { sound: "down" }] });
+});
+
+test("rules can be reordered by keyboard and by dragging", async ({ page, browserName }) => {
+  await start(page, "Ghost Panic");
+  await openTab(page, "Rules");
+  const order = async () => (await game(page)).rules.map((r) => JSON.stringify(r));
+  const start0 = await order();
+
+  await page.getByRole("button", { name: "Move rule 4" }).focus();
+  await page.keyboard.press("ArrowUp");
+  expect(await order()).toEqual([start0[0], start0[1], start0[3], start0[2], ...start0.slice(4)]);
+  // Focus follows the rule, so pressing again keeps moving it.
+  await expect(page.getByRole("button", { name: "Move rule 3" })).toBeFocused();
+  await expect(page.getByRole("status").filter({ hasText: "Rule 4 is now rule 3." })).toBeAttached();
+  await page.keyboard.press("ArrowDown");
+  expect(await order()).toEqual(start0);
+
+  await dragRule(page, browserName, 0, 2);
+  await expect.poll(order).toEqual([start0[1], start0[2], start0[0], ...start0.slice(3)]);
+  await page.getByRole("button", { name: "Undo" }).click();
+  expect(await order()).toEqual(start0);
 });

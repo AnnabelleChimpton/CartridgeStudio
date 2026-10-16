@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { addThing, cellAt, paintCell, placements, removeThing, resizeThing, setAnimated, setBehaviour } from "./edit.ts";
+import { addCounter, addThing, cellAt, moveRule, paintCell, placements, removeCounter, removeThing, resizeThing, setAnimated, setBehaviour, showCounter } from "./edit.ts";
 import { validateKit } from "./generate.ts";
 import { KIT_PRESETS } from "./presets.ts";
 
@@ -54,6 +54,44 @@ describe("kit editing", () => {
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
   });
 
+  it("removing a thing drops the turns and tile rules that use it", () => {
+    const g = preset("ghost-panic");
+    removeThing(g, "fast-ghost");
+    expect(JSON.stringify(g.rules)).not.toContain("fast-ghost");
+    expect(g.rules.some((r) => r.then.some((a) => "turnAll" in a && a.turnAll.type === "ghost"))).toBe(true);
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+    removeThing(g, "cat");
+    expect(g.rules.some((r) => "onTile" in r.when)).toBe(false);
+  });
+
+  it("adds, shows and removes counters, and their rules go with them", () => {
+    const g = preset("ghost-panic");
+    const keys = addCounter(g)!;
+    showCounter(g, keys);
+    showCounter(g, "combo");
+    expect(g.counters.filter((c) => c.show).map((c) => c.id)).toEqual(["combo"]);
+    g.rules.push({ when: { reaches: [keys, 3] }, then: [{ win: true }] });
+    // (Showing a counter costs frame time Ghost Panic doesn't have spare.)
+    expect(validateKit(g, SOUND_LIBRARY, { ignoreBudget: true }).ok).toBe(true);
+    removeCounter(g, keys);
+    removeCounter(g, "combo");
+    expect(g.counters).toEqual([]);
+    expect(JSON.stringify(g.rules)).not.toMatch(/combo|counter-/);
+    expect(g.rules.every((r) => r.then.length > 0 && r.if === undefined)).toBe(true);
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+    while (addCounter(g));
+    expect(g.counters).toHaveLength(4);
+  });
+
+  it("moves rules", () => {
+    const g = preset("ghost-panic");
+    const [a, b] = [g.rules[2], g.rules[3]];
+    moveRule(g, 3, 2);
+    expect(g.rules.slice(2, 4)).toEqual([b, a]);
+    moveRule(g, 0, 99); // out of range: ignored
+    expect(g.rules[3]).toBe(a);
+  });
+
   it("resizes and animates a thing", () => {
     const g = preset("maze");
     resizeThing(g, "yarn", 8, 8);
@@ -79,7 +117,7 @@ describe("kit editing", () => {
   });
 });
 
-describe("rule sentences (read-only batch 1 rules)", () => {
+describe("rule sentences", () => {
   it("reads Ghost Panic's rules as plain English", async () => {
     const { ruleSentence, editableRule } = await import("./sentence.ts");
     const { KitGameSchema } = await import("./schema.ts");
@@ -89,6 +127,7 @@ describe("rule sentences (read-only batch 1 rules)", () => {
     expect(lines).toContain("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.");
     expect(lines).toContain("Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.");
     expect(lines).toContain("When the level reaches 4: win the game.");
-    expect(g.rules.filter(editableRule).length).toBeGreaterThan(0);
+    expect(g.rules.every(editableRule)).toBe(true);
+    expect(editableRule({ when: { someday: 1 }, then: [{ win: true }] } as never)).toBe(false);
   });
 });

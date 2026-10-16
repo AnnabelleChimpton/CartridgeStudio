@@ -1,18 +1,18 @@
-// Rules as plain sentences, for rules the editor can't change yet (batch 1
-// vocabulary: counters, "only if", turning, every N seconds, levels, tiles).
+// Rules as plain sentences: for the print kit's manual, and for any rule
+// shape the rule editor doesn't know.
 
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { LEVEL, type KitAction, type KitCondition, type KitGame, type KitRule, type KitTrigger } from "./schema.ts";
 
 const OPS: Record<KitCondition["op"], string> = { eq: "is", ne: "isn't", gte: "is at least", lte: "is at most" };
 
-/** True when every part of the rule is something the rule editor offers. */
+const TRIGGER_KEYS = ["touch", "allGone", "reachesBottom", "timer", "every", "reaches", "onTile"];
+const ACTION_KEYS = ["remove", "respawn", "score", "loseLife", "win", "lose", "restartRoom", "sound", "add", "take", "set", "turn", "turnAll", "nextLevel"];
+
+/** True when every part of the rule is something the rule editor offers (all of today's schema; a guard for newer files). */
 export function editableRule(r: KitRule): boolean {
-  const w = r.when;
-  const triggerOk = "touch" in w || "allGone" in w || "reachesBottom" in w || "timer" in w;
-  const actionOk = (a: KitAction) =>
-    "remove" in a || "respawn" in a || "score" in a || "loseLife" in a || "win" in a || "lose" in a || "restartRoom" in a || "sound" in a;
-  return triggerOk && !r.if?.length && r.then.every(actionOk);
+  const known = (o: object, keys: string[]) => Object.keys(o).length === 1 && keys.includes(Object.keys(o)[0]!);
+  return known(r.when, TRIGGER_KEYS) && r.then.every((a) => known(a, ACTION_KEYS));
 }
 
 export function ruleSentence(r: KitRule, g: KitGame): string {

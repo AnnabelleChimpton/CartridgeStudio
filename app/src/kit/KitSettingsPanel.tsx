@@ -1,10 +1,12 @@
-// Game-wide settings for kit games: lives, colors, the words on screen and the
-// shooting sound.
+// Game-wide settings for kit games: lives, colors, the words on screen, the
+// shooting sound and the counters rules can keep.
 
+import { useState } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
+import { addCounter, removeCounter, showCounter } from "./edit.ts";
 import { kitText } from "./generate.ts";
-import type { KitGame } from "./schema.ts";
+import { MAX_COUNTERS, type KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const TEXTS: { key: keyof KitGame["text"]; label: string }[] = [
@@ -12,6 +14,23 @@ const TEXTS: { key: keyof KitGame["text"]; label: string }[] = [
   { key: "win", label: "When you win" },
   { key: "lose", label: "When you lose" },
 ];
+
+/** A name field that never stores an empty name: clearing it to retype keeps the old one until there's text. */
+function NameInput({ value, label, maxLength, onChange }: { value: string; label: string; maxLength: number; onChange: (v: string) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      aria-label={label}
+      value={draft ?? value}
+      maxLength={maxLength}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        if (e.target.value.trim()) onChange(e.target.value);
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
 
 export function KitSettingsPanel() {
   const game = useKitStore((s) => s.project);
@@ -95,6 +114,47 @@ export function KitSettingsPanel() {
           </label>
         )}
       </div>
+      <h3 id="kit-counters-h" className="section-h">Counters</h3>
+      <p className="muted small">Numbers your rules can change and check: keys, coins, a combo. The level is always there.</p>
+      {game.counters.length > 0 && (
+        <ul className="counters" aria-labelledby="kit-counters-h">
+          {game.counters.map((c, i) => (
+            <li key={c.id} className="counter-row">
+              <NameInput
+                value={c.label}
+                label={`Counter ${i + 1} name`}
+                maxLength={20}
+                onChange={(v) => edit((d) => void (d.counters[i]!.label = v), `counter:${c.id}:label`)}
+              />
+              <label>
+                <span>starts at</span>
+                <input
+                  type="number"
+                  className="num"
+                  aria-label={`${c.label} starts at`}
+                  min={0}
+                  max={99}
+                  value={c.start}
+                  onChange={(e) =>
+                    edit((d) => void (d.counters[i]!.start = Math.max(0, Math.min(99, Math.round(Number(e.target.value) || 0)))), `counter:${c.id}:start`)
+                  }
+                />
+              </label>
+              <label>
+                <input type="checkbox" checked={!!c.show} onChange={(e) => edit((d) => showCounter(d, e.target.checked ? c.id : null))} />
+                <span>Show on screen</span>
+              </label>
+              <button type="button" className="link danger" onClick={() => edit((d) => removeCounter(d, c.id))}>
+                Remove {c.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {game.counters.some((c) => c.show) && <p className="muted small">Only one counter fits on screen, beside the score.</p>}
+      <button type="button" className="secondary" disabled={game.counters.length >= MAX_COUNTERS} onClick={() => edit((d) => void addCounter(d))}>
+        Add counter
+      </button>
     </section>
   );
 }

@@ -6,7 +6,9 @@ import {
   PLAYER_BEHAVIOURS,
   ROOM_COLS,
   ROOM_ROWS,
+  MAX_COUNTERS,
   type Behaviour,
+  type KitAction,
   type KitGame,
   type KitRule,
   type KitType,
@@ -131,8 +133,23 @@ export function addThing(g: KitGame, behaviour: Behaviour = "still"): string {
 
 const mentions = (rule: KitRule, id: string) => {
   const w = rule.when;
-  return ("touch" in w && w.touch.includes(id)) || ("allGone" in w && w.allGone === id) || ("reachesBottom" in w && w.reachesBottom === id);
+  return (
+    ("touch" in w && w.touch.includes(id)) ||
+    ("allGone" in w && w.allGone === id) ||
+    ("reachesBottom" in w && w.reachesBottom === id) ||
+    ("onTile" in w && w.onTile[0] === id)
+  );
 };
+
+const turnsWith = (a: KitAction, id: string) =>
+  ("turn" in a && a.turn.into === id) || ("turnAll" in a && (a.turnAll.type === id || a.turnAll.into === id));
+
+/** Drops rules about `id` (in their trigger), and actions that turn things into or out of it. */
+function forgetThing(g: KitGame, id: string) {
+  g.rules = g.rules.filter((r) => !mentions(r, id));
+  for (const r of g.rules) r.then = r.then.filter((a) => !turnsWith(a, id));
+  g.rules = g.rules.filter((r) => r.then.length > 0);
+}
 
 export function removeThing(g: KitGame, id: string) {
   const ch = Object.entries(g.room.legend).find(([, v]) => v === id)?.[0];
@@ -140,7 +157,7 @@ export function removeThing(g: KitGame, id: string) {
     g.room.rows = g.room.rows.map((r) => r.replaceAll(ch, " "));
     delete g.room.legend[ch];
   }
-  g.rules = g.rules.filter((r) => !mentions(r, id));
+  forgetThing(g, id);
   for (const t of g.types) {
     if (t.shoots === id) delete t.shoots;
     if (t.drops?.type === id) delete t.drops;
@@ -191,4 +208,46 @@ export function setBehaviour(g: KitGame, id: string, behaviour: Behaviour) {
       );
     }
   }
+}
+
+/** Adds a counter (keys, coins, combo…) and returns its id. */
+export function addCounter(g: KitGame): string | null {
+  if (g.counters.length >= MAX_COUNTERS) return null;
+  let n = g.counters.length + 1;
+  while (g.counters.some((c) => c.id === `counter-${n}`)) n++;
+  const id = `counter-${n}`;
+  g.counters.push({ id, label: `Counter ${n}`, start: 0 });
+  return id;
+}
+
+const usesCounter = (a: KitAction, id: string) =>
+  ("add" in a && a.add[0] === id) || ("take" in a && a.take[0] === id) || ("set" in a && a.set[0] === id);
+
+/** Removes a counter along with the conditions, actions and rules that use it. */
+export function removeCounter(g: KitGame, id: string) {
+  g.counters = g.counters.filter((c) => c.id !== id);
+  g.rules = g.rules.filter((r) => !("reaches" in r.when && r.when.reaches[0] === id));
+  for (const r of g.rules) {
+    r.then = r.then.filter((a) => !usesCounter(a, id));
+    if (r.if) {
+      r.if = r.if.filter((c) => c.counter !== id);
+      if (r.if.length === 0) delete r.if;
+    }
+  }
+  g.rules = g.rules.filter((r) => r.then.length > 0);
+}
+
+/** Shows one counter on screen (or none): only one fits beside the score. */
+export function showCounter(g: KitGame, id: string | null) {
+  for (const c of g.counters) {
+    if (c.id === id) c.show = true;
+    else delete c.show;
+  }
+}
+
+/** Moves a rule to another place in the list: rules run in order, top first. */
+export function moveRule(g: KitGame, from: number, to: number) {
+  if (from === to || from < 0 || to < 0 || from >= g.rules.length || to >= g.rules.length) return;
+  const [rule] = g.rules.splice(from, 1);
+  g.rules.splice(to, 0, rule!);
 }
