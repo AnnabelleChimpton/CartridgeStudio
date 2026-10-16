@@ -19,6 +19,7 @@ export const BEHAVIOURS = [
   "fall",
   "projectile-up",
   "projectile-down",
+  "flee",
 ] as const;
 export type Behaviour = (typeof BEHAVIOURS)[number];
 export const PLAYER_BEHAVIOURS: Behaviour[] = ["player-lr", "player-4way", "player-8way"];
@@ -27,8 +28,15 @@ export const ROOM_COLS = 20;
 export const ROOM_ROWS = 11;
 export const MAX_OBJECTS = 24;
 export const MAX_TYPES = 8;
-/** Characters the kit font can draw (also used by alphachars). `#` is the wall tile. */
-export const FONT_CHARS = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.!?-:#";
+/** Named numbers a game can keep (keys, coins, combo…), besides the built-in level. */
+export const MAX_COUNTERS = 4;
+/** Characters the kit font can draw (also used by alphachars). `#`, `~` and `*` are the wall, hazard and goal tiles. */
+export const FONT_CHARS = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.!?-:#~*";
+/** Room tiles besides empty. Walls block movement; hazards and goals are only noticed by rules. */
+export const TILES = ["wall", "hazard", "goal"] as const;
+export type Tile = (typeof TILES)[number];
+/** The built-in counter: 1 at the start, plus one for each "next level". */
+export const LEVEL = "level";
 
 const Id = z.string().regex(/^[a-z][a-z0-9-]{0,23}$/, "Ids are short lowercase names");
 
@@ -51,11 +59,27 @@ export const KitTypeSchema = z.object({
 export type KitType = z.infer<typeof KitTypeSchema>;
 
 const Who = z.enum(["first", "second"]);
+const Count = z.number().int().min(0).max(99);
+export const CounterSchema = z.object({
+  id: Id,
+  label: z.string().min(1).max(20),
+  start: Count.default(0),
+  /** Show it in the HUD (one counter at most). */
+  show: z.boolean().optional(),
+});
+export type KitCounter = z.infer<typeof CounterSchema>;
+
 export const KitTriggerSchema = z.union([
   z.object({ touch: z.tuple([Id, Id]) }).strict(),
   z.object({ allGone: Id }).strict(),
   z.object({ reachesBottom: Id }).strict(),
   z.object({ timer: z.number().int().min(1).max(99) }).strict(),
+  /** Every N seconds while playing. */
+  z.object({ every: z.number().int().min(1).max(60) }).strict(),
+  /** A counter (or the level) reaches at least N; fires once each time it gets there. */
+  z.object({ reaches: z.tuple([Id, Count]) }).strict(),
+  /** A thing of this type is on a hazard or goal tile (checked at its middle). */
+  z.object({ onTile: z.tuple([Id, z.enum(["hazard", "goal"])]) }).strict(),
 ]);
 export type KitTrigger = z.infer<typeof KitTriggerSchema>;
 
@@ -68,10 +92,28 @@ export const KitActionSchema = z.union([
   z.object({ lose: z.literal(true) }).strict(),
   z.object({ restartRoom: z.literal(true) }).strict(),
   z.object({ sound: z.string() }).strict(),
+  /** Counters: add, take away (stops at 0) or set. Add stops at 99. */
+  z.object({ add: z.tuple([Id, z.number().int().min(1).max(99)]) }).strict(),
+  z.object({ take: z.tuple([Id, z.number().int().min(1).max(99)]) }).strict(),
+  z.object({ set: z.tuple([Id, Count]) }).strict(),
+  /** The rule's first or second thing becomes another type, optionally for some seconds. */
+  z.object({ turn: z.object({ who: Who, into: Id, seconds: z.number().int().min(1).max(60).optional() }).strict() }).strict(),
+  /** Every thing of a type becomes another type, optionally for some seconds. */
+  z.object({ turnAll: z.object({ type: Id, into: Id, seconds: z.number().int().min(1).max(60).optional() }).strict() }).strict(),
+  /** Start the room again with the level one higher: things move faster every second level. */
+  z.object({ nextLevel: z.literal(true) }).strict(),
 ]);
 export type KitAction = z.infer<typeof KitActionSchema>;
 
-export const KitRuleSchema = z.object({ when: KitTriggerSchema, then: z.array(KitActionSchema).min(1).max(6) });
+export const ConditionSchema = z.object({ counter: Id, op: z.enum(["eq", "ne", "gte", "lte"]), value: Count }).strict();
+export type KitCondition = z.infer<typeof ConditionSchema>;
+
+export const KitRuleSchema = z.object({
+  when: KitTriggerSchema,
+  /** "Only if" clauses, all of which must hold. */
+  if: z.array(ConditionSchema).max(2).optional(),
+  then: z.array(KitActionSchema).min(1).max(6),
+});
 export type KitRule = z.infer<typeof KitRuleSchema>;
 
 export const KitGameSchema = z.object({
@@ -86,9 +128,10 @@ export const KitGameSchema = z.object({
   room: z.object({
     /** ROOM_ROWS strings of ROOM_COLS characters; space or `.` is empty. */
     rows: z.array(z.string()),
-    /** What each character places: a wall, or an object of a type (at that cell's top-left). */
-    legend: z.record(z.string().length(1), z.union([z.literal("wall"), Id])),
+    /** What each character places: a tile, or an object of a type (at that cell's top-left). */
+    legend: z.record(z.string().length(1), z.union([z.enum(TILES), Id])),
   }),
+  counters: z.array(CounterSchema).max(MAX_COUNTERS).default([]),
   rules: z.array(KitRuleSchema).max(16),
   text: z.object({ title: z.string(), win: z.string(), lose: z.string() }),
   sounds: z.object({ shoot: z.string().optional() }).default({}),

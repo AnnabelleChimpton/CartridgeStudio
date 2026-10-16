@@ -55,6 +55,10 @@
  autodim byte loopshi
  autodim byte latches
  autodim byte latches2
+ autodim byte levelnum
+ autodim byte speedbonus
+ autodim byte tk
+ autodim byte hudbcd
 
  rem object tables: 24 slots, otype 255 means empty
  dim otype = $2200
@@ -68,6 +72,9 @@
  dim typeamt = $22A8
  rem the step over two frames, for movers that update every other frame
  dim typeamt2 = $22B0
+ rem timed "turn into": seconds left, and the type to turn back into
+ dim otimer = $22B8
+ dim oback = $22D0
 
  const STATE_TITLE = 0
  const STATE_PLAY = 1
@@ -87,6 +94,7 @@
 
  gamestate = STATE_TITLE
  lives = STARTLIVES
+ levelnum = 1
  gosub startroom
 
 main
@@ -114,11 +122,19 @@ st_play
  if invuln > 0 then invuln = invuln - 1
  secondtick = secondtick + 1
  if secondtick >= 60 then secondtick = 0 : seconds = seconds + 1
+{{#if hasTimedTurns}}
+ rem timed turns: one slot a frame, so each slot is visited once a second
+ if secondtick < 24 then gosub turnback
+{{/if}}
  marchmin = 255 : marchmax = 0
  rem speed: typespeed is 0-3; speedsteps holds pixels per frame phase
  rnd = frame & 3
  for ot = 0 to typecount_minus1
  amt = typespeed[ot]
+{{#if hasLevels}}
+ if typefaster[ot] then amt = amt + speedbonus
+ if amt > 3 then amt = 3
+{{/if}}
  amt = amt * 4 + rnd
  typeamt[ot] = speedsteps[amt]
  amt = amt ^ 1
@@ -133,13 +149,13 @@ st_play
  rem alternate frames by odd and even slot, twice as far, so speeds don't change
  if beh < 4 then goto updatenow
  if beh = 8 then goto updatenow
- if beh > 9 then goto updatenow
+ if beh > 9 && beh <> 12 then goto updatenow
  rnd = oi ^ frame
  rnd = rnd & 1
  if rnd then goto nextobj
  amt = typeamt2[ot]
 updatenow
- on beh gosub b_still b_player_lr b_player_4 b_player_8 b_patrol_h b_patrol_v b_bounce b_chase b_march b_fall b_proj_up b_proj_down
+ on beh gosub b_still b_player_lr b_player_4 b_player_8 b_patrol_h b_patrol_v b_bounce b_chase b_march b_fall b_proj_up b_proj_down b_flee
 {{#if hasDrops}}
  ot = otype[oi]
  if ot = EMPTY then goto nextobj
@@ -163,6 +179,10 @@ draw
  secondsbcd = converttobcd(seconds)
  plotvalue font {{textPalette}} secondsbcd 2 76 0
 {{/if}}
+{{#if hudCounter}}
+ hudbcd = converttobcd({{hudCounter}})
+ plotvalue font {{textPalette}} hudbcd 2 120 0
+{{/if}}
  for oi = 0 to 23
  ot = otype[oi]
  if ot = EMPTY then goto nextdraw
@@ -185,6 +205,9 @@ nextdraw
 newgame
  score0 = 0
  lives = STARTLIVES
+ levelnum = 1
+ latches = 0 : latches2 = 0
+{{{counterInit}}}
  gosub startroom
  gamestate = STATE_PLAY
  return
@@ -195,6 +218,15 @@ startroom
  plotmap roommap {{wallPalette}} 80 2 20 22 20 0 40
  savescreen
  for oi = 0 to 23 : otype[oi] = EMPTY : next
+{{#if hasTimedTurns}}
+ for oi = 0 to 23 : otimer[oi] = 0 : next
+{{/if}}
+{{#if hasLevels}}
+ speedbonus = levelnum - 1
+ speedbonus = speedbonus / 2
+ if speedbonus > 3 then speedbonus = 3
+{{/if}}
+{{{everyInit}}}
  for oi = 0 to spawncount_minus1
  ot = spawntype[oi]
  otype[oi] = ot
@@ -210,7 +242,9 @@ startroom
  if beh >= 1 && beh <= 3 && heroi = EMPTY then heroi = oi
 nexthero
  next
- marchdir = 1 : seconds = 0 : secondtick = 0 : invuln = 0 : latches = 0 : latches2 = 0
+ rem event latches survive a restart (cleared by newgame), so a rule that restarts
+ rem the room can't fire again at once just because its condition still holds
+ marchdir = 1 : seconds = 0 : secondtick = 0 : invuln = 0
  return
 
 loselife
@@ -250,8 +284,8 @@ trymove
  if nx > ox[oi] then px = nx + wid - 1 : rnd = rnd + wid - 1
  cell = px / 8 : rnd = rnd / 8
  if cell = rnd then goto trymoveok
- py = ny : gosub wallat : if cell then blocked = 1 : return
- py = ny + hgt - 1 : gosub wallat : if cell then blocked = 1 : return
+ py = ny : gosub wallat : if cell = 1 then blocked = 1 : return
+ py = ny + hgt - 1 : gosub wallat : if cell = 1 then blocked = 1 : return
  goto trymoveok
 trymovev
  rem vertical: the leading row, at the left, middle and right columns (up to 16 pixels wide);
@@ -260,17 +294,17 @@ trymovev
  if ny > oy[oi] then py = ny + hgt - 1 : rnd = rnd + hgt - 1
  cell = py / 16 : rnd = rnd / 16
  if cell = rnd then goto trymoveok
- px = nx : gosub wallat : if cell then blocked = 1 : return
- px = nx + wid - 1 : gosub wallat : if cell then blocked = 1 : return
+ px = nx : gosub wallat : if cell = 1 then blocked = 1 : return
+ px = nx + wid - 1 : gosub wallat : if cell = 1 then blocked = 1 : return
  if wid <= 8 then goto trymoveok
- px = nx + 8 : gosub wallat : if cell then blocked = 1 : return
+ px = nx + 8 : gosub wallat : if cell = 1 then blocked = 1 : return
 trymoveok
 {{/if}}
  ox[oi] = nx : oy[oi] = ny
  return
 
-{{#if hasWalls}}
- rem wallat: cell = the wall map at pixel (px, py); py must be >= ROOMTOP
+{{#if hasTileMap}}
+ rem wallat: cell = the tile at pixel (px, py): 0 empty, 1 wall, 2 hazard, 3 goal; py must be >= ROOMTOP
 wallat
  cell = py - ROOMTOP
  cell = cell / 16
@@ -365,6 +399,20 @@ b_chase
  if ny > py then ny = ny - amt
  goto trymove
 
+b_flee
+ if amt = 0 then return
+ if heroi = EMPTY then return
+ nx = ox[oi] : ny = oy[oi]
+ px = ox[heroi]
+ if nx < px then nx = nx - amt
+ if nx >= px then nx = nx + amt
+ gosub trymove
+ nx = ox[oi] : ny = oy[oi]
+ py = oy[heroi]
+ if ny < py then ny = ny - amt
+ if ny >= py then ny = ny + amt
+ goto trymove
+
 b_march
  rem marchers move as one formation, bouncing off the screen edges (not walls)
  px = ox[oi]
@@ -439,10 +487,24 @@ spawnobj
  return
 spawnhere
  otype[count] = oj
+{{#if hasTimedTurns}}
+ otimer[count] = 0
+{{/if}}
  ox[count] = nx : oy[count] = ny
  osx[count] = nx : osy[count] = ny
  odx[count] = 1 : ody[count] = 1
  return
+
+{{#if hasTimedTurns}}
+ rem turnback: count down slot tk's timed turn; at zero it turns back
+turnback
+ tk = secondtick
+ if otimer[tk] = 0 then return
+ if otype[tk] = EMPTY then otimer[tk] = 0 : return
+ otimer[tk] = otimer[tk] - 1
+ if otimer[tk] = 0 then otype[tk] = oback[tk]
+ return
+{{/if}}
 
  rem ---- rules (generated from the project) ----
 rules

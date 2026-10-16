@@ -10,6 +10,8 @@ import {
   type KitGame,
   type KitRule,
   type KitType,
+  TILES,
+  type Tile,
 } from "./schema.ts";
 
 export const BEHAVIOUR_LABELS: Record<Behaviour, string> = {
@@ -25,11 +27,12 @@ export const BEHAVIOUR_LABELS: Record<Behaviour, string> = {
   fall: "Falls from the sky",
   "projectile-up": "Flies up (a shot)",
   "projectile-down": "Falls fast (a bomb)",
+  flee: "Runs away from the player",
 };
 
 export const SPEED_LABELS = ["", "Slow", "Medium", "Fast", "Very fast"];
 
-export type Brush = "wall" | "erase" | string;
+export type Brush = Tile | "erase" | string;
 
 const LEGEND_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -44,11 +47,13 @@ export function legendChar(g: KitGame, id: string): string {
   return free;
 }
 
-function wallChar(g: KitGame): string {
-  const existing = Object.entries(g.room.legend).find(([, v]) => v === "wall")?.[0];
+const TILE_CHAR: Record<Tile, string> = { wall: "#", hazard: "~", goal: "*" };
+
+function tileChar(g: KitGame, tile: Tile): string {
+  const existing = Object.entries(g.room.legend).find(([, v]) => v === tile)?.[0];
   if (existing) return existing;
-  g.room.legend["#"] = "wall";
-  return "#";
+  g.room.legend[TILE_CHAR[tile]] = tile;
+  return TILE_CHAR[tile];
 }
 
 /** What a room cell holds: "wall", a thing's id, or null when empty. */
@@ -66,7 +71,7 @@ function setChar(g: KitGame, col: number, row: number, ch: string) {
 export function paintCell(g: KitGame, col: number, row: number, brush: Brush) {
   if (col < 0 || row < 0 || col >= ROOM_COLS || row >= ROOM_ROWS) return;
   if (brush === "erase") return setChar(g, col, row, " ");
-  if (brush === "wall") return setChar(g, col, row, wallChar(g));
+  if ((TILES as readonly string[]).includes(brush)) return setChar(g, col, row, tileChar(g, brush as Tile));
   const type = g.types.find((t) => t.id === brush);
   if (!type) return;
   const ch = legendChar(g, brush);

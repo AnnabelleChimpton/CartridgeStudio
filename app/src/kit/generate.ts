@@ -10,18 +10,22 @@ import {
   BEHAVIOURS,
   FONT_CHARS,
   KitGameSchema,
+  LEVEL,
   MAX_OBJECTS,
   PLAYER_BEHAVIOURS,
   ROOM_COLS,
   ROOM_ROWS,
+  TILES,
   type KitAction,
+  type KitCondition,
   type KitGame,
+  type KitRule,
   type KitTrigger,
 } from "./schema.ts";
 import { fontRows } from "./font.ts";
 import kitEngine from "@cartridge-studio/templates/kit/engine.bas.hbs?raw";
 
-export const KIT_RUNTIME_VERSION = "0.1.0";
+export const KIT_RUNTIME_VERSION = "0.2.0";
 const ROOMTOP = 16;
 /** Pixels per frame for speed 1-4, by frame phase (frame & 3). */
 const SPEED_STEPS = [
@@ -52,6 +56,7 @@ const BEHAVIOUR_COST: Record<string, number> = {
   "player-8way": 6,
   "projectile-up": 6,
   "projectile-down": 6,
+  flee: 9,
 };
 /** Each display zone (8 lines) a sprite spans beyond the first. */
 const EXTRA_ZONE_COST = 1.5;
@@ -62,28 +67,94 @@ const TOUCH_RULE_COST = 2;
 const TOUCH_RULE_COST_PER_PAIR = 0.6;
 const EVENT_RULE_COST = 1;
 const EVENT_RULE_COST_PER_OBJECT = 0.2;
+/**
+ * Batch 1, measured in js7800 (src/kit/kit-measure.test.ts; one "still"
+ * filler ≈ 4.5 points). Tile rules run on odd frames, so their per-object
+ * cost is the odd frame's peak. Numbers in the HUD use plotvalue, which costs
+ * more than any rule; the timer already did, and wasn't priced until now.
+ */
+const EVERY_RULE_COST = 0.5;
+const TILE_RULE_COST = 1;
+const TILE_RULE_COST_PER_OBJECT = 2.3;
+const CONDITION_COST = 0.2;
+/** Below the measurement's resolution (one filler); priced at half a filler. */
+const TIMED_TURN_COST = 2;
+const LEVELS_COST = 2;
+const HUD_NUMBER_COST = 7;
+
+/** The type of thing a rule's "first" or "second" refers to, if any. */
+export function ruleThing(w: KitTrigger, who: "first" | "second"): string | null {
+  if ("touch" in w) return w.touch[who === "first" ? 0 : 1];
+  if (who === "second") return null;
+  return "reachesBottom" in w ? w.reachesBottom : "onTile" in w ? w.onTile[0] : null;
+}
+
+/**
+ * Which types an object of each type can become through "turn" actions
+ * (itself included), and back again when a turn has a time limit.
+ */
+export function turnReach(g: KitGame): Map<number, Set<number>> {
+  const id = new Map(g.types.map((t, i) => [t.id, i]));
+  const edges = new Map<number, Set<number>>(g.types.map((_, i) => [i, new Set([i])]));
+  const edge = (a: string | null, b: string, back: boolean) => {
+    const x = a === null ? undefined : id.get(a);
+    const y = id.get(b);
+    if (x === undefined || y === undefined) return;
+    edges.get(x)!.add(y);
+    if (back) edges.get(y)!.add(x);
+  };
+  for (const r of g.rules) {
+    for (const a of r.then) {
+      if ("turn" in a) edge(ruleThing(r.when, a.turn.who), a.turn.into, !!a.turn.seconds);
+      if ("turnAll" in a) edge(a.turnAll.type, a.turnAll.into, !!a.turnAll.seconds);
+    }
+  }
+  // Transitive closure (at most 8 types).
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const set of edges.values()) {
+      for (const v of [...set]) for (const w of edges.get(v)!) if (!set.has(w)) (set.add(w), (changed = true));
+    }
+  }
+  return edges;
+}
 
 /** Estimated share of a frame the game needs (100 = all of it). */
 export function cpuCost(g: KitGame, spawns: { type: number }[]): number {
   const id = new Map(g.types.map((t, i) => [t.id, i]));
   const launched = new Set(g.types.flatMap((t) => [t.shoots, t.drops?.type]).filter((x): x is string => !!x));
-  const population = (t: number) => spawns.filter((s) => s.type === t).length + (launched.has(g.types[t]!.id) ? 1 : 0);
+  const base = (t: number) => spawns.filter((s) => s.type === t).length + (launched.has(g.types[t]!.id) ? 1 : 0);
+  const reach = turnReach(g);
+  // Objects that can be of type t at some point: every type that can turn into it.
+  const population = (t: number) => g.types.reduce((n, _, u) => n + (reach.get(u)!.has(t) ? base(u) : 0), 0);
+  const each = (i: number) => {
+    const t = g.types[i]!;
+    return BEHAVIOUR_COST[t.behaviour]! + EXTRA_ZONE_COST * (Math.ceil(t.height / 8) - 1) + (t.drops ? DROPPER_COST : 0);
+  };
   let cost = 0;
-  g.types.forEach((t, i) => {
-    const each = BEHAVIOUR_COST[t.behaviour]! + EXTRA_ZONE_COST * (Math.ceil(t.height / 8) - 1) + (t.drops ? DROPPER_COST : 0);
-    cost += population(i) * each;
-  });
+  // An object that can turn into something busier is priced as the busiest thing it can be.
+  g.types.forEach((_, i) => (cost += base(i) * Math.max(...[...reach.get(i)!].map(each))));
   for (const r of g.rules) {
     const w = r.when;
+    cost += CONDITION_COST * (r.if?.length ?? 0);
     if ("touch" in w) {
       // The runtime loops over the scarcer side and checks every object of the other.
       const [a, b] = w.touch.map((x) => population(id.get(x)!)) as [number, number];
       cost += TOUCH_RULE_COST + TOUCH_RULE_COST_PER_PAIR * Math.max(1, Math.min(a, b)) * Math.max(a, b);
+    } else if ("every" in w) {
+      cost += EVERY_RULE_COST;
+    } else if ("onTile" in w) {
+      cost += TILE_RULE_COST + TILE_RULE_COST_PER_OBJECT * population(id.get(w.onTile[0])!);
     } else {
       const t = "allGone" in w ? w.allGone : "reachesBottom" in w ? w.reachesBottom : null;
       cost += EVENT_RULE_COST + EVENT_RULE_COST_PER_OBJECT * (t ? population(id.get(t)!) : 0);
     }
   }
+  const actions = g.rules.flatMap((r) => r.then);
+  if (actions.some((a) => ("turn" in a && a.turn.seconds) || ("turnAll" in a && a.turnAll.seconds))) cost += TIMED_TURN_COST;
+  if (actions.some((a) => "nextLevel" in a)) cost += LEVELS_COST;
+  if (g.counters.some((c) => c.show)) cost += HUD_NUMBER_COST;
+  if (g.rules.some((r) => "timer" in r.when)) cost += HUD_NUMBER_COST;
   return Math.round(cost);
 }
 
@@ -91,7 +162,7 @@ export type KitResult = { ok: true; input: BuildInput & { files: Record<string, 
 
 /** Text the font can draw, uppercased and trimmed to a screen line. */
 export const kitText = (s: string, max = 32) =>
-  [...s.toUpperCase()].filter((c) => FONT_CHARS.includes(c) && c !== "#").join("").trim().slice(0, max);
+  [...s.toUpperCase()].filter((c) => FONT_CHARS.includes(c) && !"#~*".includes(c)).join("").trim().slice(0, max);
 
 interface Spawn {
   type: number;
@@ -99,7 +170,16 @@ interface Spawn {
   y: number;
 }
 
-export function validateKit(input: unknown, library: SoundEffect[]): { ok: true; game: KitGame; spawns: Spawn[] } | { ok: false; errors: string[] } {
+export interface KitOptions {
+  /** Skip the CPU budget check (cost measurements only). */
+  ignoreBudget?: boolean;
+}
+
+export function validateKit(
+  input: unknown,
+  library: SoundEffect[],
+  opts: KitOptions = {},
+): { ok: true; game: KitGame; spawns: Spawn[] } | { ok: false; errors: string[] } {
   const parsed = KitGameSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((i) => `This game file is damaged (${i.path.join(".")}: ${i.message}).`) };
@@ -110,6 +190,7 @@ export function validateKit(input: unknown, library: SoundEffect[]): { ok: true;
   const paletteIds = new Set(g.palettes.map((p) => p.id));
 
   if (typeIndex.size !== g.types.length) errors.push("Two kinds of thing have the same name.");
+  for (const t of g.types) if ((TILES as readonly string[]).includes(t.id)) errors.push(`"${t.id}" is a kind of tile; give "${t.label}" another id.`);
   for (const p of [g.wallPalette, g.textPalette]) if (!paletteIds.has(p)) errors.push(`There's no palette called "${p}".`);
   for (const t of g.types) {
     if (!paletteIds.has(t.palette)) errors.push(`"${t.label}" uses a palette that doesn't exist.`);
@@ -133,7 +214,7 @@ export function validateKit(input: unknown, library: SoundEffect[]): { ok: true;
         if (ch === " " || ch === ".") return;
         const what = g.room.legend[ch];
         if (!what) errors.push(`The room uses "${ch}", which doesn't stand for anything.`);
-        else if (what !== "wall") {
+        else if (!(TILES as readonly string[]).includes(what)) {
           const t = typeIndex.get(what);
           if (t === undefined) errors.push(`The room places "${what}", which doesn't exist.`);
           else spawns.push({ type: t, x: c * 8, y: ROOMTOP + r * 16 });
@@ -154,19 +235,42 @@ export function validateKit(input: unknown, library: SoundEffect[]): { ok: true;
     if (n > ZONE_BUDGET) errors.push(`Row ${r + 1} of the room has ${n} things; the console can show ${ZONE_BUDGET} side by side.`);
   }
 
+  // Counters.
+  const counterIds = new Set(g.counters.map((c) => c.id));
+  if (counterIds.size !== g.counters.length) errors.push("Two counters have the same name.");
+  if (counterIds.has(LEVEL)) errors.push(`"${LEVEL}" is built in; give the counter another name.`);
+  if (g.counters.filter((c) => c.show).length > 1) errors.push("Only one counter can be shown on screen.");
+  const refCounter = (id: string, where: string, levelOk: boolean) => {
+    if (id === LEVEL ? !levelOk : !counterIds.has(id)) errors.push(`${where} uses a counter "${id}" that doesn't exist.`);
+  };
+
   // Rules.
   const refType = (id: string, where: string) => !typeIndex.has(id) && errors.push(`${where} mentions "${id}", which doesn't exist.`);
+  const isPlayerType = (id: string) => PLAYER_BEHAVIOURS.includes(g.types[typeIndex.get(id) ?? -1]?.behaviour as never);
   g.rules.forEach((rule, n) => {
     const where = `Rule ${n + 1}`;
     const w = rule.when;
     if ("touch" in w) w.touch.forEach((id) => refType(id, where));
     if ("allGone" in w) refType(w.allGone, where);
     if ("reachesBottom" in w) refType(w.reachesBottom, where);
+    if ("onTile" in w) refType(w.onTile[0], where);
+    if ("reaches" in w) refCounter(w.reaches[0], where, true);
+    for (const c of rule.if ?? []) refCounter(c.counter, where, true);
     for (const a of rule.then) {
-      const who = "remove" in a ? a.remove : "respawn" in a ? a.respawn : null;
-      if (who === "second" && !("touch" in w)) errors.push(`${where} removes or moves a second thing, but only touching involves two.`);
-      if (who === "first" && !("touch" in w) && !("reachesBottom" in w)) errors.push(`${where} has no thing to remove or move.`);
+      const who = "remove" in a ? a.remove : "respawn" in a ? a.respawn : "turn" in a ? a.turn.who : null;
+      if (who && ruleThing(w, who) === null) errors.push(`${where} changes ${who === "second" ? "a second thing, but only touching involves two" : "a thing, but nothing is involved"}.`);
       if ("sound" in a && !library.some((s) => s.id === a.sound)) errors.push(`${where} plays a sound that isn't in the library.`);
+      if ("add" in a) refCounter(a.add[0], where, false);
+      if ("take" in a) refCounter(a.take[0], where, false);
+      if ("set" in a) refCounter(a.set[0], where, false);
+      const turnFrom = "turn" in a ? ruleThing(w, a.turn.who) : "turnAll" in a ? a.turnAll.type : null;
+      const turnInto = "turn" in a ? a.turn.into : "turnAll" in a ? a.turnAll.into : null;
+      if (turnInto) {
+        refType(turnInto, where);
+        if (turnFrom) refType(turnFrom, where);
+        if ((turnFrom && isPlayerType(turnFrom)) || isPlayerType(turnInto)) errors.push(`${where}: the player can't turn into something else, or be turned into.`);
+        if (turnFrom === turnInto) errors.push(`${where} turns something into itself.`);
+      }
     }
     if ("reachesBottom" in w) {
       const settles = rule.then.some((a) => "remove" in a || "respawn" in a || "win" in a || "lose" in a || "restartRoom" in a);
@@ -175,7 +279,7 @@ export function validateKit(input: unknown, library: SoundEffect[]): { ok: true;
   });
   if (g.sounds.shoot && !library.some((s) => s.id === g.sounds.shoot)) errors.push("The shooting sound isn't in the library.");
 
-  if (!errors.length) {
+  if (!errors.length && !opts.ignoreBudget) {
     const cost = cpuCost(g, spawns);
     if (cost > CPU_BUDGET) {
       errors.push(`This room is too busy for the console to run smoothly (it needs ${cost}% of each frame). Remove some things or rules.`);
@@ -197,10 +301,16 @@ const triggerText = (w: KitTrigger) =>
       ? `all ${w.allGone} are gone`
       : "reachesBottom" in w
         ? `a ${w.reachesBottom} reaches the bottom`
-        : `${w.timer} seconds pass`;
+        : "timer" in w
+          ? `${w.timer} seconds pass`
+          : "every" in w
+            ? `every ${w.every} seconds`
+            : "reaches" in w
+              ? `${w.reaches[0]} reaches ${w.reaches[1]}`
+              : `a ${w.onTile[0]} is on a ${w.onTile[1]} tile`;
 
-export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
-  const v = validateKit(input, library);
+export function generateKit(input: unknown, library: SoundEffect[], opts: KitOptions = {}): KitResult {
+  const v = validateKit(input, library, opts);
   if (!v.ok) return v;
   const { game: g } = v;
   // Placed objects are sorted by type, so each type has its own slot range;
@@ -208,12 +318,19 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
   const spawns = [...v.spawns].sort((a, b) => a.type - b.type);
   const launchStart = spawns.length;
   const launchedTypes = new Set(g.types.flatMap((t) => [t.shoots, t.drops?.type]).filter((x): x is string => !!x));
-  /** First and last slot that can hold objects of type t. */
-  const slots = (t: number): [number, number] => {
+  /** First and last slot that start out holding objects of type t. */
+  const baseSlots = (t: number): [number, number] => {
     const placed = spawns.map((s, i) => [s.type, i] as const).filter(([type]) => type === t).map(([, i]) => i);
     const launched = launchedTypes.has(g.types[t]!.id);
     if (placed.length === 0) return launched ? [launchStart, 23] : [launchStart, launchStart - 1];
     return [placed[0]!, launched ? 23 : placed.at(-1)!];
+  };
+  const reach = turnReach(g);
+  /** First and last slot that can hold objects of type t, including things that turn into it. */
+  const slots = (t: number): [number, number] => {
+    const ranges = g.types.map((_, u) => u).filter((u) => reach.get(u)!.has(t)).map(baseSlots).filter(([a, b]) => b >= a);
+    if (ranges.length === 0) return [launchStart, launchStart - 1];
+    return [Math.min(...ranges.map((r) => r[0])), Math.max(...ranges.map((r) => r[1]))];
   };
   const typeIndex = new Map(g.types.map((t, i) => [t.id, i]));
   const paletteIndex = new Map(g.palettes.map((p, i) => [p.id, i]));
@@ -255,16 +372,33 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
   /** Which loop variable holds each rule's first and second thing. */
   const roles = new Map<number, { first: string; second: string }>();
   /** Most objects of a type there can be: placed ones, or one if something shoots or drops it. */
-  const population = (t: number) => {
+  const basePopulation = (t: number) => {
     const placed = spawns.filter((s) => s.type === t).length;
     const launched = g.types.some((x) => x.shoots === g.types[t]!.id || x.drops?.type === g.types[t]!.id) ? 1 : 0;
     return placed + launched;
   };
+  const population = (t: number) => g.types.reduce((n, _, u) => n + (reach.get(u)!.has(t) ? basePopulation(u) : 0), 0);
+
+  // Counters: cnt0-cnt3, plus the built-in level.
+  const counterVar = (id: string) => (id === LEVEL ? "levelnum" : `cnt${g.counters.findIndex((c) => c.id === id)}`);
+  /** Lines that jump to `fail` unless every condition holds. */
+  const conditionGate = (conds: KitCondition[] | undefined, fail: string) =>
+    (conds ?? []).map((c) => {
+      const v = counterVar(c.counter);
+      const not = { eq: "<>", ne: "=", gte: "<", lte: ">" }[c.op];
+      return ` if ${v} ${not} ${c.value} then ${fail}`;
+    });
+  const timedTurns = g.rules.some((r) => r.then.some((a) => ("turn" in a && a.turn.seconds) || ("turnAll" in a && a.turnAll.seconds)));
+  let everyCount = 0;
+  const everyInit: string[] = [];
   let latch = 0;
   g.rules.forEach((rule, n) => {
     const w = rule.when;
     const L = `r${n}`;
-    const out: string[] = [` rem rule ${n + 1}: when ${triggerText(w)}`];
+    const out: string[] = [` rem rule ${n + 1}: when ${triggerText(w)}${rule.if?.length ? ", only if " + rule.if.map((c) => `${c.counter} ${c.op} ${c.value}`).join(" and ") : ""}`];
+    const latched = "allGone" in w || "timer" in w || "reaches" in w;
+    // Looping rules check their conditions first, so a false one also saves the loop.
+    if (!latched && !("every" in w)) out.push(...conditionGate(rule.if, `goto ${L}_end`));
     if ("touch" in w) {
       // The outer loop runs over the scarcer type: the player (one known slot)
       // or whichever type has fewer objects. Actions still see the rule's
@@ -281,8 +415,7 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
       const [os, oe] = slots(outer);
       const [is, ie] = slots(inner);
       if (oe < os || ie < is) {
-        out.push(` rem (never true: no ${oe < os ? to.label : tn.label} can exist)`);
-        ruleCode.push(out.join("\n"));
+        ruleCode.push([out[0], ` rem (never true: no ${oe < os ? to.label : tn.label} can exist)`].join("\n"));
         return;
       }
       out.push(
@@ -301,6 +434,41 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
         ` next`,
         `${L}_ni`,
         ...(outerIsHero ? [] : [` next`]),
+      );
+    } else if ("every" in w) {
+      const v = `ev${everyCount++}`;
+      everyInit.push(` ${v} = ${w.every}`);
+      out.push(
+        ` if secondtick <> 0 then goto ${L}_end`,
+        ` ${v} = ${v} - 1`,
+        ` if ${v} then goto ${L}_end`,
+        ` ${v} = ${w.every}`,
+        ...conditionGate(rule.if, `goto ${L}_end`),
+        ` gosub ${L}_do`,
+        ` if ruleexit then return`,
+      );
+    } else if ("onTile" in w) {
+      const a = typeIndex.get(w.onTile[0])!;
+      const [as, ae] = slots(a);
+      const kind = TILES.indexOf(w.onTile[1]) + 1;
+      const t = g.types[a]!;
+      if (ae < as) {
+        ruleCode.push([out[0], ` rem (never true: no ${t.label} can exist)`].join("\n"));
+        return;
+      }
+      roles.set(n, { first: "oi", second: "oj" });
+      // Checked at the thing's middle, on odd frames like the other event rules.
+      out.push(
+        ` if rnd = 0 then goto ${L}_end`,
+        ` for oi = ${as} to ${ae}`,
+        ` if otype[oi] <> ${a} then goto ${L}_ni`,
+        ` px = ox[oi] + ${Math.floor(t.width / 2)} : py = oy[oi] + ${Math.floor(t.height / 2)}`,
+        ` if py > 191 then goto ${L}_ni`,
+        ` gosub wallat`,
+        ` if cell = ${kind} then gosub ${L}_do`,
+        ` if ruleexit then return`,
+        `${L}_ni`,
+        ` next`,
       );
     } else if ("reachesBottom" in w) {
       const a = typeIndex.get(w.reachesBottom)!;
@@ -323,6 +491,7 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
       const reg = bit < 8 ? "latches" : "latches2";
       const flag = `${reg}{${bit % 8}}`;
       out.push(` if rnd = 0 then goto ${L}_end`);
+      out.push(...conditionGate(rule.if, `${flag} = 0 : goto ${L}_end`));
       if ("allGone" in w) {
         const a = typeIndex.get(w.allGone)!;
         const [as, ae] = slots(a);
@@ -333,17 +502,42 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
           ` next`,
           ` if count > 0 then ${flag} = 0 : goto ${L}_end`,
         );
+      } else if ("reaches" in w) {
+        out.push(` if ${counterVar(w.reaches[0])} < ${w.reaches[1]} then ${flag} = 0 : goto ${L}_end`);
       } else {
         out.push(` if seconds <> ${w.timer} then ${flag} = 0 : goto ${L}_end`);
       }
-      out.push(` if ${flag} then goto ${L}_end`, ` ${flag} = 1`, ` gosub ${L}_do`, ` if ruleexit then return`, `${L}_end`);
+      out.push(` if ${flag} then goto ${L}_end`, ` ${flag} = 1`, ` gosub ${L}_do`, ` if ruleexit then return`);
     }
-    out.push(` if gamestate <> STATE_PLAY then return`);
+    out.push(`${L}_end`, ` if gamestate <> STATE_PLAY then return`);
     ruleCode.push(out.join("\n"));
   });
-  const ruleBodies = g.rules.map((rule, n) => {
+  const turnLines = (x: string, into: string, seconds: number | undefined) => {
+    const t = typeIndex.get(into)!;
+    if (seconds) return [` if otimer[${x}] = 0 then oback[${x}] = otype[${x}]`, ` otimer[${x}] = ${seconds}`, ` otype[${x}] = ${t}`];
+    return [...(timedTurns ? [` otimer[${x}] = 0`] : []), ` otype[${x}] = ${t}`];
+  };
+  const ruleBodies = g.rules.map((rule: KitRule, n) => {
     const role = roles.get(n) ?? { first: "oi", second: "oj" };
-    const body = rule.then.map((a: KitAction) => {
+    const body = rule.then.map((a: KitAction, j) => {
+      if ("add" in a) {
+        const v = counterVar(a.add[0]);
+        return ` ${v} = ${v} + ${a.add[1]}\n if ${v} > 99 then ${v} = 99`;
+      }
+      if ("take" in a) {
+        const v = counterVar(a.take[0]);
+        return ` if ${v} < ${a.take[1]} then ${v} = 0 else ${v} = ${v} - ${a.take[1]}`;
+      }
+      if ("set" in a) return ` ${counterVar(a.set[0])} = ${a.set[1]}`;
+      if ("turn" in a) return turnLines(role[a.turn.who], a.turn.into, a.turn.seconds).join("\n");
+      if ("turnAll" in a) {
+        const from = typeIndex.get(a.turnAll.type)!;
+        const [fs, fe] = slots(from);
+        if (fe < fs) return ` rem (no ${a.turnAll.type} can exist)`;
+        const skip = `r${n}_t${j}`;
+        return [` for tk = ${fs} to ${fe}`, ` if otype[tk] <> ${from} then goto ${skip}`, ...turnLines("tk", a.turnAll.into, a.turnAll.seconds), skip, ` next`].join("\n");
+      }
+      if ("nextLevel" in a) return ` if levelnum < 99 then levelnum = levelnum + 1\n gosub startroom : ruleexit = 1`;
       if ("remove" in a) return ` otype[${role[a.remove]}] = EMPTY`;
       if ("respawn" in a) {
         const x = role[a.respawn];
@@ -369,10 +563,14 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
   // Data.
   const room = g.room.rows.map((r) => r.replace(/\./g, " "));
   const isWall = (ch: string) => g.room.legend[ch] === "wall";
+  /** 0 empty, 1 wall, 2 hazard, 3 goal. */
+  const tileOf = (ch: string) => TILES.indexOf(g.room.legend[ch] as never) + 1;
+  const TILE_CHARS = ["  ", "##", "~~", "**"];
   const mapLines = room.flatMap((r) => {
-    const line = [...r].map((ch) => (isWall(ch) ? "##" : "  ")).join("");
+    const line = [...r].map((ch) => TILE_CHARS[tileOf(ch)]).join("");
     return [line, line]; // each 16-line room row is two 8-line character rows
   });
+  const hasLevels = g.rules.some((r) => r.then.some((a) => "nextLevel" in a));
   const data = [
     dataTable("typew", g.types.map((t) => t.width)),
     dataTable("typeh", g.types.map((t) => t.height)),
@@ -382,7 +580,8 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
     dataTable("typedrops", g.types.map((t) => (t.drops ? typeIndex.get(t.drops.type)! : 255))),
     dataTable("typedropchance", g.types.map((t) => t.drops?.chance ?? 0)),
     dataTable("speedsteps", SPEED_STEPS.flat()),
-    dataTable("roomwalls", room.flatMap((r) => [...r].map((ch) => (isWall(ch) ? 1 : 0)))),
+    dataTable("roomwalls", room.flatMap((r) => [...r].map(tileOf))),
+    ...(hasLevels ? [dataTable("typefaster", g.types.map((t) => (PLAYER_BEHAVIOURS.includes(t.behaviour) ? 0 : 1)))] : []),
     dataTable("rowoffset", Array.from({ length: ROOM_ROWS }, (_, r) => r * ROOM_COLS)),
     dataTable("spawntype", spawns.map((s) => s.type)),
     dataTable("spawnx", spawns.map((s) => s.x)),
@@ -398,7 +597,19 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
       title: sanitizeTitle(g.title),
       runtimeVersion: KIT_RUNTIME_VERSION,
       lives: g.lives,
-      constants: ` const spawncount_minus1 = ${spawns.length - 1}\n const LAUNCHSTART = ${Math.min(launchStart, 23)}\n const typecount_minus1 = ${g.types.length - 1}\n autodim byte ruleexit`,
+      constants: [
+        ` const spawncount_minus1 = ${spawns.length - 1}`,
+        ` const LAUNCHSTART = ${Math.min(launchStart, 23)}`,
+        ` const typecount_minus1 = ${g.types.length - 1}`,
+        ` autodim byte ruleexit`,
+        ...g.counters.map((c, i) => ` autodim byte cnt${i}`),
+        ...Array.from({ length: everyCount }, (_, i) => ` autodim byte ev${i}`),
+      ].join("\n"),
+      counterInit: g.counters.map((c, i) => ` cnt${i} = ${c.start}`).join("\n") || " rem no counters",
+      everyInit: everyInit.join("\n") || " rem no every-N-seconds rules",
+      hasTimedTurns: timedTurns,
+      hasLevels,
+      hudCounter: g.counters.some((c) => c.show) ? `cnt${g.counters.findIndex((c) => c.show)}` : "",
       hasDrops: g.types.some((t) => t.drops),
       graphics: graphics.join("\n"),
       alphachars: FONT_CHARS,
@@ -408,6 +619,7 @@ export function generateKit(input: unknown, library: SoundEffect[]): KitResult {
       wallPalette: paletteIndex.get(g.wallPalette),
       showTimer: g.rules.some((r) => "timer" in r.when),
       hasWalls: room.some((r) => [...r].some(isWall)),
+      hasTileMap: room.some((r) => [...r].some(isWall)) || g.rules.some((r) => "onTile" in r.when),
       drawLabels: g.types.map((_, k) => `draw${k}`).join(" "),
       shootSound,
       rules: ruleCode.join("\n\n"),

@@ -3,7 +3,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
-async function start(page: Page, preset: "Shooter" | "Maze" | "Dodger") {
+async function start(page: Page, preset: "Shooter" | "Maze" | "Dodger" | "Ghost Panic") {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset}`) }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
@@ -88,7 +88,8 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
 });
 
 test("rules use the game's own things", async ({ page }) => {
-  await start(page, "Maze");
+  // The Dodger: it already shows a timer, so a timer rule has room in the budget (the HUD digits cost 7).
+  await start(page, "Dodger");
   const rules = (await game(page)).rules.length;
   await openTab(page, "Rules");
   await page.getByRole("button", { name: "Add rule" }).click();
@@ -135,4 +136,15 @@ test("a kit game survives a reload and round-trips through a game file", async (
   await page.getByLabel("Open game file").setInputFiles({ name: download.suggestedFilename(), mimeType: "application/zip", buffer: file });
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
+});
+
+test("Ghost Panic opens, builds, and shows its newer rules as sentences", async ({ page }) => {
+  await start(page, "Ghost Panic");
+  await expect(page.getByLabel("Game title")).toHaveValue("Ghost Panic");
+  await openTab(page, "Rules");
+  await expect(page.getByText("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.")).toBeVisible();
+  // Plain rules stay editable.
+  await expect(page.getByLabel("Rule 1 trigger")).toHaveValue("touch");
+  await openTab(page, "Room");
+  await expect(page.getByRole("radio", { name: "Paint Spikes" })).toBeVisible();
 });
