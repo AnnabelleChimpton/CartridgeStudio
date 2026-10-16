@@ -1,0 +1,18 @@
+/* AppStatus: offline indicator, install link and update prompt. */
+.app-status {
+  max-width: 1440px; margin: 0 auto; padding: 0 16px 12px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.app-status:empty { display: none; }
+.offline-indicator { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.offline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+.offline-dot.off { background: var(--accent); }
+
+/* Bottom corner, clear of the editor's controls, and dismissible. */
+.update-prompt {
+  position: fixed; right: 16px; bottom: 16px; z-index: 30;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  max-width: calc(100vw - 32px); padding: 10px 14px;
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--field-line); border-radius: 8px; box-shadow: 0 6px 24px #0008;
+}
