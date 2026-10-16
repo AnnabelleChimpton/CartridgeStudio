@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#14161b"/><g transform="translate(256 256) scale(0.78) translate(-256 -256)">
+  <!-- A generic game cartridge: body, label, grip ridges and edge contacts. -->
+  <path d="M140 96h232a20 20 0 0 1 20 20v236l-24 24v40H144v-40l-24-24V116a20 20 0 0 1 20-20z" fill="#f0a23a"/>
+  <rect x="172" y="132" width="168" height="136" rx="10" fill="#14161b"/>
+  <path d="M196 236l40-56 28 36 18-22 34 42z" fill="#f0a23a"/>
+  <circle cx="300" cy="170" r="14" fill="#f0a23a"/>
+  <g fill="#14161b">
+    <rect x="172" y="296" width="168" height="10" rx="5"/>
+    <rect x="172" y="318" width="168" height="10" rx="5"/>
+  </g>
+  <g fill="#14161b">
+    <rect x="170" y="384" width="16" height="24" rx="3"/>
+    <rect x="198" y="384" width="16" height="24" rx="3"/>
+    <rect x="226" y="384" width="16" height="24" rx="3"/>
+    <rect x="254" y="384" width="16" height="24" rx="3"/>
+    <rect x="282" y="384" width="16" height="24" rx="3"/>
+    <rect x="310" y="384" width="16" height="24" rx="3"/>
+  </g>
+</g></svg>
