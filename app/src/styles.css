@@ -626,6 +626,16 @@ details.dev { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px s
 .cpu-bar .over, strong.over { background-color: var(--error); color: var(--error); }
 strong.ok, strong.near, strong.over { background: none; font-variant-numeric: tabular-nums; }
 
+/* The cartridge meter sits right under the console meter: they share one rule. */
+.cpu-meter + .cpu-meter.cart-fill { border-top: 0; }
+.cart-fill details { margin-top: var(--s-2); }
+.cart-fill .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; margin: var(--s-2) 0 0; }
+.cart-fill .stats dt { color: var(--muted); font-size: var(--fs-xs); }
+.cart-fill .stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+/* The TV row under the game's controls: the button and its line of help. */
+.emu-controls.tv-row { margin-top: var(--s-1); }
+.emu-controls.tv-row .hint { flex: 1 1 200px; flex-basis: auto; margin: 0; }
+
 /* Show it */
 .show-h { font-size: var(--fs-sm); font-weight: 700; color: var(--text); margin: var(--s-4) 0 var(--s-2); }
 .show-it > h2 + .show-h { margin-top: 0; }
@@ -647,6 +657,20 @@ strong.ok, strong.near, strong.over { background: none; font-variant-numeric: ta
 .show-button:hover:not(:disabled), .show-button:focus-visible { border-color: var(--accent-text); background: var(--raised); }
 .show-button.recording { border-color: var(--error); background: var(--error-soft); }
 .rec-dot { display: inline-block; width: 10px; height: 10px; background: var(--error); animation: rec 1s steps(1, end) infinite; }
+
+.show-zip { display: grid; gap: var(--s-2); }
+ul.zip-contents { margin: 0; padding-left: 18px; }
+ul.zip-contents li { margin-bottom: 2px; }
+
+/* The console dialog: the hardware table, "Did it boot?" and the boot report. */
+table.compat { width: 100%; border-collapse: collapse; margin: var(--s-3) 0 var(--s-2); }
+table.compat caption { text-align: left; font-weight: 700; color: var(--text); padding-bottom: var(--s-1); }
+table.compat th, table.compat td { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.compat thead th { color: var(--muted); font-weight: 700; }
+.boot-ask { margin-top: var(--s-2); }
+.boot-ask button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
+.first-boot { margin-top: var(--s-2); padding-left: var(--s-3); border-left: 4px solid var(--ok); }
+.boot-report-block { margin-top: var(--s-2); }
 
 /* TV mode: the game as big as the screen allows, with its title and a prompt. */
 .tv-title, .tv-hint { display: none; }
