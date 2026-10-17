@@ -1,4 +1,4 @@
-// Ghost Panic, the batch 1 proof preset: counters, "only if", timed "turn
+// Ghost Panic, the starter game that uses the most at once: counters, "only if", timed "turn
 // into", every N seconds, flee, the level loop and hazard tiles, together in
 // one game. Each test uses the real game with a small change to the room, so
 // the moments under test happen next to the cat.
@@ -20,7 +20,7 @@ const START: Step[] = [{ frames: 5 }, { hold: ["fire"], frames: 2 }, { frames: 2
 const WATCH: WatchMap = {
   ...KIT_WATCH,
   level: { symbol: "levelnum" },
-  combo: { symbol: "cnt_combo" },
+  combo: { symbol: "c_combo" },
   ghostA: { symbol: "otype", offset: 1 },
   ghostB: { symbol: "otype", offset: 2 },
   ghostAx: { symbol: "ox", offset: 1 },

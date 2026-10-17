@@ -294,3 +294,24 @@ body:has(#motion-toggle[aria-pressed="true"]) .screen::after { background: var(-
   .brand-mark { width: 32px; height: 32px; }
   .header-row .button.small { padding-inline: 0.8rem; font-size: 0.88rem; }
 }
+
+/* ---- Structural classes for the rewritten page (content session). Spacing and layout only; the visual pass can restyle freely. ---- */
+.poster { position: relative; }
+.poster .button { position: absolute; left: 0; right: 0; bottom: 1rem; width: max-content; max-width: calc(100% - 2rem); margin: 0 auto; min-height: 44px; }
+.player-frame { display: block; width: 100%; height: clamp(440px, 75vh, 680px); border: 0; background: var(--bg); }
+.screen.playing::after { content: none; }
+.hero-notes p { margin: 0 0 0.35rem; }
+.who-families { display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; align-items: start; margin: 1.5rem 0 2.5rem; }
+@media (max-width: 860px) { .who-families { grid-template-columns: 1fr; } }
+.who-basic { border-top: 1px solid var(--line); padding-top: 1.5rem; margin-bottom: 2rem; }
+.who-basic ul, .who-families ul { padding-left: 1.2rem; }
+.who-jams { border-top: 1px solid var(--line); padding-top: 1.5rem; max-width: 46rem; }
+.bas-excerpt { margin: 1rem 0 0; }
+.bas-excerpt figcaption p:not(.rule) { color: var(--muted); font-size: 0.95rem; }
+.bas-excerpt pre { margin: 0; padding: 1rem; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.table-scroll { overflow-x: auto; margin: 0 0 1rem; }
+.compat-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.compat-table th, .compat-table td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--line); }
+.questions h3 { margin-top: 1.75rem; }
+.credits h2 { font-size: 1rem; margin: 0.5rem 0 0.25rem; }
+.credits p { margin: 0 0 0.25rem; font-size: 0.9rem; }

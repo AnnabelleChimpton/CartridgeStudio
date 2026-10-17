@@ -39,26 +39,40 @@ export function sourceFolder({ title, madeFrom, files, symbols, cartridge, tests
   return out;
 }
 
+/** The stock 7800basic release page for the version the app builds with (the lock file names its WebAssembly download). */
+const releasePage = (url: string) => url.replace(/\/releases\/download\/([^/]+)\/.*$/, "/releases/tag/$1");
+
 function readme(title: string, madeFrom: string, cartridge?: string, tests = false): string {
+  const version = TOOLCHAIN_NAME.split(" ")[1];
   return `${title} - source
 ${"=".repeat(title.length + 9)}
 
-Made with Cartridge Studio from ${madeFrom}.
+Made with Cartridge Studio from ${madeFrom}. Cartridge Studio built it with
+the unmodified ${TOOLCHAIN_NAME} and dasm, compiled to WebAssembly; the
+same program builds with the stock tools on your own computer.
 
-  game.bas       the 7800basic program; it's yours to edit
+  game.bas       the 7800basic program; edit it as you like
   *.png          the graphics it imports (incgraphic)
   build.sh       builds it on macOS and Linux
   build.bat      builds it on Windows
   RUNTIME.txt    the program's labels, variables and memory map
-  PITFALLS.txt   things 7800basic ${TOOLCHAIN_NAME.split(" ")[1]} gets wrong, and how to avoid them${tests ? "\n  tests.json     your checks: joystick input from power-on, then what should be true;\n                 variables are named by dasm symbol in its \"watch\" map" : ""}${cartridge ? `\n  ${cartridge.padEnd(14)} open it in Cartridge Studio to keep editing there` : ""}
+  PITFALLS.txt   eight things 7800basic ${version} gets wrong, and how to avoid them${tests ? "\n  tests.json     your checks: joystick input from power-on, then what should be true;\n                 variables are named by dasm symbol in its \"watch\" map" : ""}${cartridge ? `\n  ${cartridge.padEnd(14)} open it in Cartridge Studio to keep editing there` : ""}
 
-To build it, install ${TOOLCHAIN_NAME}
-(${TOOLCHAIN_URL})
-and set bas7800dir as its install guide says, then run build.sh or build.bat.
-The folder also opens as it is in Atari Dev Studio.
+Building it with stock 7800basic
+  1. Download ${TOOLCHAIN_NAME} for your system from
+     ${releasePage(TOOLCHAIN_URL)}
+     and unpack it. It includes dasm.
+  2. Set bas7800dir to the unpacked folder, as 7800basic's install guide
+     says (install_ux.sh on macOS and Linux, install_win.bat on Windows).
+  3. Run build.sh (or build.bat) from this folder. It writes game.bas.a78,
+     with the A78 header for emulators, and game.bas.bin for flash carts.
+  Cartridge Studio checks that its exports build with ${version}.
+  The folder also opens as it is in Atari Dev Studio.
 
-The game is yours. 7800basic's own routines built into the ROM are CC0
-(see 7800basic's LICENSE.txt).
+Credits
+  7800basic is by Mike Saarna (RevEng) and contributors, GPL v2. dasm is
+  GPL v2. The game is yours: the ROM holds your program and 7800basic's own
+  runtime routines, which are CC0 (see 7800basic's LICENSE.txt).
 `;
 }
 

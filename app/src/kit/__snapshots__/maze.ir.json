@@ -990,6 +990,7 @@
   "win": "ALL THE YARN",
   "lose": "CAUGHT BY DUST"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": {

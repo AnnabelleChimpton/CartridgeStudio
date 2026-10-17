@@ -80,7 +80,7 @@
     "away": false,
     "speed": {
      "step": 1,
-     "plus": "cnt_pace",
+     "plus": "c_pace",
      "max": 4
     },
     "every": 1
@@ -144,7 +144,7 @@
     "away": true,
     "speed": {
      "step": 1,
-     "plus": "cnt_pace",
+     "plus": "c_pace",
      "max": 4
     },
     "every": 1
@@ -208,7 +208,7 @@
     "away": false,
     "speed": {
      "step": 2,
-     "plus": "cnt_pace",
+     "plus": "c_pace",
      "max": 4
     },
     "every": 1
@@ -713,7 +713,7 @@
   {
    "id": "pace",
    "label": "Pace",
-   "name": "cnt_pace",
+   "name": "c_pace",
    "start": 0,
    "keep": "game",
    "span": {
@@ -724,7 +724,7 @@
   {
    "id": "combo",
    "label": "Combo",
-   "name": "cnt_combo",
+   "name": "c_combo",
    "start": 0,
    "keep": "game",
    "span": {
@@ -832,7 +832,7 @@
      },
      "k": "counter",
      "mode": "set",
-     "name": "cnt_combo",
+     "name": "c_combo",
      "value": {
       "src": {
        "k": "lit",
@@ -906,7 +906,7 @@
      "a": {
       "src": {
        "k": "var",
-       "name": "cnt_combo"
+       "name": "c_combo"
       },
       "signed": false
      },
@@ -981,7 +981,7 @@
      },
      "k": "counter",
      "mode": "add",
-     "name": "cnt_combo",
+     "name": "c_combo",
      "value": {
       "src": {
        "k": "lit",
@@ -1547,7 +1547,7 @@
      },
      "k": "counter",
      "mode": "set",
-     "name": "cnt_pace",
+     "name": "c_pace",
      "value": {
       "src": {
        "k": "lit",
@@ -1645,6 +1645,7 @@
   "win": "CLEARED THREE TIMES",
   "lose": "THE GHOSTS WON"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": null,

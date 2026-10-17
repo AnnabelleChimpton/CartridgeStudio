@@ -13,7 +13,7 @@ describe("About and licences", () => {
     expect(byName["7800basic"]!.version).toBe(lock.version);
     expect(byName["7800basic"]!.source).toBe(`https://github.com/7800-devtools/7800basic/tree/v${lock.version}`);
     expect(byName["js7800"]!.source).toBe(`https://github.com/raz0red/js7800/tree/${commit}`);
-    expect(byName["js7800"]!.note).toBe("Built from unmodified upstream source, with two worker-safe I/O stand-ins.");
+    expect(byName["js7800"]!.note).toBe("Built from upstream source at this commit with two worker-safe I/O stand-ins (app/js7800-core/, app/scripts/build-js7800.mjs), then minified.");
     expect(byName["dasm"]!.source).toBe("https://github.com/dasm-assembler/dasm");
   });
 

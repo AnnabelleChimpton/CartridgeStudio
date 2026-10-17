@@ -3,9 +3,9 @@
 // with things on the screen and in the slots the cost model priced. This is
 // what lets the kit promise "anything the editor accepts works".
 //
-// The games use kit model v2's whole vocabulary (randomKitGameV2): parts,
-// every trigger, targets, values, rooms, flow. Random v1 games (as saved
-// before v2) check the migration: they must migrate, validate and build.
+// The games use kit format 2's whole vocabulary (randomKitGameV2): parts,
+// every trigger, targets, values, rooms, flow. Random format 1 games (as
+// saved before format 2) check the migration: they must migrate, validate and build.
 // Replay one with KIT_FUZZ_SEED=<seed> KIT_FUZZ_COUNT=1.
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -50,7 +50,7 @@ function rng(seed: number) {
   return { next, int, pick };
 }
 
-/** A random kit v1 game (as saved before model v2); `density` scales how many things are placed. */
+/** A random kit format 1 game (as saved before format 2); `density` scales how many things are placed. */
 export function randomKitGameV1(seed: number, density: number): KitGame {
   const r = rng(seed);
   const others = BEHAVIOURS.filter((b) => !PLAYER_BEHAVIOURS.includes(b));
@@ -71,7 +71,7 @@ export function randomKitGameV1(seed: number, density: number): KitGame {
       speed: 1 + r.int(4),
     };
   });
-  // Model v2 spike: some things move by velocity instead. A separate stream, so
+  // Some things move by velocity instead. A separate stream, so
   // the rest of each seed's game is unchanged.
   const rv = rng(seed ^ 0x7e10);
   types.forEach((t, i) => {
@@ -89,7 +89,7 @@ export function randomKitGameV1(seed: number, density: number): KitGame {
   if (r.next() < 0.5) {
     for (let k = 0; k < 4 + r.int(25); k++) rows[r.int(11)]![r.int(20)] = "#";
   }
-  // Hazard and goal tiles (batch 1).
+  // Hazard and goal tiles.
   if (r.next() < 0.4) {
     for (let k = 0; k < 1 + r.int(8); k++) rows[r.int(11)]![r.int(20)] = r.pick(["~", "*"]);
   }
@@ -104,7 +104,7 @@ export function randomKitGameV1(seed: number, density: number): KitGame {
   const legend: Record<string, string> = { "#": "wall", "~": "hazard", "*": "goal" };
   types.forEach((t, i) => (legend[symbol(i)] = t.id));
 
-  // Counters (batch 1).
+  // Counters.
   const counters: KitCounter[] = Array.from({ length: r.int(3) }, (_, i) => ({ id: `c${i}`, label: `C${i}`, start: r.int(5), ...(i === 0 && r.next() < 0.3 ? { show: true } : {}) }));
   const counterRefs = [...counters.map((c) => c.id), LEVEL];
   const nonPlayers = types.filter((t) => !PLAYER_BEHAVIOURS.includes(t.behaviour)).map((t) => t.id);

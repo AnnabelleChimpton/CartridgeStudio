@@ -38,4 +38,28 @@ describe("the offline player", () => {
     expect(Object.keys(files)).toEqual(["js7800-core.js", "runtime.js", "LICENSE.txt"]);
     expect(files["js7800-core.js"]).toContain("window.JS7800 = { B: a }");
   });
+
+  it("names the maker under the title, in the kit font with the words as typed, only when there is one", () => {
+    const by = playerHtml({ title: "Ghost Panic", rom, core, license: "GPL", info: { controls: { move: "free", button: "fire" }, madeBy: "Sam & Robin" } });
+    expect(by).toContain('<p class="by">');
+    expect(by).toContain("by Sam &#38; Robin");
+    const plain = playerHtml({ title: "Ghost Panic", rom, core, license: "GPL", info: { controls: { move: "free", button: "fire" }, madeBy: "Sam and Robin" } });
+    expect(plain).toMatch(/<p class="by"><svg[^>]*>.*<\/svg><span class="sr-only">by Sam and Robin<\/span><\/p>/);
+    expect(playerHtml({ title: "Ghost Panic", rom, core, license: "GPL" })).not.toContain('class="by"');
+  });
+
+  it("credits js7800, 7800basic and dasm in the footer", () => {
+    const html = playerHtml({ title: "Ghost Panic", rom, core, license: "GPL" });
+    expect(html).toMatch(/js7800<\/a> by raz0red/);
+    expect(html).toMatch(/7800basic<\/a> by Mike Saarna \(RevEng\)/);
+    expect(html).toContain(">dasm</a>");
+  });
+
+  it("links the studio only from an https public address", async () => {
+    expect(playerHtml({ title: "G", rom, core, license: "GPL", home: "https://example.org/studio/" })).toContain('<a href="https://example.org/studio/" rel="noreferrer">Made with Cartridge Studio</a>');
+    expect(playerHtml({ title: "G", rom, core, license: "GPL" })).not.toContain(">Made with Cartridge Studio</a>");
+    const { appHome } = await import("./player.ts");
+    const { PUBLIC_URL } = await import("../public-url.ts");
+    expect(appHome()).toBe(PUBLIC_URL ? PUBLIC_URL : undefined);
+  });
 });

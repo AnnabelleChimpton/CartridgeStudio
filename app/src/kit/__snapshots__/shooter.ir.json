@@ -1277,6 +1277,7 @@
   "win": "FLOORS SAFE",
   "lose": "BAGGED"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": {

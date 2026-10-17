@@ -28,6 +28,11 @@ body:
     validations:
       required: true
   - type: input
+    id: firmware
+    attributes:
+      label: Console firmware version
+      description: The 7800+ and 2600+ show it in their settings. Leave it empty for an original 7800.
+  - type: input
     id: cartridge
     attributes:
       label: Flash cartridge and firmware version

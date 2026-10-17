@@ -29,6 +29,8 @@ export interface BoxArt {
 export interface PlayerInfo {
   controls: PlayerControls;
   art?: BoxArt;
+  /** The game's "Made by", when it has one. */
+  madeBy?: string;
 }
 
 /** For games we know nothing about: the full joystick and a button. */
@@ -130,7 +132,8 @@ export function playerInfo(game: unknown): PlayerInfo {
   else if (typeof game.source === "string") controls = codeControls(game.source);
   // The Classic shooter: a ship that slides left and right and fires.
   else if (isObj(game.template) && /shooter/.test(str(game.template.id) ?? "")) controls = { move: "lr", button: "fire" };
-  return { controls, art: boxArt(game) };
+  const madeBy = str(game.madeBy)?.trim().slice(0, 29);
+  return { controls, art: boxArt(game), ...(madeBy ? { madeBy } : {}) };
 }
 
 /** The controls in words, for a keyboard and for a touch screen. */

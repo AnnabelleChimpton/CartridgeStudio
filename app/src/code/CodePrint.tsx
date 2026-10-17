@@ -8,6 +8,7 @@ import { APP_VERSION } from "../version.ts";
 import type { PrintSprite, PrintSubject } from "../print/pdf.ts";
 import { PrintControls, defaultPaper, printPdf } from "../ui/PrintPanel.tsx";
 import type { Everything } from "../ui/ShowItPanel.tsx";
+import { printSpec } from "../print/spec.ts";
 import type { Preview } from "../ui/usePreview.ts";
 import { download } from "../ui/usePreview.ts";
 import { codeCredits, codeSourceFiles } from "./code-files.ts";
@@ -41,6 +42,8 @@ export function codePrintSubject(p: CodeProject): PrintSubject {
     intro: "",
     facts: [],
     manual: p.manualText ?? DRAFT,
+    controls: [],
+    scoring: [],
   };
 }
 
@@ -63,7 +66,7 @@ export function codeEverything(project: CodeProject, preview: Preview, cartridge
       const [rom, file, pdf, { buildPlayerHtml }] = await Promise.all([
         preview.buildSigned(),
         cartridgeFile(),
-        printPdf(codePrintSubject(project), defaultPaper(), preview.screenshot),
+        printPdf(codePrintSubject(project), defaultPaper(), "plain", preview.screenshot),
         import("../player/player.ts"),
       ]);
       const pkg = await packageZip({
@@ -93,7 +96,12 @@ export function CodePrint({ title, preview }: { title: string; preview: Preview;
       edited={project.manualText !== undefined}
       onText={(t) => edit((d) => void (d.manualText = t), "manual")}
       onReset={() => edit((d) => void delete d.manualText)}
-      makePdf={(paper) => printPdf(codePrintSubject(project), paper, preview.screenshot)}
+      makePdf={(paper, layout) => {
+        const built = preview.lastGood;
+        const colors = new Set(project.palettes.flatMap((p) => p.colors).map((c) => c.toUpperCase())).size;
+        const spec = built ? printSpec({ ...built, colors, toolchain: KIT_TOOLCHAIN, app: APP_VERSION }) : undefined;
+        return printPdf({ ...codePrintSubject(project), spec }, paper, layout, preview.screenshot);
+      }}
       onDownload={(bytes, name) => download(bytes, name, { toast: true })}
     />
   );

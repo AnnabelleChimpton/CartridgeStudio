@@ -4,10 +4,11 @@
 - Commit: `fe918ce422bc130972c45510809f2caec4450efe`
 - License: GPL v2 or later (`LICENSE`, `LICENSE-third-party`)
 - Contents: js7800's `src/js/prosystem/*` core plus its event and md5
-  helpers, built from unmodified upstream source, with two worker-safe I/O
+  helpers, built from upstream source at this commit with two worker-safe I/O
   stand-ins: `web/audio.js` and `web/mouse.js` are replaced at bundle time by
-  `app/js7800-core/audio-stub.js` and `mouse-stub.js`. The entry module is
-  `app/js7800-core/entry.js`.
+  `app/js7800-core/audio-stub.js` and `mouse-stub.js`, and the bundle is
+  minified. The entry module is `app/js7800-core/entry.js`; the build is
+  `app/scripts/build-js7800.mjs`.
 - Rebuild: `node app/scripts/build-js7800.mjs <work-dir>`
 
 The app loads this file only in its emulator worker

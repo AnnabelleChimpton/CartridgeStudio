@@ -23,10 +23,8 @@ Pull requests with unsigned commits can't be merged. To sign commits you've
 already made on a branch, run `git rebase --signoff main` and force-push.
 
 Why: the sign-off records that you have the right to contribute your change.
-Keeping that record for every contribution means the project can later offer
-the code under an additional licence (for example a commercial licence for a
-hardware partner) without tracking down every past contributor. Your
-contribution stays available under the GPL either way.
+It grants the project no other rights: your contribution is under the GPL v3
+or later, like the rest of the studio. `LICENSING.md` covers who owns what.
 
 ### Developer Certificate of Origin 1.1
 
@@ -87,6 +85,32 @@ Then, from `app/`:
 
 Continuous integration runs the same commands on every pull request (see
 `.github/workflows/`).
+
+CI doesn't run MAME. Run it yourself after changing generated code:
+
+- `npm run test:mame` (from the repo root) runs every template and kit
+  starter game's behaviour tests in MAME's `a7800` driver. It needs MAME
+  installed; see `harness/README.md`.
+- From `app/`, `npx vitest run src/kit src/code src/files` is the quicker
+  subset of the unit tests that builds ROMs for the kit, the code tier and
+  the exports.
+
+Generated code is pinned by snapshots in `app/src/kit/__snapshots__/`. When a
+change to the generator is meant to change them, regenerate with
+`npx vitest run -u src/kit/snapshots.test.ts` and read the diff before
+committing it.
+
+## Branches, commits and merges
+
+- Work on a named branch for the topic: `print-kit`, `jam`, `kit-audio`.
+- Pull requests are squash-merged. The squash message says why the change was
+  made, not only what it touches.
+- A subject names the area and states the cause:
+  "Onboarding: name cards after their games, drop window.confirm", not
+  "Update onboarding".
+- Keep `Co-Authored-By` trailers when squashing, alongside `Signed-off-by`.
+- Never commit `docs/`, `CLAUDE.md` or `.claude/`. They hold working notes
+  and local tool settings; `.claude/` is in `.gitignore`.
 
 ## Third-party code and notices
 

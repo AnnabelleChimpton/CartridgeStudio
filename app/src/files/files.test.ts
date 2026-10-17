@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Project } from "../project/schema.ts";
 import { TEMPLATES, getTemplate } from "../project/templates.ts";
 import { readCartridgeFile, writeCartridgeFile } from "./cartridge-file.ts";
-import { checklist, slugify, sourceZip } from "./exports.ts";
+import { BOOT_REPORT_URL, checklist, slugify, sourceZip } from "./exports.ts";
 import { encodeRgbaPng } from "./png.ts";
 
 const template = getTemplate("fixed-shooter");
@@ -81,6 +81,10 @@ describe("exports", () => {
     expect(text).toContain("Atari is a trademark of its owner;\n  not affiliated with or endorsed by Atari.");
     // No promises about particular consoles until the hardware matrix has run.
     expect(text).not.toMatch(/7800\+|2600\+|for flash carts and real consoles/);
+    // Boot problems go to the project's issue form; AtariAge is only a place to show a finished game.
+    expect(text).toContain(BOOT_REPORT_URL);
+    expect(text).toMatch(/To show a\s+finished game to other 7800 players, the 7800 homebrew forum on AtariAge/);
+    expect(text).not.toMatch(/support|help.*AtariAge|AtariAge.*help/i);
     expect(slugify("  Moth Patrol! 2 ")).toBe("moth-patrol-2");
     expect(slugify("🐱")).toBe("game");
   });

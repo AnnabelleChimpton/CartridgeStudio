@@ -5,6 +5,11 @@ import { controlsText, playerInfo } from "./game-info.ts";
 const preset = (id: string) => KIT_PRESETS.find((p) => p.id === id)!.game;
 
 describe("what the player learns from a game", () => {
+  it("reads the maker only from the game's own \"Made by\"", () => {
+    expect(playerInfo({ ...preset("ghost-panic"), madeBy: " Sam and Robin " }).madeBy).toBe("Sam and Robin");
+    expect("madeBy" in playerInfo(preset("ghost-panic"))).toBe(false);
+  });
+
   it("reads each starter's controls from its things", () => {
     expect(playerInfo(preset("dodger")).controls).toEqual({ move: "lr", button: "start" });
     expect(playerInfo(preset("shooter")).controls).toEqual({ move: "lr", button: "fire" });

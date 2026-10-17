@@ -1147,6 +1147,7 @@
   "win": "30 SECONDS. STILL HERE.",
   "lose": "OUT OF LIVES"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": null,

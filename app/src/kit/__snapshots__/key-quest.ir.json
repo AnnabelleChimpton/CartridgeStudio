@@ -1398,7 +1398,7 @@
   {
    "id": "keys",
    "label": "Keys",
-   "name": "cnt_keys",
+   "name": "c_keys",
    "start": 0,
    "keep": "game",
    "span": {
@@ -1443,7 +1443,7 @@
      },
      "k": "counter",
      "mode": "add",
-     "name": "cnt_keys",
+     "name": "c_keys",
      "value": {
       "src": {
        "k": "lit",
@@ -1505,7 +1505,7 @@
      "a": {
       "src": {
        "k": "var",
-       "name": "cnt_keys"
+       "name": "c_keys"
       },
       "signed": false
      },
@@ -1541,7 +1541,7 @@
      },
      "k": "counter",
      "mode": "take",
-     "name": "cnt_keys",
+     "name": "c_keys",
      "value": {
       "src": {
        "k": "lit",
@@ -1603,7 +1603,7 @@
      "a": {
       "src": {
        "k": "var",
-       "name": "cnt_keys"
+       "name": "c_keys"
       },
       "signed": false
      },
@@ -1989,7 +1989,7 @@
   {
    "show": "keys",
    "at": "middle",
-   "name": "cnt_keys"
+   "name": "c_keys"
   },
   {
    "show": "lives",
@@ -2056,6 +2056,7 @@
   "win": "THE CROWN IS YOURS",
   "lose": "OUT OF LIVES"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": {

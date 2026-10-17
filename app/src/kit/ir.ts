@@ -1,4 +1,4 @@
-// Kit model v2, step 2 of 3: validate a kit game and lower it to a typed IR
+// Kit code generation, step 2 of 3: validate a kit game and lower it to a typed IR
 // (intermediate representation). The IR is plain data: kinds of thing with
 // their movement parts and slot ranges, rooms with their placements, and
 // rules lowered to triggers, comparisons and actions with every name
@@ -245,6 +245,8 @@ export interface IR {
   textPalette: number;
   wallPalette: number;
   text: { title: string; win: string; lose: string };
+  /** "Made by", as typed; empty when the game doesn't say. */
+  madeBy: string;
   flow: {
     title: boolean;
     attract: { after: number; input: number[] } | null;
@@ -386,7 +388,30 @@ function labelName(id: string, k: number, all: string[]): string {
   return clash ? `${base}${k}` : base;
 }
 export const spriteName = (id: string) => `spr_${id.replace(/-/g, "_")}`;
-const counterName = (id: string) => (id === LIVES ? "lives" : id === LEVEL ? "levelnum" : `cnt_${id.replace(/-/g, "_")}`);
+/**
+ * Each counter's variable, named after what the game calls it: `c_` and the
+ * label in lowercase letters, digits and underscores ("Combo" is c_combo), with
+ * a number added when two labels come out the same. The prefix keeps them clear
+ * of 7800basic's own words and variables (a, score0, switch...). Lives and the
+ * level keep the fixed names lives and levelnum, which behaviour tests watch.
+ */
+export function counterNames(counters: { id: string; label: string }[]): Map<string, string> {
+  const names = new Map<string, string>();
+  const used = new Set<string>();
+  for (const c of counters) {
+    if (c.id === LIVES || c.id === LEVEL) {
+      names.set(c.id, c.id === LIVES ? "lives" : "levelnum");
+      continue;
+    }
+    const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 12).replace(/_+$/, "");
+    const base = `c_${clean(c.label) || clean(c.id)}`;
+    let name = base;
+    for (let n = 2; used.has(name); n++) name = `${base}${n}`;
+    used.add(name);
+    names.set(c.id, name);
+  }
+  return names;
+}
 
 /** Text the font can draw, uppercased and trimmed to a screen line. */
 export const kitText = (s: string, max = 32) =>
@@ -422,6 +447,8 @@ export function lowerKit(input: unknown, library: SoundEffect[] | null, opts: Lo
 
   // ---- counters and built-in values ----
   const counterIds = new Set(g.counters.map((c) => c.id));
+  const counterVars = counterNames(g.counters);
+  const counterName = (id: string) => counterVars.get(id) ?? (id === LIVES ? "lives" : id === LEVEL ? "levelnum" : `c_${id.replace(/-/g, "_")}`);
   if (counterIds.size !== g.counters.length) err("Two counters have the same name.");
   for (const c of g.counters) if ([SCORE, SECONDS, ROOM].includes(c.id)) err(`"${c.id}" is built in; give the counter another name.`);
   /** Readable byte values: counters, seconds and the room number. */
@@ -925,6 +952,7 @@ export function lowerKit(input: unknown, library: SoundEffect[] | null, opts: Lo
     textPalette: paletteIndex.get(g.textPalette)!,
     wallPalette: paletteIndex.get(g.wallPalette)!,
     text: g.text,
+    madeBy: g.madeBy?.trim() ?? "",
     flow: {
       title: g.flow.title,
       attract: g.flow.attract ? { after: g.flow.attract.after, input: g.flow.attract.input?.length ? g.flow.attract.input : DEFAULT_DEMO } : null,

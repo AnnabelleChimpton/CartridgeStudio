@@ -327,13 +327,14 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
           <ShowItPanel
             preview={preview}
             title={game.title}
-            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={(bytes, name) => download(bytes, name, { toast: true })} />}
+            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={(bytes, name) => download(bytes, name, { toast: true })} built={preview.lastGood} />}
             everything={kitEverything(game, { screenshot: preview.screenshot, buildSigned: preview.buildSigned, cartridgeFile })}
             jam
           />
           <JamEntryPanel
             preview={preview}
             gameTitle={game.title}
+            madeBy={game.madeBy}
             cartridgeFile={cartridgeFile}
             tests={() => testsBytes(tests.file)}
             facts={kitFacts(game)}

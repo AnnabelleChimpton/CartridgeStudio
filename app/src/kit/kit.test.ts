@@ -28,7 +28,7 @@ beforeAll(async () => {
 });
 
 describe("kit games", () => {
-  it("has the spike genres and the batch 1 preset", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "key-quest", "maze", "shooter"]));
+  it("has the five starter games", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "key-quest", "maze", "shooter"]));
 
   for (const [name, raw] of Object.entries(kitGames)) {
     describe(name, () => {
