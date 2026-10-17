@@ -373,8 +373,8 @@ test("a thing can be put in the room or made the player, and the title screen fo
 });
 
 test("a thing's movement parts can be customised", async ({ page }) => {
-  await start(page, "Rock Fall");
-  await page.locator(".sprite-select", { hasText: "Star" }).click();
+  await start(page, "Teacup Rain");
+  await page.locator(".sprite-select", { hasText: "Fish" }).click();
   await expect(page.getByLabel("How it moves")).toHaveValue("fall");
   await page.getByText("Customise how it moves").click();
   await page.getByLabel("At the screen edge").selectOption({ label: "Bounces off" });
@@ -387,47 +387,48 @@ test("a thing's movement parts can be customised", async ({ page }) => {
   await page.getByLabel("Drawings").selectOption({ label: "Looks left and right" });
   await page.getByLabel("Variable a name").fill("bounces");
   await page.getByLabel("Variable a start").fill("3");
-  await page.getByLabel("Most at once").selectOption("6");
+  // Two at most: steering and gravity on every one is costly, and the budget refuses more in this game.
+  await page.getByLabel("Most at once").selectOption("2");
   await page.getByLabel("Moved by").selectOption({ label: "Steering by itself" });
   await page.getByLabel("Toward or away").selectOption({ label: "Away from the nearest" });
-  await page.getByLabel("Steers toward").selectOption({ label: "Ship" });
+  await page.getByLabel("Steers toward").selectOption({ label: "Cat" });
 
-  const star = (await game(page)).types.find((t) => t.id === "star")!;
-  expect(star).toMatchObject({
-    steer: { toward: "ship", away: true, every: 1 },
+  const fish = (await game(page)).types.find((t) => t.id === "fish")!;
+  expect(fish).toMatchObject({
+    steer: { toward: "cat", away: true, every: 1 },
     gravity: { amount: 4, max: 40, axis: "y" },
     move: { vx: 12, vy: 8, wall: "through", edge: "bounce" },
     display: { directions: "lr" },
     vars: { a: { name: "bounces", start: 3 } },
-    cap: 6,
+    cap: 2,
   });
-  expect(star.frames).toHaveLength(2);
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  expect(fish.frames).toHaveLength(2);
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   expect((await page.evaluate(() => window.__cs!.builds[0]!)).kind).toBe("built");
 
   // A thing that moves its own way opens with its parts showing.
-  await page.locator(".sprite-select", { hasText: "Rock" }).first().click();
+  await page.locator(".sprite-select", { hasText: "Teacup" }).first().click();
   await expect(page.getByLabel("Speed across")).toBeHidden();
-  await page.locator(".sprite-select", { hasText: "Star" }).click();
+  await page.locator(".sprite-select", { hasText: "Fish" }).click();
   await expect(page.getByLabel("Speed across")).toHaveValue("12");
   // Picking a preset replaces them.
   await page.getByLabel("How it moves").selectOption({ label: "Bounces around" });
-  expect((await game(page)).types.find((t) => t.id === "star")!.steer).toBeUndefined();
+  expect((await game(page)).types.find((t) => t.id === "fish")!.steer).toBeUndefined();
 });
 
 test("rules pick targets and values, and use events, messages and steps", async ({ page }) => {
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   await openTab(page, "Rules");
   const before = (await game(page)).rules.length;
   const n = before + 1;
   const m = before + 2;
 
-  // When a Star appears: step the nearest Rock by 4 across and a random number (−3 to 3) down, and send a message.
+  // When a Fish appears: step the nearest Teacup by 4 across and a random number (−3 to 3) down, and send a message.
   await page.getByRole("button", { name: "Add rule" }).click();
   await page.getByLabel(`Rule ${n} trigger`).selectOption({ label: "appears" });
-  await page.getByLabel(`Rule ${n} thing`).selectOption({ label: "Star" });
+  await page.getByLabel(`Rule ${n} thing`).selectOption({ label: "Fish" });
   await page.getByLabel(`Rule ${n} action 1`, { exact: true }).selectOption({ label: "step" });
-  await page.getByLabel(`Rule ${n} action 1 which`).selectOption({ label: "the nearest Rock" });
+  await page.getByLabel(`Rule ${n} action 1 which`).selectOption({ label: "the nearest Teacup" });
   await page.getByLabel(`Rule ${n} action 1 across`, { exact: true }).fill("4");
   await page.getByRole("button", { name: `Read a value instead: Rule ${n} action 1, down` }).click();
   await page.getByLabel(`Rule ${n} action 1 down`, { exact: true }).selectOption({ label: "a random number up to" });
@@ -438,37 +439,37 @@ test("rules pick targets and values, and use events, messages and steps", async 
   await page.getByLabel(`Rule ${n} action 2`, { exact: true }).selectOption({ label: "send the message" });
   await expect(page.getByLabel(`Rule ${n} action 2 message`)).toHaveValue("message-1");
 
-  // When the message is sent: remove every Rock whose y is more than 100, only if the number of Rock is at least 2.
+  // When the message is sent: remove every Teacup whose y is more than 100, only if the number of Teacup is at least 2.
   await page.getByRole("button", { name: "Add rule" }).click();
   await page.getByLabel(`Rule ${m} trigger`).selectOption({ label: "the message" });
   await expect(page.getByLabel(`Rule ${m} message`)).toHaveValue("message-1");
   await page.getByLabel(`Rule ${m} action 1`, { exact: true }).selectOption({ label: "remove" });
-  await page.getByLabel(`Rule ${m} action 1 which`).selectOption({ label: "every Rock" });
+  await page.getByLabel(`Rule ${m} action 1 which`).selectOption({ label: "every Teacup" });
   await page.getByRole("button", { name: `Rule ${m} action 1: whose…` }).click();
   await page.getByLabel(`Rule ${m} action 1 filter property`).selectOption({ label: "its y" });
   await page.getByLabel(`Rule ${m} action 1 filter test`).selectOption({ label: "is more than" });
   await page.getByLabel(`Rule ${m} action 1 filter value`).fill("100");
   await page.locator("li.rule").nth(m - 1).getByRole("button", { name: "+ only if" }).click();
-  await page.getByLabel(`Rule ${m} condition 1 counter`).selectOption({ label: "the number of Rock" });
+  await page.getByLabel(`Rule ${m} condition 1 counter`).selectOption({ label: "the number of Teacup" });
   await page.getByLabel(`Rule ${m} condition 1 value`).fill("2");
 
-  // Touching a Star scores once each time, not every frame.
+  // Touching a Fish scores once each time, not every frame.
   await page.getByLabel("Rule 3 fires").selectOption({ label: "once each time" });
 
   const g = await game(page);
   expect(g.messages).toEqual(["message-1"]);
   expect(g.rules[2]!.fires).toBe("once");
   expect(g.rules[n - 1]).toMatchObject({
-    when: { created: "star" },
-    then: [{ step: { who: { nearest: "rock" }, dx: 4, dy: { random: 6, plus: -3 } } }, { send: "message-1" }],
+    when: { created: "fish" },
+    then: [{ step: { who: { nearest: "teacup" }, dx: 4, dy: { random: 6, plus: -3 } } }, { send: "message-1" }],
   });
   expect(g.rules[m - 1]).toMatchObject({
     when: { message: "message-1" },
-    if: [{ a: { count: "rock" }, op: "gte", b: 2 }],
-    then: [{ destroy: { every: "rock", where: { a: { prop: "y", of: "target" }, op: "gt", b: 100 } } }],
+    if: [{ a: { count: "teacup" }, op: "gte", b: 2 }],
+    then: [{ destroy: { every: "teacup", where: { a: { prop: "y", of: "target" }, op: "gt", b: 100 } } }],
   });
   await expect(page.locator(".rule-sentence.readonly")).toHaveCount(0);
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   expect((await page.evaluate(() => window.__cs!.builds[0]!)).kind).toBe("built");
   await viewCode(page);
   await expect.poll(() => generated(page)).toContain('When the message "message-1" is sent');

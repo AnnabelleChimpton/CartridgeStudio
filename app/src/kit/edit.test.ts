@@ -218,17 +218,17 @@ describe("customising parts", () => {
 
   it("a joystick and steering replace each other, and only the joystick keeps the shooting", () => {
     const g = preset("shooter");
-    expect(shootsOf(g, "ship")).toBe("shot");
-    setMover(g, "ship", "steer");
-    expect(moverOf(thing(g, "ship"))).toBe("steer");
-    expect(thing(g, "ship").control).toBeUndefined();
-    expect(thing(g, "ship").steer).toMatchObject({ speed: { step: 4 }, every: 1 });
+    expect(shootsOf(g, "basket")).toBe("shot");
+    setMover(g, "basket", "steer");
+    expect(moverOf(thing(g, "basket"))).toBe("steer");
+    expect(thing(g, "basket").control).toBeUndefined();
+    expect(thing(g, "basket").steer).toMatchObject({ speed: { step: 4 }, every: 1 });
     expect(g.rules.some((r) => "button" in r.when)).toBe(false);
-    setMover(g, "ship", "joystick");
-    expect(thing(g, "ship").steer).toBeUndefined();
-    expect(thing(g, "ship").control).toEqual({ joystick: 1, axes: "4way", mode: "direct", speed: { step: 4 } });
-    setMover(g, "ship", "none");
-    expect(moverOf(thing(g, "ship"))).toBe("none");
+    setMover(g, "basket", "joystick");
+    expect(thing(g, "basket").steer).toBeUndefined();
+    expect(thing(g, "basket").control).toEqual({ joystick: 1, axes: "4way", mode: "direct", speed: { step: 4 } });
+    setMover(g, "basket", "none");
+    expect(moverOf(thing(g, "basket"))).toBe("none");
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
   });
 
