@@ -430,49 +430,9 @@
      }
     }
    ]
-  },
-  {
-   "id": "r-p-pace5",
-   "when": { "roomStart": true },
-   "if": [
-    {
-     "a": { "counter": "level" },
-     "op": "gte",
-     "b": 5
-    }
-   ],
-   "then": [
-    {
-     "id": "a-p-pace5",
-     "set": {
-      "what": { "counter": "pace" },
-      "to": 2
-     }
-    }
-   ]
-  },
-  {
-   "id": "r-p-pace7",
-   "when": { "roomStart": true },
-   "if": [
-    {
-     "a": { "counter": "level" },
-     "op": "gte",
-     "b": 7
-    }
-   ],
-   "then": [
-    {
-     "id": "a-p-pace7",
-     "set": {
-      "what": { "counter": "pace" },
-      "to": 3
-     }
-    }
-   ]
   }
  ],
- "text": { "title": "Ghost Panic", "win": "THREE MAZES CLEAR", "lose": "THE GHOSTS WON" },
+ "text": { "title": "Ghost Panic", "win": "CLEARED THREE TIMES", "lose": "THE GHOSTS WON" },
  "flow": {
   "title": true,
   "attract": null,

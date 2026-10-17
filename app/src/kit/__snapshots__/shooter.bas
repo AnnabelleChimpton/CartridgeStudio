@@ -623,7 +623,7 @@ rule4_next
  next
 rule4_end
 
- rem rule 5: When the number of Vacuum is 0: play Rising tone and start the room again.
+ rem rule 5: When the number of Vacuums is 0: play Rising tone and start the room again.
 rule5
  if oddframe = 0 then goto rule5_end
  tmp2 = 0
@@ -640,7 +640,7 @@ rule5_off
  latches{0} = 0
 rule5_end
 
- rem rule 6: When button 1 is pressed, only if the number of Sock is 0: create a Sock above the Laundry
+ rem rule 6: When button 1 is pressed, only if the number of Socks is 0: create a Sock above the Laundry
  rem   basket and play Zap.
 rule6
  if !padpressed{4} then goto rule6_end
@@ -654,7 +654,7 @@ rule6
 rule6_p_11
 rule6_end
 
- rem rule 7: Every frame, only if a random number up to 255 is less than 50 and the number of Dust bomb
+ rem rule 7: Every frame, only if a random number up to 255 is less than 50 and the number of Dust bombs
  rem   is 0: create a Dust bomb below a random Vacuum.
 rule7
  tmp2 = rand

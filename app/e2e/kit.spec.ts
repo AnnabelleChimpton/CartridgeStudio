@@ -182,6 +182,25 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
   await expect(page.getByLabel("Rule 6 trigger")).toHaveValue("onHazard");
   await expect(page.getByLabel("Rule 8 trigger")).toHaveValue("every");
   await expect(page.getByLabel("Rule 10 counter")).toHaveValue("level");
+  // Each sentence reads as shown (chosen words, typed numbers) with no word twice in a row, like "Lives is is 0".
+  const shown = await page.locator(".rule-sentence").evaluateAll((ps) =>
+    ps.map((p) => {
+      const words = (n: Node): string =>
+        n instanceof HTMLSelectElement
+          ? ` ${n.selectedOptions[0]?.text ?? ""} `
+          : n instanceof HTMLInputElement
+            ? ` ${n.value} `
+            : n instanceof HTMLButtonElement
+              ? " "
+              : n.nodeType === Node.TEXT_NODE
+                ? (n.textContent ?? "")
+                : [...n.childNodes].map(words).join(" ");
+      return words(p).replace(/\s+/g, " ").trim();
+    }),
+  );
+  expect(shown).toHaveLength(g.rules.length);
+  for (const s of shown) expect(s).not.toMatch(/\b(\w+) \1\b/i);
+  expect(shown.filter((s) => /^When Lives is exactly 0\b/.test(s)), shown.join("\n")).toHaveLength(1);
 
   // Changing one word changes just that word.
   await page.getByLabel("Rule 2 action 3 seconds").fill("8");

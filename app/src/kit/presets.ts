@@ -60,6 +60,23 @@ function levels(g: KitGame): number | undefined {
   return undefined;
 }
 
+/** The counters things add to their speed (a speed's "plus"), wherever a movement part keeps it. */
+function paceCounters(x: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(x)) x.forEach((v) => paceCounters(v, out));
+  else if (x && typeof x === "object")
+    for (const [k, v] of Object.entries(x)) {
+      if (k === "plus" && typeof v === "string") out.add(v);
+      else paceCounters(v, out);
+    }
+  return out;
+}
+
+/** Whether a rule raises a pace counter, so the game gets faster as it goes. */
+function speedsUp(g: KitGame): boolean {
+  const pace = paceCounters(g.types);
+  return g.rules.some((r) => r.then.some((a) => "set" in a && "counter" in a.set.what && pace.has(a.set.what.counter) && typeof a.set.to === "number" && a.set.to > 0));
+}
+
 const seconds = (n: number | undefined, fallback: string) => (n === undefined ? fallback : `${numberWord(n)} second${n === 1 ? "" : "s"}`);
 
 /** Each starter's kind and description, worked out from the game so the numbers stay true when the file changes. */
@@ -70,7 +87,7 @@ const DESCRIPTIONS: Record<string, (g: KitGame) => [string, string]> = {
     const mazes = levels(g);
     return [
       "A chase game",
-      `Catnip scares the ghosts for ${seconds(turnSeconds(g, "scared"), "a while")}; catch them while it lasts. Mind the spikes.${mazes ? ` ${NumberWord(mazes)} mazes to clear.` : ""}`,
+      `Catnip scares the ghosts for ${seconds(turnSeconds(g, "scared"), "a while")}; catch them while it lasts. Mind the spikes.${mazes ? ` Clear the maze ${numberWord(mazes)} times${speedsUp(g) ? "; it gets faster" : ""}.` : ""}`,
     ];
   },
   dodger: (g) => ["A dodging game", `Teacups fall for ${seconds(afterSeconds(g), "a while")}. Weave between them and catch the fish.`],

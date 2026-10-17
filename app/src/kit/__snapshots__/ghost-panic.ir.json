@@ -1564,120 +1564,6 @@
     "kind": "rule",
     "id": "r-p-pace3"
    }
-  },
-  {
-   "n": 13,
-   "id": "r-p-pace5",
-   "label": "rule13",
-   "trigger": {
-    "k": "roomStart"
-   },
-   "fires": null,
-   "any": false,
-   "latch": null,
-   "pre": [
-    {
-     "a": {
-      "src": {
-       "k": "var",
-       "name": "levelnum"
-      },
-      "signed": false
-     },
-     "op": "gte",
-     "b": {
-      "src": {
-       "k": "lit",
-       "n": 5
-      },
-      "signed": false
-     }
-    }
-   ],
-   "post": [],
-   "actions": [
-    {
-     "id": "a-p-pace5",
-     "span": {
-      "kind": "action",
-      "id": "a-p-pace5"
-     },
-     "k": "counter",
-     "mode": "set",
-     "name": "cnt_pace",
-     "value": {
-      "src": {
-       "k": "lit",
-       "n": 2
-      },
-      "signed": false
-     }
-    }
-   ],
-   "event": false,
-   "its": [],
-   "other": null,
-   "span": {
-    "kind": "rule",
-    "id": "r-p-pace5"
-   }
-  },
-  {
-   "n": 14,
-   "id": "r-p-pace7",
-   "label": "rule14",
-   "trigger": {
-    "k": "roomStart"
-   },
-   "fires": null,
-   "any": false,
-   "latch": null,
-   "pre": [
-    {
-     "a": {
-      "src": {
-       "k": "var",
-       "name": "levelnum"
-      },
-      "signed": false
-     },
-     "op": "gte",
-     "b": {
-      "src": {
-       "k": "lit",
-       "n": 7
-      },
-      "signed": false
-     }
-    }
-   ],
-   "post": [],
-   "actions": [
-    {
-     "id": "a-p-pace7",
-     "span": {
-      "kind": "action",
-      "id": "a-p-pace7"
-     },
-     "k": "counter",
-     "mode": "set",
-     "name": "cnt_pace",
-     "value": {
-      "src": {
-       "k": "lit",
-       "n": 3
-      },
-      "signed": false
-     }
-    }
-   ],
-   "event": false,
-   "its": [],
-   "other": null,
-   "span": {
-    "kind": "rule",
-    "id": "r-p-pace7"
-   }
   }
  ],
  "hud": [
@@ -1756,7 +1642,7 @@
  "wallPalette": 3,
  "text": {
   "title": "Ghost Panic",
-  "win": "THREE MAZES CLEAR",
+  "win": "CLEARED THREE TIMES",
   "lose": "THE GHOSTS WON"
  },
  "flow": {

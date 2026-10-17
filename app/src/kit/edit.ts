@@ -71,6 +71,22 @@ export function newId(g: KitGame, prefix: "r" | "a"): string {
 /** An action with a fresh id. */
 export const act = (g: KitGame, a: Record<string, unknown>): KitAction => ({ id: newId(g, "a"), ...a }) as KitAction;
 
+/**
+ * The rule "Add rule" makes: one that doesn't fight the rules already there.
+ * It's the first pair of things no "touches" rule mentions yet, player first,
+ * scoring 10 points. When every pair has a rule, it's a timer that plays a sound.
+ */
+export function newRule(g: KitGame): KitRule {
+  const touched = new Set(g.rules.flatMap((r) => ("touch" in r.when ? [`${r.when.touch[0]} ${r.when.touch[1]}`, `${r.when.touch[1]} ${r.when.touch[0]}`] : [])));
+  const player = g.types.find(isPlayer) ?? g.types[0];
+  const order = player ? [player, ...g.types.filter((t) => t !== player)] : [];
+  for (const a of order)
+    for (const b of order)
+      if (a !== b && !touched.has(`${a.id} ${b.id}`))
+        return { id: newId(g, "r"), when: { touch: [a.id, b.id] }, then: [act(g, { add: { what: { counter: SCORE }, by: 10 } })] };
+  return { id: newId(g, "r"), when: { after: 30 }, then: [act(g, { sound: "blip" })] };
+}
+
 /** The room character that places `id`, assigning a free one if needed. */
 export function legendChar(g: KitGame, id: string): string {
   const existing = Object.entries(g.room.legend).find(([, v]) => v === id)?.[0];

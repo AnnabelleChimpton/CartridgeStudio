@@ -722,7 +722,7 @@ rule3_nj_5
 rule3_ni
 rule3_end
 
- rem rule 4: When the number of Yarn ball is 0: play Chime and win the game.
+ rem rule 4: When the number of Yarn balls is 0: play Chime and win the game.
 rule4
  if oddframe = 0 then goto rule4_end
  tmp2 = 0

@@ -11,7 +11,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
-import { act, isPlayer, loseLife, moveRule, newId, nextLevel } from "./edit.ts";
+import { act, isPlayer, loseLife, moveRule, newId, newRule, nextLevel } from "./edit.ts";
 import { triggerThing } from "./ir.ts";
 import { LEVEL, SCORE, type KitAction, type KitCompare, type KitGame, type KitRule, type KitTarget, type KitTrigger } from "./schema.ts";
 import { ruleSentence } from "./sentence.ts";
@@ -87,6 +87,8 @@ const OPS: { op: Op; label: string }[] = [
   { op: "gt", label: "is more than" },
   { op: "lt", label: "is less than" },
 ];
+/** After the "is" trigger ("When Lives is exactly 0"), so the operator doesn't repeat "is". */
+const IS_OPS: Record<Op, string> = { eq: "exactly", ne: "not", gte: "at least", lte: "at most", gt: "more than", lt: "less than" };
 const PLACES = [
   { place: "above", label: "above" },
   { place: "below", label: "below" },
@@ -575,13 +577,13 @@ export function KitRulesPanel() {
                     <select
                       aria-label={`Rule ${n} test`}
                       className="fit"
-                      style={fit(OPS.find((o) => o.op === w.test.op)!.label)}
+                      style={fit(IS_OPS[w.test.op])}
                       value={w.test.op}
                       onChange={(e) => setRule(i, (r) => void ("test" in r.when && (r.when.test.op = e.target.value as Op)))}
                     >
                       {OPS.filter((o) => o.op !== "gte").map((o) => (
                         <option key={o.op} value={o.op}>
-                          {o.label}
+                          {IS_OPS[o.op]}
                         </option>
                       ))}
                     </select>
@@ -824,13 +826,7 @@ export function KitRulesPanel() {
         className="secondary"
         disabled={game.rules.length >= 24 || game.types.length === 0}
         aria-describedby={game.rules.length === 0 ? `${ids}-empty` : undefined}
-        onClick={() =>
-          edit((d) => {
-            const first = d.types.find(isPlayer)?.id ?? d.types[0]!.id;
-            const second = d.types.find((t) => t.id !== first)?.id ?? first;
-            d.rules.push({ id: newId(d, "r"), when: { touch: [first, second] }, then: [act(d, { add: { what: { counter: SCORE }, by: 10 } })] });
-          })
-        }
+        onClick={() => edit((d) => void d.rules.push(newRule(d)))}
       >
         {game.rules.length === 0 ? "Add your first rule" : "Add rule"}
       </button>
