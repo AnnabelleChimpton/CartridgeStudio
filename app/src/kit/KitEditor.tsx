@@ -54,12 +54,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "code", label: "Code" },
 ];
 
-/** Each thing's frames by id, to tell whether any pixel of an existing thing changed. */
+/** Whether any pixel of the hero changed since the guide started. */
 function drawn(a: KitGame, b: KitGame) {
-  return a.types.some((t) => {
-    const was = b.types.find((u) => u.id === t.id);
-    return was !== undefined && JSON.stringify(was.frames) !== JSON.stringify(t.frames);
-  });
+  const hero = a.types.find(isPlayer) ?? a.types[0];
+  const was = hero && b.types.find((u) => u.id === hero.id);
+  return !!was && JSON.stringify(was.frames) !== JSON.stringify(hero.frames);
 }
 
 interface Props {
@@ -118,7 +117,6 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     }
   }, [tab, game]);
 
-  // The getting-started guide.
   const guideId = useGuide((s) => s.current);
   const guide = useCurrentGuide();
   const preset = KIT_PRESETS.find((p) => p.id === guide?.preset) ?? KIT_PRESETS.find((p) => p.game.title === game.title);
@@ -139,7 +137,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     const now = g.current ? g.games[g.current] : undefined;
     if (!now || now.done.includes(step)) return;
     g.complete(step);
-    if (now.open) setAnnounce(guideAnnouncement(step, [...now.done, step]));
+    if (now.open) setAnnounce(guideAnnouncement(step, [...now.done, step], hero?.label ?? "hero"));
   };
   const tickRef = useRef(tick);
   tickRef.current = tick;
@@ -150,13 +148,10 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     if (!guide.done.includes("rule") && JSON.stringify(game.rules) !== JSON.stringify(baseline.rules)) tick("rule");
   });
 
-  // Playing the game (focusing it, here or on the TV) ticks "Play it on the TV".
+  // Going full screen (the guide's Play button, the TV button or the browser's own) ticks "Play it on the TV".
   useEffect(() => {
-    const stage = preview.stage.current;
-    const onFocus = () => tickRef.current("tv");
-    stage?.addEventListener("focusin", onFocus);
-    return () => stage?.removeEventListener("focusin", onFocus);
-  }, [preview.stage]);
+    if (preview.tvStarts > 0) tickRef.current("tv");
+  }, [preview.tvStarts]);
 
   useEffect(() => {
     if (guideOpen && focusGuide.current) guideRef.current?.focus();
@@ -184,7 +179,6 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     window.__cs!.kitStore = useKitStore;
   }, []);
 
-  // Autosave, into My games.
   useAutosave(gameId, { kind: "kit", game }, preview);
   const tests = useCreatorTests(gameId, preview);
 
@@ -198,9 +192,9 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
       tests: testsBytes(tests.file),
       cartridge: { name: `${slugify(game.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
     });
-    download(folderZip(game.title, "source", files), `${slugify(game.title)}-source.zip`);
+    download(folderZip(game.title, "source", files), `${slugify(game.title)}-source.zip`, { toast: true });
   };
-  const save = async () => download(await cartridgeFile(), `${slugify(game.title)}${CARTRIDGE_EXTENSION}`);
+  const save = async () => download(await cartridgeFile(), `${slugify(game.title)}${CARTRIDGE_EXTENSION}`, { toast: true });
 
   return (
     <div className="page">
@@ -244,8 +238,15 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
           {guide?.open && hero && (
             <KitGuide
               ref={guideRef}
+              title={game.title}
               hero={hero.label}
               done={guide.done}
+              onRom={() =>
+                void preview
+                  .buildSigned()
+                  .then((rom) => download(rom.a78, `${slugify(game.title)}.a78`, { toast: true }))
+                  .catch((e: unknown) => preview.setError(e instanceof Error ? e.message : String(e)))
+              }
               ideas={preset?.ideas ?? []}
               onStep={onStep}
               onIdea={onIdea}
@@ -326,7 +327,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
           <ShowItPanel
             preview={preview}
             title={game.title}
-            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} />}
+            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={(bytes, name) => download(bytes, name, { toast: true })} />}
           />
           <JamEntryPanel
             preview={preview}

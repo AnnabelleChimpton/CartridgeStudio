@@ -6,7 +6,7 @@ import { slugify } from "../files/exports.ts";
 import { KIT_PRESETS } from "../kit/presets.ts";
 import { download } from "../ui/usePreview.ts";
 import { APP_VERSION } from "../version.ts";
-import { JAM_EXTENSION, LONG_LINK, MAX_STARTERS, MAX_STARTER_BYTES, briefFileText, briefLink, newBrief, type JamBrief } from "./brief.ts";
+import { JAM_EXTENSION, LONG_LINK, MAX_STARTERS, MAX_STARTER_BYTES, briefFileText, briefLink, newBrief, tooLong, type JamBrief } from "./brief.ts";
 import { LIMIT_LABELS, cartridgeFacts, type Limits } from "./limits.ts";
 import "./jam.css";
 
@@ -35,19 +35,18 @@ export function JamPageShell({ title, current, children }: { title: string; curr
 }
 
 export const SUGGESTED_THEMES = [
-  "One more life",
-  "It's behind you",
-  "Small world",
-  "Out of time",
-  "Collect them all",
-  "The floor is lava",
-  "Upside down",
-  "Two of a kind",
-  "Night shift",
-  "Lost and found",
+  "Only two things move",
+  "The score is the timer",
+  "One room, three levels",
+  "Something in the kitchen",
+  "The vacuum is your friend",
+  "One palette",
+  "8 pixels wide",
+  "Nothing moves until you do",
+  "Everything is furniture",
 ];
 
-const SUGGESTED_RULES = ["One room", "Two colours", "No shooting", "Under 3 minutes to finish", "Only one kind of enemy"];
+const SUGGESTED_RULES = ["One room", "Two colours", "No shooting", "Under 3 minutes to finish", "Only one kind of enemy", "48K max", "NTSC"];
 const SUGGESTED_CRITERIA = ["Fun", "Theme", "Look and sound"];
 
 function base64(bytes: Uint8Array): string {
@@ -92,8 +91,8 @@ function BriefMaker() {
           ...(pin ? { app: APP_VERSION } : {}),
           ...(link ? { link } : {}),
         });
-      } catch {
-        problem = "Something in the brief is too long.";
+      } catch (e) {
+        problem = tooLong(e, { name: f.name, theme: f.theme, dates: f.dates, constraints: lines(f.constraints, 8), criteria: lines(f.criteria, 8) });
       }
     }
   }
@@ -265,7 +264,7 @@ function BriefMaker() {
               <button
                 type="button"
                 className="secondary"
-                onClick={() => download(new TextEncoder().encode(briefFileText(brief)), `${slugify(brief.name)}${JAM_EXTENSION}`)}
+                onClick={() => download(new TextEncoder().encode(briefFileText(brief)), `${slugify(brief.name)}${JAM_EXTENSION}`, { toast: true })}
               >
                 Download the brief ({JAM_EXTENSION})
               </button>
@@ -295,7 +294,7 @@ export function JamGuide() {
     <JamPageShell title="How to run a jam" current="guide">
       <p className="jam-lede">
         A jam on Cartridge Studio needs no server and no sign-ups. You make a brief, share one link, collect ZIP files, and build a
-        gallery you can post anywhere. Every game is a real 7800 cartridge program that also plays in any web browser.
+        gallery you can post anywhere. Every game is a 7800 ROM that also plays in any web browser.
       </p>
 
       <section aria-labelledby={`${id}-1`}>
@@ -341,14 +340,10 @@ export function JamGuide() {
           site. You get one ZIP with an <code>index.html</code> showing every game.
         </p>
         <ul>
+          <li>On itch.io, make an HTML project, upload the gallery ZIP and tick “This file will be played in the browser”.</li>
+          <li>For GitHub Pages, unzip it into a repository and turn on Pages for that branch.</li>
           <li>
-            <strong>itch.io:</strong> make an HTML project, upload the gallery ZIP and tick “This file will be played in the browser”.
-          </li>
-          <li>
-            <strong>GitHub Pages:</strong> unzip it into a repository and turn on Pages for that branch.
-          </li>
-          <li>
-            <strong>A stream or a party:</strong> unzip it anywhere and open <code>index.html</code>. No internet needed.
+            For a stream or a party, unzip it anywhere and open <code>index.html</code>. No internet needed.
           </li>
         </ul>
       </section>
@@ -370,7 +365,7 @@ export function JamGuide() {
 
       <section aria-labelledby={`${id}-6`}>
         <h2 id={`${id}-6`}>Suggested themes</h2>
-        <p>Short themes that suit one-screen games and can be read more than one way:</p>
+        <p>Short themes that suit one-screen kit games. Some name a place, some set a limit:</p>
         <ul className="jam-themes">
           {SUGGESTED_THEMES.map((t) => (
             <li key={t}>{t}</li>

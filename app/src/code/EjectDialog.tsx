@@ -15,7 +15,7 @@ export function EjectDialog({ title, kind, onConfirm, onClose }: Props) {
   return (
     <Dialog title={`Edit “${title || "this game"}” as code?`} onClose={onClose}>
       <p>
-        This makes a <strong>code project</strong>: a copy of the game as 7800basic source (game.bas) plus its graphics, which you edit by
+        This makes a code project: a copy of the game as 7800basic source (game.bas) plus its graphics, which you edit by
         hand, with the same live preview.
       </p>
       <p>

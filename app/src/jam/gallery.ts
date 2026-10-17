@@ -149,7 +149,7 @@ function header(info: GalleryInfo, kicker: string, links: string[]): string {
   return `<header>
   <p class="kicker">${kicker}</p>
   <h1>${esc(info.name.trim() || "Game jam")}</h1>
-  ${info.theme ? `<p class="theme">Theme: <strong>${esc(info.theme)}</strong></p>` : ""}
+  ${info.theme ? `<p class="theme">Theme: ${esc(info.theme)}</p>` : ""}
   ${info.dates ? `<p class="dates">${esc(info.dates)}</p>` : ""}
   ${rules.length ? `<ul class="rules" aria-label="Rules">${rules.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
   ${all.length ? `<p class="links">${all.join("")}</p>` : ""}

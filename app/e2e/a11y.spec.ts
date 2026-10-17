@@ -21,7 +21,7 @@ async function axe(page: Page) {
 
 test("the start screen, the kit editor and My games pass axe", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("What do you want to make?")).toBeVisible();
+  await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   expect(await axe(page)).toEqual([]);
 
   await start(page, /^Cat vs\. Vacuums/);
@@ -47,7 +47,7 @@ test("the start screen, the kit editor and My games pass axe", async ({ page }) 
   // New game shows My games above the starters; it and its rename and delete dialogs pass axe.
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  const chooser = page.getByRole("dialog", { name: "What do you want to make?" });
+  const chooser = page.getByRole("dialog", { name: "Pick a cart to start from" });
   await expect(chooser.getByRole("region", { name: "My games" }).getByRole("listitem")).toHaveCount(2);
   expect(await axe(page), "My games").toEqual([]);
   await chooser.getByRole("button", { name: "Rename Cat vs. Vacuums" }).click();
@@ -87,7 +87,7 @@ test("controls inside a <label> are named by it, not an aria-label (WCAG 2.5.3)"
 });
 
 test("the room can be painted from the keyboard, and Shift+arrows is one undo step", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   await openTab(page, "Room");
   const room = page.getByLabel("Room grid");
   await room.focus();
@@ -120,7 +120,7 @@ test("the room can be painted from the keyboard, and Shift+arrows is one undo st
 });
 
 test("sprites can be drawn from the keyboard", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   const pixels = page.locator('canvas[aria-roledescription="pixel grid"]');
   await pixels.focus();
   await page.keyboard.press("3");
@@ -142,7 +142,7 @@ test("sprites can be drawn from the keyboard", async ({ page }) => {
 });
 
 test("the color picker works with arrows, Enter and Escape", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   await openTab(page, "Game");
   const before = (await game(page)).background;
   const swatch = page.getByRole("button", { name: /^Background/ }).first();

@@ -3,8 +3,8 @@
  "title": "Cat vs. Vacuums",
  "palettes": [
   {
-   "id": "ship",
-   "colors": [ "$3A", "$02", "$0F" ]
+   "id": "basket",
+   "colors": [ "$28", "$22", "$3A" ]
   },
   {
    "id": "enemy",
@@ -28,14 +28,14 @@
  "textPalette": "text",
  "types": [
   {
-   "id": "ship",
-   "label": "Player ship",
+   "id": "basket",
+   "label": "Laundry basket",
    "width": 16,
    "height": 16,
    "frames": [
-    [ "0000000110000000", "0000001111000000", "0000001221000000", "0000011221100000", "0000011111100000", "0000111111110000", "0001113333111000", "0011113333111100", "0111111111111110", "1111111111111111", "1111222222221111", "1110022222200111", "1100002222000011", "1000000330000001", "0000003333000000", "0000000330000000" ]
+    [ "0000000000000000", "0000000000000000", "0000300000030000", "0003330000333000", "0003333333333000", "0033233333323300", "0033333333333300", "1111111111111111", "1212121212121211", "1121212121212121", "1212121212121211", "0121212121212120", "0112121212121210", "0121212121212120", "0011111111111100", "0000000000000000" ]
    ],
-   "palette": "ship",
+   "palette": "basket",
    "control": {
     "joystick": 1,
     "axes": "lr",
@@ -59,11 +59,11 @@
   },
   {
    "id": "shot",
-   "label": "Shot",
+   "label": "Sock",
    "width": 4,
    "height": 6,
    "frames": [
-    [ "0110", "0110", "1221", "1221", "0110", "0110" ]
+    [ "2222", "0110", "0110", "0111", "1111", "0110" ]
    ],
    "palette": "shot",
    "move": { "vx": 0, "vy": -64, "wall": "destroy", "edge": "destroy", "smooth": true }
@@ -94,7 +94,7 @@
    "                    ",
    "         P          "
   ],
-  "legend": { "V": "invader", "P": "ship" }
+  "legend": { "V": "invader", "P": "basket" }
  },
  "counters": [
   { "id": "lives", "label": "Lives", "start": 3 }
@@ -126,7 +126,7 @@
   {
    "id": "r-2",
    "when": {
-    "touch": [ "bomb", "ship" ]
+    "touch": [ "bomb", "basket" ]
    },
    "fires": "while",
    "then": [
@@ -140,12 +140,12 @@
     },
     {
      "id": "a-2-2-s0",
-     "toStart": { "every": "ship" }
+     "toStart": { "every": "basket" }
     },
     {
      "id": "a-2-2-p0",
      "protect": {
-      "who": { "every": "ship" },
+      "who": { "every": "basket" },
       "tenths": 15
      }
     },
@@ -155,7 +155,7 @@
   {
    "id": "r-3",
    "when": {
-    "touch": [ "invader", "ship" ]
+    "touch": [ "invader", "basket" ]
    },
    "fires": "while",
    "then": [
@@ -168,12 +168,12 @@
     },
     {
      "id": "a-3-1-s0",
-     "toStart": { "every": "ship" }
+     "toStart": { "every": "basket" }
     },
     {
      "id": "a-3-1-p0",
      "protect": {
-      "who": { "every": "ship" },
+      "who": { "every": "basket" },
       "tenths": 15
      }
     },
@@ -197,12 +197,12 @@
     },
     {
      "id": "a-4-1-s0",
-     "toStart": { "every": "ship" }
+     "toStart": { "every": "basket" }
     },
     {
      "id": "a-4-1-p0",
      "protect": {
-      "who": { "every": "ship" },
+      "who": { "every": "basket" },
       "tenths": 15
      }
     },
@@ -315,7 +315,7 @@
    ]
   }
  ],
- "text": { "title": "Cat vs. Vacuums", "win": "You win!", "lose": "Game over" },
+ "text": { "title": "Cat vs. Vacuums", "win": "FLOORS SAFE", "lose": "BAGGED" },
  "flow": {
   "title": true,
   "attract": { "after": 20 },

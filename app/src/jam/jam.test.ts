@@ -14,6 +14,7 @@ import {
   offeredPresets,
   parseBrief,
   readBriefText,
+  tooLong,
 } from "./brief.ts";
 import { entryFlags, entryProblem, jamEntryZip, organizerFlags, type EntryInput } from "./entry.ts";
 import { galleryEntries, galleryIndexHtml, galleryZip, judgesCsv, parseCsv, resultsHtml, tallyResults, type GalleryEntry } from "./gallery.ts";
@@ -82,6 +83,20 @@ describe("jam briefs", () => {
     // Old briefs could name the Classic shooter; it's retired, so they get the kit's starters.
     expect(all).not.toContain("fixed-shooter");
     expect(offeredPresets(newBrief({ name: "x", presets: ["fixed-shooter"] }), all)).toEqual(all);
+  });
+});
+
+describe("brief errors", () => {
+  const fields = { name: "Kitchen Jam", theme: "", dates: "", constraints: ["One room", "x".repeat(130)], criteria: [] };
+  it("name the field, its length and the limit", () => {
+    let error: unknown;
+    try {
+      newBrief(fields);
+    } catch (e) {
+      error = e;
+    }
+    expect(tooLong(error, fields)).toBe("Rule 2 is 130 characters; the limit is 120.");
+    expect(tooLong(new Error("?"), fields)).toBe("Part of the brief is over its length limit.");
   });
 });
 

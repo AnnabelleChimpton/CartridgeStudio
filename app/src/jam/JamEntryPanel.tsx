@@ -67,7 +67,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
       download(entry.zip, entry.name);
       setDone(entry.name);
     } catch (e) {
-      setError(`We couldn't make the entry: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`Making the entry stopped: ${e instanceof Error ? e.message : String(e)}. Your game is saved; press Make my jam entry to try again.`);
     } finally {
       setBusy(false);
     }
@@ -99,13 +99,8 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
     <section className="panel jam-entry" aria-labelledby={`${id}-h`}>
       <h2 id={`${id}-h`}>Jam entry</h2>
       <p className="small">
-        For <strong>{brief.name}</strong>
-        {brief.theme && (
-          <>
-            {" "}
-            · theme <strong>{brief.theme}</strong>
-          </>
-        )}
+        For {brief.name}
+        {brief.theme && <> · theme: {brief.theme}</>}
       </p>
       {field("title", "Title", { placeholder: gameTitle, hint: "Leave empty to use the game's title." })}
       {field("credits", "Credits", { placeholder: "Who made it, e.g. Sam and Robin" })}
@@ -141,7 +136,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
         <span>
           Clip:{" "}
           {clip ? (
-            <strong className="ok-text">ready ({Math.round(clip.length / 1024)} KB)</strong>
+            <span className="ok-text">ready ({Math.round(clip.length / 1024)} KB)</span>
           ) : (
             <span className="muted">none yet. Use “Make a clip” in Show it, or choose a GIF.</span>
           )}
@@ -172,7 +167,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
       {flags.length > 0 && (
         <div className="jam-flags">
           <p className="small">
-            <strong>Worth knowing:</strong> the organizer will see these notes. You can still send your entry.
+            These differ from the jam's brief. The organizer will see these notes, and you can still send your entry.
           </p>
           <ul className="small">
             {flags.map((f) => (
@@ -199,7 +194,7 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
       <div aria-live="polite">
         {done && (
           <p className="jam-done">
-            Saved <strong>{done}</strong>. Send it to the organizer
+            Saved “{done}”. Send it to the organizer
             {brief.link ? (
               <>
                 {" "}

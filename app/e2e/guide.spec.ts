@@ -1,4 +1,4 @@
-// Getting started: a starter game opens with a three-step guide that ticks
+// Getting started: a starter game opens with a short guide that ticks
 // itself off, works from the keyboard, remembers being hidden and comes back
 // from the Guide button.
 
@@ -9,15 +9,15 @@ async function start(page: Page, preset: string) {
   await page.getByRole("button", { name: new RegExp(`^${preset}`) }).click();
   await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
 }
-const guide = (page: Page) => page.getByRole("region", { name: /Make it yours|You made it yours/ });
+const guide = (page: Page) => page.getByRole("region", { name: /^First changes to |is your game now\.$/ });
 const announced = (page: Page, text: string) => expect(page.getByRole("status").filter({ hasText: text })).toBeAttached();
 
 test("the guide walks through drawing, playing on the TV and changing a rule", async ({ page }) => {
   await page.goto("/");
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   await expect(guide(page)).toBeVisible();
   await expect(guide(page).getByRole("listitem").first()).toHaveAttribute("aria-current", "step");
-  await expect(guide(page).getByRole("button", { name: "Survive for a whole minute" })).toBeVisible();
+  await expect(guide(page).getByRole("button", { name: "Last for a whole minute" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Things" })).toHaveClass(/guide-target/);
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(axe.violations.map((v) => v.id)).toEqual([]);
@@ -30,14 +30,19 @@ test("the guide walks through drawing, playing on the TV and changing a rule", a
   await page.keyboard.press("3");
   await page.keyboard.press("ArrowRight");
   await page.keyboard.press("Enter");
-  await announced(page, "Your hero has your drawing. Next: Play it on the TV.");
+  await announced(page, "Your Cat has your drawing. Next: Play it on the TV.");
   await expect(guide(page).getByRole("listitem").nth(1)).toHaveAttribute("aria-current", "step");
   await expect(page.locator(".play-column")).toHaveClass(/guide-play/);
+
+  // Clicking into the game isn't playing it on the TV: the step waits for full screen.
+  await page.getByRole("application", { name: "Game preview" }).click();
+  await expect(guide(page).getByRole("listitem").nth(1)).toHaveAttribute("aria-current", "step");
+  await page.keyboard.press("Escape");
 
   // 2: Play goes to TV mode, with the keyboard in the game.
   await page.getByRole("button", { name: "Play: Play it on the TV" }).click();
   await expect(page.getByRole("application", { name: "Game preview" })).toBeFocused();
-  await announced(page, "You played your own game! Next: Change a rule (if you like).");
+  await announced(page, "Played full screen. Next: Change a rule (if you like).");
   await page.evaluate(() => document.fullscreenElement && document.exitFullscreen());
   await page.keyboard.press("Escape"); // Esc stops playing
   await expect(page.getByRole("application", { name: "Game preview" })).not.toBeFocused();
@@ -46,13 +51,13 @@ test("the guide walks through drawing, playing on the TV and changing a rule", a
   await page.getByRole("button", { name: "Rules: Change a rule (if you like)" }).click();
   await expect(page.getByRole("tab", { name: "Rules" })).toHaveAttribute("aria-selected", "true");
   await page.getByLabel("Rule 3 action 1 points").selectOption("100");
-  await announced(page, "You changed how your game plays. All three steps done.");
-  await expect(page.getByRole("heading", { name: "You made a game!" })).toBeVisible();
+  await announced(page, "Rule changed. That was the last step.");
+  await expect(page.getByRole("heading", { name: "Teacup Rain is your game now." })).toBeVisible();
 
   // An idea opens where to make it.
-  await page.getByRole("button", { name: "Make the rocks fall faster" }).click();
+  await page.getByRole("button", { name: "Make the teacups fall faster" }).click();
   await expect(page.getByRole("tab", { name: "Things" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("button", { name: /^Rock/, pressed: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Teacup/, pressed: true })).toBeVisible();
 });
 
 test("a hidden guide stays hidden for that game, comes back from Guide, and a new game gets a fresh one", async ({ page, browserName }) => {

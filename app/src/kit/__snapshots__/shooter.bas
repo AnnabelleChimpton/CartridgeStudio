@@ -130,7 +130,7 @@
  const STATE_ATTRACT = 4
  const EMPTY = 255
  const ROOMTOP = 16
- const T_SHIP = 0
+ const T_BASKET = 0
  const T_INVADER = 1
  const T_SHOT = 2
  const T_BOMB = 3
@@ -154,13 +154,13 @@
  dim oprot = $2308
  dim ev7 = $2320
 
- rem Player ship
- incgraphic spr_ship.png 160A 0 1 2 3
+ rem Laundry basket
+ incgraphic spr_basket.png 160A 0 1 2 3
  rem Vacuum
  incgraphic spr_invader.png 160A 0 1 2 3
  rem Vacuum frame 2
  incgraphic spr_invader_2.png 160A 0 1 2 3
- rem Shot
+ rem Sock
  incgraphic spr_shot.png 160A 0 1 2 3
  rem Dust bomb
  incgraphic spr_bomb.png 160A 0 1 2 3
@@ -168,8 +168,8 @@
  characterset font
  alphachars '0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.!?-:#~*'
 
- rem palette ship
- P0C1 = $3A : P0C2 = $02 : P0C3 = $0F
+ rem palette basket
+ P0C1 = $28 : P0C2 = $22 : P0C3 = $3A
  rem palette enemy
  P1C1 = $96 : P1C2 = $42 : P1C3 = $90
  rem palette shot
@@ -255,14 +255,14 @@ draw
  plotvalue font 4 score0 6 4 0
  hud1 = converttobcd(lives)
  plotvalue font 4 hud1 2 152 0
- rem Player ship
+ rem Laundry basket
  oi = 0
- if otype[oi] <> T_SHIP then goto drw_ship_next
+ if otype[oi] <> T_BASKET then goto drw_basket_next
  if oprot[oi] then tmp = frame & 16 else tmp = 0
- if tmp then goto drw_ship_next
+ if tmp then goto drw_basket_next
  px = ox[oi] : py = oy[oi]
- plotsprite4 spr_ship 0 px py
-drw_ship_next
+ plotsprite4 spr_basket 0 px py
+drw_basket_next
  rem Vacuum
  for oi = 1 to 10
  if otype[oi] <> T_INVADER then goto drw_invader_next
@@ -276,7 +276,7 @@ drw_ship_next
  plotsprite4 spr_invader 1 px py fr
 drw_invader_next
  next
- rem Shot
+ rem Sock
  oi = 11
  if otype[oi] <> T_SHOT then goto drw_shot_next
  if oprot[oi] then tmp = frame & 16 else tmp = 0
@@ -380,34 +380,34 @@ startroomdone
 
  rem ---- movement: one compiled loop per kind of thing ----
 moveall
- rem ---- Player ship: joystick 1 (lr, direct), velocity, walls: slide, edges: stop ----
+ rem ---- Laundry basket: joystick 1 (lr, direct), velocity, walls: slide, edges: stop ----
  mi = 0
- if otype[mi] <> T_SHIP then goto upd_ship_next
+ if otype[mi] <> T_BASKET then goto upd_basket_next
  ovx[mi] = 0 : ovxl[mi] = 0
- if !pad1{2} then goto upd_ship_24
+ if !pad1{2} then goto upd_basket_24
  ovx[mi] = 254 : ovxl[mi] = 0
-upd_ship_24
- if !pad1{3} then goto upd_ship_25
+upd_basket_24
+ if !pad1{3} then goto upd_basket_25
  ovx[mi] = 2 : ovxl[mi] = 0
-upd_ship_25
-upd_ship_ctl
+upd_basket_25
+upd_basket_ctl
  tmp = ofx[mi] + ovxl[mi] : stp = ovx[mi]
  if tmp < ofx[mi] then stp = stp + 1
  ofx[mi] = tmp
- if stp = 0 then goto upd_ship_y
+ if stp = 0 then goto upd_basket_y
  nx = ox[mi] + stp : ny = oy[mi]
  wid = 16 : hgt = 16
  gosub trymoveedge
- if blocked = 0 then goto upd_ship_y
- if blocked = 1 then goto upd_ship_26
+ if blocked = 0 then goto upd_basket_y
+ if blocked = 1 then goto upd_basket_26
  ovx[mi] = 0 : ovxl[mi] = 0
- goto upd_ship_y
-upd_ship_26
+ goto upd_basket_y
+upd_basket_26
  ovx[mi] = 0 : ovxl[mi] = 0
  ovy[mi] = 0 : ovyl[mi] = 0
-upd_ship_y
-upd_ship_d
-upd_ship_next
+upd_basket_y
+upd_basket_d
+upd_basket_next
  rem ---- Vacuum: velocity, walls: through, edges: pass ----
  for mi = 1 to 10
  if otype[mi] <> T_INVADER then goto upd_invader_next
@@ -426,7 +426,7 @@ upd_invader_d
  if tmp then ds = mi : gosub kill_invader
 upd_invader_next
  next
- rem ---- Shot: velocity, walls: destroy, edges: destroy ----
+ rem ---- Sock: velocity, walls: destroy, edges: destroy ----
  mi = 11
  if otype[mi] <> T_SHOT then goto upd_shot_next
 upd_shot_y
@@ -516,8 +516,8 @@ nearnext
  return
 
  rem ---- removing things (each runs its kind's "destroyed" rules) ----
-kill_ship
- rem remove a Player ship
+kill_basket
+ rem remove a Laundry basket
  otype[ds] = EMPTY
  return
 
@@ -527,7 +527,7 @@ kill_invader
  return
 
 kill_shot
- rem remove a Shot
+ rem remove a Sock
  otype[ds] = EMPTY
  return
 
@@ -551,7 +551,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Shot touches Vacuum: remove the Shot, remove the Vacuum, add 10 points and play Boom.
+ rem rule 1: When Sock touches Vacuum: remove the Sock, remove the Vacuum, add 10 points and play Boom.
 rule1
  oi = 11
  if otype[oi] <> T_SHOT then goto rule1_ni
@@ -569,15 +569,15 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Dust bomb touches Player ship: remove the Dust bomb, take 1 from Lives, send every
- rem   Player ship back to start, protect every Player ship for 1.5 seconds and play Falling tone.
+ rem rule 2: When Dust bomb touches Laundry basket: remove the Dust bomb, take 1 from Lives, send every
+ rem   Laundry basket back to start, protect every Laundry basket for 1.5 seconds and play Falling tone.
 rule2
  oi = 12
  if otype[oi] <> T_BOMB then goto rule2_ni
  if oprot[oi] then goto rule2_ni
  x1 = ox[oi] : y1 = oy[oi]
  oj = 0
- if otype[oj] <> T_SHIP then goto rule2_nj_2
+ if otype[oj] <> T_BASKET then goto rule2_nj_2
  if oprot[oj] then goto rule2_nj_2
  x2 = ox[oj] : y2 = oy[oj]
  if boxcollision(x1, y1, 4, 4, x2, y2, 16, 16) then gosub rule2_do
@@ -587,11 +587,11 @@ rule2_nj_2
 rule2_ni
 rule2_end
 
- rem rule 3: When Vacuum touches Player ship: take 1 from Lives, send every Player ship back to start,
- rem   protect every Player ship for 1.5 seconds, play Falling tone and start the room again.
+ rem rule 3: When Vacuum touches Laundry basket: take 1 from Lives, send every Laundry basket back to
+ rem   start, protect every Laundry basket for 1.5 seconds, play Falling tone and start the room again.
 rule3
  oj = 0
- if otype[oj] <> T_SHIP then goto rule3_ni
+ if otype[oj] <> T_BASKET then goto rule3_ni
  if oprot[oj] then goto rule3_ni
  x1 = ox[oj] : y1 = oy[oj]
  for oi = 1 to 10
@@ -600,14 +600,14 @@ rule3
  x2 = ox[oi] : y2 = oy[oi]
  if boxcollision(x1, y1, 16, 16, x2, y2, 12, 8) then gosub rule3_do
  if ruleexit then return
- if otype[oj] <> T_SHIP then goto rule3_ni
+ if otype[oj] <> T_BASKET then goto rule3_ni
 rule3_nj_5
  next
 rule3_ni
 rule3_end
 
- rem rule 4: While a Vacuum reaches the bottom edge: take 1 from Lives, send every Player ship back to
- rem   start, protect every Player ship for 1.5 seconds and start the room again.
+ rem rule 4: While a Vacuum reaches the bottom edge: take 1 from Lives, send every Laundry basket back to
+ rem   start, protect every Laundry basket for 1.5 seconds and start the room again.
 rule4
  for oi = 1 to 10
  if otype[oi] <> T_INVADER then goto rule4_next
@@ -640,15 +640,15 @@ rule5_off
  latches{0} = 0
 rule5_end
 
- rem rule 6: When button 1 is pressed, only if the number of Shot is 0: create a Shot above the Player
- rem   ship and play Zap.
+ rem rule 6: When button 1 is pressed, only if the number of Sock is 0: create a Sock above the Laundry
+ rem   basket and play Zap.
 rule6
  if !padpressed{4} then goto rule6_end
  tmp2 = 0
  if otype[11] = T_SHOT then tmp2 = 1
  if tmp2 <> 0 then goto rule6_end
  oi = 0
- if otype[oi] <> T_SHIP then goto rule6_p_11
+ if otype[oi] <> T_BASKET then goto rule6_p_11
  gosub rule6_do
  if ruleexit then return
 rule6_p_11
@@ -719,11 +719,11 @@ rule2_do
  tmp = 1
  if lives < tmp then lives = 0 else lives = lives - tmp
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_3
+ if otype[ak] <> T_BASKET then goto tgt_3
  ox[ak] = osx[ak] : oy[ak] = osy[ak]
 tgt_3
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_4
+ if otype[ak] <> T_BASKET then goto tgt_4
  oprot[ak] = 15
 tgt_4
  playsfx sfx_down
@@ -733,11 +733,11 @@ rule3_do
  tmp = 1
  if lives < tmp then lives = 0 else lives = lives - tmp
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_6
+ if otype[ak] <> T_BASKET then goto tgt_6
  ox[ak] = osx[ak] : oy[ak] = osy[ak]
 tgt_6
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_7
+ if otype[ak] <> T_BASKET then goto tgt_7
  oprot[ak] = 15
 tgt_7
  playsfx sfx_down
@@ -748,11 +748,11 @@ rule4_do
  tmp = 1
  if lives < tmp then lives = 0 else lives = lives - tmp
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_9
+ if otype[ak] <> T_BASKET then goto tgt_9
  ox[ak] = osx[ak] : oy[ak] = osy[ak]
 tgt_9
  ak = 0
- if otype[ak] <> T_SHIP then goto tgt_10
+ if otype[ak] <> T_BASKET then goto tgt_10
  oprot[ak] = 15
 tgt_10
  gosub startroom : ruleexit = 1
@@ -853,12 +853,12 @@ drawtitle
  plotchars 'PRESS FIRE' 4 60 12
  return
 drawwon
- plotchars 'YOU WIN!' 4 64 11
+ plotchars 'FLOORS SAFE' 4 58 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return
 drawlost
- plotchars 'GAME OVER' 4 62 11
+ plotchars 'BAGGED' 4 68 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return
@@ -868,7 +868,7 @@ drawdemo
  return
 
  rem ---- data (generated) ----
- rem per kind (T_SHIP, T_INVADER, T_SHOT, T_BOMB): width
+ rem per kind (T_BASKET, T_INVADER, T_SHOT, T_BOMB): width
  data typew
  16, 12, 4, 4
 end

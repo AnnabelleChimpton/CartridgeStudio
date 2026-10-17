@@ -100,25 +100,25 @@ function shooterPilot(seed: number): Pilot {
   };
 }
 
-/** Dodger: drift toward the nearest star, away from columns with rocks coming down. */
+/** Teacup Rain: drift toward the nearest fish, away from columns with crockery coming down. */
 function dodgerPilot(seed: number): Pilot {
   const r = rng(seed);
   const greed = 0.3 + r() * 0.5;
   return ({ hero, things }) => {
     if (!hero) return NONE;
-    const hazards = things.filter((t) => (t.type === "rock" || t.type === "boulder") && t.y < hero.y + hero.h && t.y > hero.y - 90);
-    const stars = things.filter((t) => t.type === "star" && t.y < hero.y + hero.h);
-    const star = stars.sort((a, b) => b.y - a.y)[0];
+    const hazards = things.filter((t) => (t.type === "teacup" || t.type === "teapot") && t.y < hero.y + hero.h && t.y > hero.y - 90);
+    const fish = things.filter((t) => t.type === "fish" && t.y < hero.y + hero.h);
+    const target = fish.sort((a, b) => b.y - a.y)[0];
     let best = hero.x;
     let bestCost = Infinity;
     for (let x = 0; x <= 160 - hero.w; x += 2) {
       let cost = Math.abs(x - hero.x) * 0.05;
-      if (star) cost += Math.abs(x + hero.w / 2 - cx(star)) * greed;
+      if (target) cost += Math.abs(x + hero.w / 2 - cx(target)) * greed;
       for (const h of hazards) {
         const overlap = h.x < x + hero.w + 6 && h.x + h.w > x - 6;
         if (overlap) cost += 400 - (hero.y - h.y) * 2;
       }
-      // Passing under a rock on the way there counts too.
+      // Passing under a teacup on the way there counts too.
       const lo = Math.min(x, hero.x);
       const hi = Math.max(x, hero.x) + hero.w;
       for (const h of hazards) if (h.y > hero.y - 30 && h.x < hi && h.x + h.w > lo) cost += 150;

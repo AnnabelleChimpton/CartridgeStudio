@@ -1,26 +1,26 @@
 // The jam a creator has joined, always in view: its theme and rules, the
 // organizer's page, and a way out.
 
+import { useState } from "react";
+import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { APP_VERSION } from "../version.ts";
 import { useJamStore } from "./store.ts";
 import "./jam.css";
 
 export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; onStarter: (name: string, cartridge: string) => void }) {
   const brief = useJamStore((s) => s.brief);
+  const [leaving, setLeaving] = useState(false);
   if (!brief) return null;
-  const leave = () => {
-    if (confirm(`Leave ${brief.name}? Your game stays; only the jam banner and entry form go.`)) useJamStore.getState().leave();
-  };
   return (
     <aside className="jam-banner" aria-label="Game jam">
       <div className="jam-banner-main">
         <p className="jam-banner-name">
-          <span className="jam-tag">Jam</span> <strong>{brief.name}</strong>
+          <span className="jam-tag">Jam</span> {brief.name}
           {brief.dates && <span className="muted"> · {brief.dates}</span>}
         </p>
         {brief.theme && (
           <p className="jam-banner-theme">
-            Theme: <strong>{brief.theme}</strong>
+            Theme: {brief.theme}
           </p>
         )}
         {brief.app && brief.app !== APP_VERSION && (
@@ -58,10 +58,20 @@ export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; on
             Start a jam game
           </button>
         )}
-        <button type="button" className="link" onClick={leave}>
+        <button type="button" className="link" onClick={() => setLeaving(true)}>
           Leave jam
         </button>
       </div>
+      {leaving && (
+        <ConfirmDialog
+          title={`Leave ${brief.name}?`}
+          message="Your game stays; only the jam banner and entry form go."
+          yes="Leave jam"
+          no="Stay in the jam"
+          onYes={() => useJamStore.getState().leave()}
+          onClose={() => setLeaving(false)}
+        />
+      )}
     </aside>
   );
 }

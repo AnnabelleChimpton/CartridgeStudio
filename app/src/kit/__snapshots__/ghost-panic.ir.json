@@ -1756,8 +1756,8 @@
  "wallPalette": 3,
  "text": {
   "title": "Ghost Panic",
-  "win": "Three mazes clear!",
-  "lose": "Game over"
+  "win": "THREE MAZES CLEAR",
+  "lose": "THE GHOSTS WON"
  },
  "flow": {
   "title": true,

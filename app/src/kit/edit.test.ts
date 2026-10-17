@@ -128,10 +128,10 @@ describe("kit editing", () => {
 
   it("making a thing the player demotes the old player and stops it shooting", () => {
     const g = preset("shooter");
-    expect(shootsOf(g, "ship")).toBe("shot");
+    expect(shootsOf(g, "basket")).toBe("shot");
     setBehaviour(g, "invader", "player-lr");
-    expect(presetOf(g.types.find((t) => t.id === "ship")!)?.behaviour).toBe("still");
-    expect(shootsOf(g, "ship")).toBeNull();
+    expect(presetOf(g.types.find((t) => t.id === "basket")!)?.behaviour).toBe("still");
+    expect(shootsOf(g, "basket")).toBeNull();
     // The march's turn went with the march.
     expect(g.rules.some((r) => "edge" in r.when && r.when.edge[1] === "sides")).toBe(false);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
@@ -143,10 +143,10 @@ describe("kit editing", () => {
 
   it("shooting and dropping are rules the Things tab edits in plain words", () => {
     const g = preset("shooter");
-    setShoots(g, "ship", "bomb");
-    expect(shootsOf(g, "ship")).toBe("bomb");
-    setShoots(g, "ship", null);
-    expect(shootsOf(g, "ship")).toBeNull();
+    setShoots(g, "basket", "bomb");
+    expect(shootsOf(g, "basket")).toBe("bomb");
+    setShoots(g, "basket", null);
+    expect(shootsOf(g, "basket")).toBeNull();
     expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 4 });
     setDrops(g, "invader", { type: "bomb", chance: 20 });
     expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 20 });

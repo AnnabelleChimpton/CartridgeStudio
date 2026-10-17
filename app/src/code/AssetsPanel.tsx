@@ -4,6 +4,7 @@
 
 import { useId, useMemo, useState } from "react";
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
+import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import { GRAPHIC_NAME, MAX_GRAPHICS, graphicFile, type CodeGraphic, type CodeProject } from "./schema.ts";
 import { addIncgraphic, removeIncgraphic } from "./source-edit.ts";
@@ -39,6 +40,7 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
   const edit = useCodeStore((s) => s.edit);
   const [selected, setSelected] = useState<string | null>(() => project.graphics[0]?.name ?? null);
   const [message, setMessage] = useState<{ text: string; line?: number } | null>(null);
+  const [removing, setRemoving] = useState<CodeGraphic | null>(null);
   const ids = useId();
 
   const about = useMemo(() => descriptions(project.source), [project.source]);
@@ -57,7 +59,6 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
   };
 
   const remove = (g: CodeGraphic) => {
-    if (!confirm(`Remove ${g.name}? Its incgraphic line comes out of game.bas too; code that draws it will need changing.`)) return;
     edit((d) => {
       d.graphics = d.graphics.filter((x) => x.name !== g.name);
       d.source = removeIncgraphic(d.source, graphicFile(g));
@@ -70,8 +71,8 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
     <section className="panel" aria-labelledby={`${ids}-h`}>
       <h2 id={`${ids}-h`}>Graphics</h2>
       <p className="lead muted">
-        Each graphic is a PNG that game.bas imports with <code>incgraphic</code>. Colors here are for drawing; game.bas sets the real
-        ones with P0C1 to P7C3.
+        Each graphic is a PNG that game.bas imports with <code>incgraphic</code>. Colors here are for drawing; game.bas sets the
+        colors the console shows, with P0C1 to P7C3.
       </p>
       <div className="graphics-layout">
         <div>
@@ -159,13 +160,23 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
               >
                 Add animation frame
               </button>
-              <button type="button" className="secondary danger" onClick={() => remove(graphic)}>
+              <button type="button" className="secondary danger" onClick={() => setRemoving(graphic)}>
                 Remove {graphic.name}
               </button>
             </div>
           </section>
         )}
       </div>
+      {removing && (
+        <ConfirmDialog
+          title={`Remove ${removing.name}?`}
+          message="Its incgraphic line comes out of game.bas too; code that draws it will need changing."
+          yes={`Remove ${removing.name}`}
+          danger
+          onYes={() => remove(removing)}
+          onClose={() => setRemoving(null)}
+        />
+      )}
     </section>
   );
 }

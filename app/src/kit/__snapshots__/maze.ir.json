@@ -987,8 +987,8 @@
  "wallPalette": 3,
  "text": {
   "title": "Yarn Hunt",
-  "win": "All the yarn!",
-  "lose": "Game over"
+  "win": "ALL THE YARN",
+  "lose": "CAUGHT BY DUST"
  },
  "flow": {
   "title": true,

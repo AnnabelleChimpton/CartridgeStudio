@@ -472,7 +472,7 @@
    ]
   }
  ],
- "text": { "title": "Ghost Panic", "win": "Three mazes clear!", "lose": "Game over" },
+ "text": { "title": "Ghost Panic", "win": "THREE MAZES CLEAR", "lose": "THE GHOSTS WON" },
  "flow": {
   "title": true,
   "attract": null,

@@ -1002,7 +1002,7 @@ drawwon
  plotvalue font 5 score0 6 80 14
  return
 drawlost
- plotchars 'GAME OVER' 5 62 11
+ plotchars 'OUT OF LIVES' 5 56 11
  plotchars 'SCORE' 5 56 14
  plotvalue font 5 score0 6 80 14
  return

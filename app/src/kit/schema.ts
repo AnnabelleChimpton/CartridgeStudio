@@ -19,6 +19,8 @@ export const MAX_ROOMS = 8;
 /** Named numbers (lives, keys, combo…). Score and seconds are built in besides these. */
 export const MAX_COUNTERS = 8;
 export const MAX_MESSAGES = 8;
+/** Numbers along the top of the screen. */
+export const MAX_HUD = 4;
 /** Characters the kit font can draw (also used by alphachars). `#`, `~` and `*` are the wall, hazard and goal tiles. */
 export const FONT_CHARS = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.!?-:#~*";
 /** Room tiles besides empty. Walls block movement; hazards and goals are only noticed by rules. */
@@ -392,7 +394,7 @@ export const KitGameSchema = z
     rooms: z.array(ExtraRoomSchema).max(MAX_ROOMS - 1).default([]),
     counters: z.array(CounterSchema).max(MAX_COUNTERS).default([]),
     /** Up to four values on screen: score, seconds or a counter. */
-    hud: z.array(HudSchema).max(4).default([]),
+    hud: z.array(HudSchema).max(MAX_HUD).default([]),
     messages: z.array(Id).max(MAX_MESSAGES).default([]),
     rules: z.array(KitRuleSchema).max(MAX_RULES),
     text: z.object({ title: Text(60), win: Text(60), lose: Text(60) }).strict(),

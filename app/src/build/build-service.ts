@@ -62,7 +62,7 @@ export class WorkerBuildService implements BuildService {
         reject(err);
         this.fault(err);
       };
-      this.worker.onmessageerror = () => this.fault(new Error("The build worker sent a message we couldn't read"));
+      this.worker.onmessageerror = () => this.fault(new Error("The build worker sent a message the page couldn't read"));
     });
     this.workerReady.catch(() => {});
     this.post({ type: "init", packUrl: this.packUrl });

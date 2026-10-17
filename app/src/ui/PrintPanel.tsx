@@ -70,7 +70,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
       if (what === "pdf") onDownload(pdf, `${slug}-print.pdf`);
       else onDownload(await makePackage(pdf), `${slug}-submission.zip`);
     } catch (e) {
-      setError(`We couldn't make the ${what === "pdf" ? "PDF" : "package"}: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`Making the ${what === "pdf" ? "PDF" : "package"} stopped: ${e instanceof Error ? e.message : String(e)}. Your game is saved; press the button again to retry.`);
     } finally {
       setBusy(null);
     }

@@ -348,7 +348,7 @@ export function DebuggerDrawer({ preview, title, known, typeNames, estimate }: P
                 {listing.status === "ready" ? "Make the listing again" : listing.status === "making" ? "Making the listing…" : "Make the listing"}
               </button>
               {listing.status === "ready" && (
-                <button type="button" className="secondary" onClick={() => download(new TextEncoder().encode(listing.text), `${title.trim() ? title.trim().replace(/[^\w-]+/g, "-").toLowerCase() : "game"}.list.txt`)}>
+                <button type="button" className="secondary" onClick={() => download(new TextEncoder().encode(listing.text), `${title.trim() ? title.trim().replace(/[^\w-]+/g, "-").toLowerCase() : "game"}.list.txt`, { toast: true })}>
                   Download the listing
                 </button>
               )}

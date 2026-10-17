@@ -70,7 +70,7 @@ export function CodePrint({ title, preview, cartridgeFile }: { title: string; pr
         });
         return pkg.zip;
       }}
-      onDownload={download}
+      onDownload={(bytes, name) => download(bytes, name, { toast: true })}
     />
   );
 }

@@ -5,7 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type BrowserContextOptions, type Page } from "@playwright/test";
 
-type Preset = "Cat vs. Vacuums" | "Rock Fall" | "Ghost Panic";
+type Preset = "Cat vs. Vacuums" | "Teacup Rain" | "Ghost Panic";
 
 async function start(page: Page, preset: Preset) {
   await page.goto("/");

@@ -1,17 +1,17 @@
 {
  "kit": 2,
- "title": "Rock Fall",
+ "title": "Teacup Rain",
  "palettes": [
   {
-   "id": "ship",
+   "id": "cat",
    "colors": [ "$3A", "$02", "$0F" ]
   },
   {
-   "id": "rock",
-   "colors": [ "$F4", "$F8", "$02" ]
+   "id": "crockery",
+   "colors": [ "$0F", "$86", "$02" ]
   },
   {
-   "id": "star",
+   "id": "fish",
    "colors": [ "$1E", "$0F", "$00" ]
   },
   {
@@ -24,14 +24,14 @@
  "textPalette": "text",
  "types": [
   {
-   "id": "ship",
-   "label": "Ship",
+   "id": "cat",
+   "label": "Cat",
    "width": 16,
    "height": 16,
    "frames": [
-    [ "0000000110000000", "0000001111000000", "0000001221000000", "0000011221100000", "0000011111100000", "0000111111110000", "0001113333111000", "0011113333111100", "0111111111111110", "1111111111111111", "1111222222221111", "1110022222200111", "1100002222000011", "1000000330000001", "0000003333000000", "0000000330000000" ]
+    [ "0100000000000010", "0110000000000110", "0111000000001110", "0111111111111110", "1111111111111111", "1112211111122111", "1112211111122111", "1111111111111111", "1111111331111111", "0111113333111110", "0011111221111100", "0001111111111000", "0011111111111100", "0111331111331110", "0111331111331110", "0011100000011100" ]
    ],
-   "palette": "ship",
+   "palette": "cat",
    "control": {
     "joystick": 1,
     "axes": "lr",
@@ -41,36 +41,36 @@
    "move": { "vx": 0, "vy": 0, "wall": "slide", "edge": "stop" }
   },
   {
-   "id": "rock",
-   "label": "Rock",
+   "id": "teacup",
+   "label": "Teacup",
    "width": 8,
    "height": 8,
    "frames": [
-    [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
+    [ "00000000", "11111100", "12222110", "11111101", "11111101", "01111110", "00111100", "11111111" ]
    ],
-   "palette": "rock",
+   "palette": "crockery",
    "move": { "vx": 0, "vy": 16, "wall": "through", "edge": "pass" }
   },
   {
-   "id": "boulder",
-   "label": "Fast rock",
+   "id": "teapot",
+   "label": "Teapot",
    "width": 8,
    "height": 8,
    "frames": [
-    [ "00111100", "01121110", "11111211", "11211111", "11111111", "01112110", "01111110", "00111100" ]
+    [ "00011000", "00111100", "11111110", "11222211", "01111101", "01111101", "00111110", "00000000" ]
    ],
-   "palette": "rock",
+   "palette": "crockery",
    "move": { "vx": 0, "vy": 32, "wall": "through", "edge": "pass" }
   },
   {
-   "id": "star",
-   "label": "Star",
+   "id": "fish",
+   "label": "Fish",
    "width": 8,
    "height": 8,
    "frames": [
-    [ "00010000", "00111000", "11111110", "01111100", "00111000", "01101100", "11000110", "00000000" ]
+    [ "00000000", "00011100", "10111110", "11111131", "11111111", "10111110", "00011100", "00000000" ]
    ],
-   "palette": "star",
+   "palette": "fish",
    "move": { "vx": 0, "vy": 8, "wall": "through", "edge": "pass" }
   }
  ],
@@ -88,7 +88,7 @@
    "                    ",
    "         P          "
   ],
-  "legend": { "r": "rock", "b": "boulder", "s": "star", "P": "ship" }
+  "legend": { "r": "teacup", "b": "teapot", "s": "fish", "P": "cat" }
  },
  "counters": [
   { "id": "lives", "label": "Lives", "start": 3 }
@@ -102,7 +102,7 @@
   {
    "id": "r-1",
    "when": {
-    "touch": [ "ship", "rock" ]
+    "touch": [ "cat", "teacup" ]
    },
    "fires": "while",
    "then": [
@@ -115,12 +115,12 @@
     },
     {
      "id": "a-1-1-s0",
-     "toStart": { "every": "ship" }
+     "toStart": { "every": "cat" }
     },
     {
      "id": "a-1-1-p0",
      "protect": {
-      "who": { "every": "ship" },
+      "who": { "every": "cat" },
       "tenths": 15
      }
     },
@@ -131,7 +131,7 @@
   {
    "id": "r-2",
    "when": {
-    "touch": [ "ship", "boulder" ]
+    "touch": [ "cat", "teapot" ]
    },
    "fires": "while",
    "then": [
@@ -144,12 +144,12 @@
     },
     {
      "id": "a-2-1-s0",
-     "toStart": { "every": "ship" }
+     "toStart": { "every": "cat" }
     },
     {
      "id": "a-2-1-p0",
      "protect": {
-      "who": { "every": "ship" },
+      "who": { "every": "cat" },
       "tenths": 15
      }
     },
@@ -160,7 +160,7 @@
   {
    "id": "r-3",
    "when": {
-    "touch": [ "ship", "star" ]
+    "touch": [ "cat", "fish" ]
    },
    "fires": "while",
    "then": [
@@ -185,7 +185,7 @@
   },
   {
    "id": "r-p-fall1",
-   "when": { "leaves": "rock" },
+   "when": { "leaves": "teacup" },
    "then": [
     {
      "id": "r-p-fall1-1",
@@ -205,7 +205,7 @@
   },
   {
    "id": "r-p-fall2",
-   "when": { "leaves": "boulder" },
+   "when": { "leaves": "teapot" },
    "then": [
     {
      "id": "r-p-fall2-1",
@@ -225,7 +225,7 @@
   },
   {
    "id": "r-p-fall3",
-   "when": { "leaves": "star" },
+   "when": { "leaves": "fish" },
    "then": [
     {
      "id": "r-p-fall3-1",
@@ -258,7 +258,7 @@
    ]
   }
  ],
- "text": { "title": "Rock Fall", "win": "You survived!", "lose": "Game over" },
+ "text": { "title": "Teacup Rain", "win": "30 SECONDS. STILL HERE.", "lose": "OUT OF LIVES" },
  "flow": {
   "title": true,
   "attract": null,

@@ -1,4 +1,4 @@
-// "What do you want to make?" The games made so far (My games), then the
+// "Pick a cart to start from": the games made so far (My games), then the
 // starting games. Shown when no game is open, and from New game.
 
 import { useEffect, useState } from "react";
@@ -9,9 +9,9 @@ import { ContextStrip } from "./ContextStrip.tsx";
 import { Dialog } from "./Dialog.tsx";
 import { MyGames, type LibraryActions } from "./MyGames.tsx";
 import { ntscCss } from "./ntsc.ts";
-import { TIERS, useTier } from "./prefs.ts";
 import { SpritePreview } from "./SpritePreview.tsx";
 import { Brand } from "./TopBar.tsx";
+import { numberWord } from "./words.ts";
 
 export type StartChoice = { kind: "kit"; preset: string } | { kind: "code" };
 
@@ -51,18 +51,17 @@ function kitCast(game: KitGame) {
   }));
 }
 
-function TierNote() {
-  const tier = TIERS.find((t) => t.id === useTier())!;
+/** What the chooser says above the cards, counted from the cards it shows. */
+function Intro({ only }: { only?: readonly string[] }) {
+  const count = KIT_PRESETS.filter((p) => !only || only.includes(p.id)).length;
+  const all = count === 1 ? "It plays" : `All ${numberWord(count)} play`;
   return (
-    <p className="muted small chooser-foot">
-      You're in <strong>{tier.label}</strong> mode: {tier.detail.charAt(0).toLowerCase() + tier.detail.slice(1)} Change it any time
-      from Mode in the top bar.
-    </p>
+    <>
+      <p className="muted chooser-lead">{all} already. Change the art, the room or the rules, then press play.</p>
+      <p className="muted small">A short guide at the top of the editor walks you through the first changes.</p>
+    </>
   );
 }
-
-const INTRO =
-  "Pick a starting game. You can change everything in it: the art, how things move, the room and the rules. Three short steps will show you how.";
 
 /** The starting games. `only` limits them to these kit presets, e.g. for a jam. */
 function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
@@ -115,9 +114,9 @@ export function StartChooser({
 }) {
   if (onCancel) {
     return (
-      <Dialog title="What do you want to make?" wide onClose={onCancel}>
+      <Dialog title="Pick a cart to start from" wide onClose={onCancel}>
         {library && <MyGames {...library} />}
-        <p className="muted">{INTRO}</p>
+        <Intro only={only} />
         <Choices onChoose={onChoose} only={only} />
         <div className="toolbar">
           <span className="spacer" />
@@ -137,11 +136,10 @@ export function StartChooser({
         <ContextStrip />
       </div>
       <div className="chooser">
-        <h2>What do you want to make?</h2>
+        <h2>Pick a cart to start from</h2>
         {library && <MyGames {...library} />}
-        <p className="muted chooser-lead">{INTRO}</p>
+        <Intro only={only} />
         <Choices onChoose={onChoose} only={only} />
-        <TierNote />
       </div>
     </main>
   );

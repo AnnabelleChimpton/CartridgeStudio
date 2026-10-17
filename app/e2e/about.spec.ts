@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 
 test("the About dialog credits the tools and serves their licences", async ({ page, request }) => {
   await page.goto("/");
-  await expect(page.getByText("What do you want to make?")).toBeVisible();
+  await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   const dialog = page.getByRole("dialog", { name: "About and licences" });
   // The offline note can appear above the link as the page settles and move it
   // mid-click, so open until the dialog shows.

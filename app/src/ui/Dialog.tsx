@@ -55,6 +55,7 @@ export function ConfirmDialog({
   title,
   message,
   yes,
+  no = "Cancel",
   onYes,
   onClose,
   danger,
@@ -63,6 +64,8 @@ export function ConfirmDialog({
   message: ReactNode;
   /** The button that goes ahead, saying what it does ("Start the new game"). */
   yes: string;
+  /** The button that backs out. */
+  no?: string;
   onYes: () => void;
   onClose: () => void;
   danger?: boolean;
@@ -82,7 +85,7 @@ export function ConfirmDialog({
           {yes}
         </button>
         <button type="button" className="secondary" onClick={onClose}>
-          Cancel
+          {no}
         </button>
       </div>
     </Dialog>

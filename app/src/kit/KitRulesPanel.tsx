@@ -388,9 +388,9 @@ export function KitRulesPanel() {
         {moved}
       </p>
       {game.rules.length === 0 && (
-        <p className="empty-state" data-testid="rules-empty">
-          No rules yet, so things can move but nothing happens when they meet. Press Add rule to start one, like “When the{" "}
-          {game.types.find(isPlayer)?.label ?? game.types[0]!.label} touches something, add 10 points”.
+        <p className="empty-state" data-testid="rules-empty" id={`${ids}-empty`}>
+          No rules yet, so things move but nothing happens when they meet. A first rule could be “When the{" "}
+          {(game.types.find(isPlayer) ?? game.types[0])?.label ?? "player"} touches something, add 10 points”.
         </p>
       )}
       <ol className="rules" ref={list}>
@@ -823,6 +823,7 @@ export function KitRulesPanel() {
         type="button"
         className="secondary"
         disabled={game.rules.length >= 24 || game.types.length === 0}
+        aria-describedby={game.rules.length === 0 ? `${ids}-empty` : undefined}
         onClick={() =>
           edit((d) => {
             const first = d.types.find(isPlayer)?.id ?? d.types[0]!.id;
@@ -831,7 +832,7 @@ export function KitRulesPanel() {
           })
         }
       >
-        Add rule
+        {game.rules.length === 0 ? "Add your first rule" : "Add rule"}
       </button>
     </section>
   );

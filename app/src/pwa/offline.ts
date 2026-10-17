@@ -1,5 +1,5 @@
 // Installing and running offline: registers the service worker (pwa/sw.js,
-// production builds only), and tracks what the status bar shows — whether
+// production builds only), and tracks what the status bar shows: whether
 // everything is cached for offline use, whether the network is up, whether a
 // newer version is waiting, and whether the browser offers to install the app.
 

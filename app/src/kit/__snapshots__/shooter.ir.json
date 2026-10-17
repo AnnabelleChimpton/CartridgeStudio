@@ -3,11 +3,11 @@
  "types": [
   {
    "index": 0,
-   "id": "ship",
-   "label": "Player ship",
-   "sym": "T_SHIP",
-   "name": "ship",
-   "sprite": "spr_ship",
+   "id": "basket",
+   "label": "Laundry basket",
+   "sym": "T_BASKET",
+   "name": "basket",
+   "sprite": "spr_basket",
    "width": 16,
    "height": 16,
    "palette": 0,
@@ -58,7 +58,7 @@
    },
    "span": {
     "kind": "type",
-    "id": "ship"
+    "id": "basket"
    }
   },
   {
@@ -115,7 +115,7 @@
   {
    "index": 2,
    "id": "shot",
-   "label": "Shot",
+   "label": "Sock",
    "sym": "T_SHOT",
    "name": "shot",
    "sprite": "spr_shot",
@@ -1229,11 +1229,11 @@
  "messages": [],
  "palettes": [
   {
-   "id": "ship",
+   "id": "basket",
    "colors": [
-    "$3A",
-    "$02",
-    "$0F"
+    "$28",
+    "$22",
+    "$3A"
    ]
   },
   {
@@ -1274,8 +1274,8 @@
  "wallPalette": 4,
  "text": {
   "title": "Cat vs. Vacuums",
-  "win": "You win!",
-  "lose": "Game over"
+  "win": "FLOORS SAFE",
+  "lose": "BAGGED"
  },
  "flow": {
   "title": true,

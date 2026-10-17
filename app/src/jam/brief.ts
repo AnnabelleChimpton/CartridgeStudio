@@ -94,6 +94,19 @@ export function readBriefText(s: string): BriefResult {
   }
 }
 
+const FIELD_NAMES: Record<string, string> = { name: "The jam name", theme: "The theme", dates: "The dates", constraints: "Rule", criteria: "Judging line" };
+
+/** Says which field of the brief is over its limit and by how much, from the schema's error. */
+export function tooLong(e: unknown, values: Record<string, string | string[]>): string {
+  const issue = e instanceof z.ZodError ? e.issues.find((i) => i.code === "too_big") : undefined;
+  const [key, index] = issue?.path ?? [];
+  const value = typeof key === "string" ? values[key] : undefined;
+  const text = Array.isArray(value) ? (typeof index === "number" ? value[index] : undefined) : value;
+  if (!issue || !("maximum" in issue) || typeof key !== "string" || !FIELD_NAMES[key] || text === undefined) return "Part of the brief is over its length limit.";
+  const what = typeof index === "number" ? `${FIELD_NAMES[key]} ${index + 1}` : FIELD_NAMES[key];
+  return `${what} is ${text.trim().length} characters; the limit is ${String(issue.maximum)}.`;
+}
+
 /** The .jam.json file's text. */
 export const briefFileText = (b: JamBrief) => `${JSON.stringify(b, null, 2)}\n`;
 

@@ -128,6 +128,17 @@ test("a blank code project builds, and adding a graphic adds its incgraphic line
   await expect.poll(() => buildCount(page), { timeout: 30_000 }).toBeGreaterThan(n);
   await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
 
+  // Removing it asks first, in the app's own dialog, and takes its line out.
+  await page.getByRole("button", { name: "Remove rock" }).click();
+  const remove = page.getByRole("dialog", { name: "Remove rock?" });
+  await expect(remove).toContainText("Its incgraphic line comes out of game.bas too");
+  await remove.getByRole("button", { name: "Cancel" }).click();
+  expect(await source(page)).toContain(" incgraphic rock.png");
+  await page.getByRole("button", { name: "Remove rock" }).click();
+  await remove.getByRole("button", { name: "Remove rock" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Removed rock." })).toBeVisible();
+  expect(await source(page)).not.toContain(" incgraphic rock.png");
+
   // The reference inserts examples at the cursor.
   await page.getByRole("tab", { name: "Reference" }).click();
   await page.getByRole("searchbox", { name: "Search" }).fill("random");

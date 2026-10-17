@@ -1,13 +1,13 @@
 {
- "title": "Rock Fall",
+ "title": "Teacup Rain",
  "types": [
   {
    "index": 0,
-   "id": "ship",
-   "label": "Ship",
-   "sym": "T_SHIP",
-   "name": "ship",
-   "sprite": "spr_ship",
+   "id": "cat",
+   "label": "Cat",
+   "sym": "T_CAT",
+   "name": "cat",
+   "sprite": "spr_cat",
    "width": 16,
    "height": 16,
    "palette": 0,
@@ -58,16 +58,16 @@
    },
    "span": {
     "kind": "type",
-    "id": "ship"
+    "id": "cat"
    }
   },
   {
    "index": 1,
-   "id": "rock",
-   "label": "Rock",
-   "sym": "T_ROCK",
-   "name": "rock",
-   "sprite": "spr_rock",
+   "id": "teacup",
+   "label": "Teacup",
+   "sym": "T_TEACUP",
+   "name": "teacup",
+   "sprite": "spr_teacup",
    "width": 8,
    "height": 8,
    "palette": 1,
@@ -109,16 +109,16 @@
    },
    "span": {
     "kind": "type",
-    "id": "rock"
+    "id": "teacup"
    }
   },
   {
    "index": 2,
-   "id": "boulder",
-   "label": "Fast rock",
-   "sym": "T_BOULDER",
-   "name": "boulder",
-   "sprite": "spr_boulder",
+   "id": "teapot",
+   "label": "Teapot",
+   "sym": "T_TEAPOT",
+   "name": "teapot",
+   "sprite": "spr_teapot",
    "width": 8,
    "height": 8,
    "palette": 1,
@@ -160,16 +160,16 @@
    },
    "span": {
     "kind": "type",
-    "id": "boulder"
+    "id": "teapot"
    }
   },
   {
    "index": 3,
-   "id": "star",
-   "label": "Star",
-   "sym": "T_STAR",
-   "name": "star",
-   "sprite": "spr_star",
+   "id": "fish",
+   "label": "Fish",
+   "sym": "T_FISH",
+   "name": "fish",
+   "sprite": "spr_fish",
    "width": 8,
    "height": 8,
    "palette": 2,
@@ -211,7 +211,7 @@
    },
    "span": {
     "kind": "type",
-    "id": "star"
+    "id": "fish"
    }
   }
  ],
@@ -1107,7 +1107,7 @@
  "messages": [],
  "palettes": [
   {
-   "id": "ship",
+   "id": "cat",
    "colors": [
     "$3A",
     "$02",
@@ -1115,15 +1115,15 @@
    ]
   },
   {
-   "id": "rock",
+   "id": "crockery",
    "colors": [
-    "$F4",
-    "$F8",
+    "$0F",
+    "$86",
     "$02"
    ]
   },
   {
-   "id": "star",
+   "id": "fish",
    "colors": [
     "$1E",
     "$0F",
@@ -1143,9 +1143,9 @@
  "textPalette": 3,
  "wallPalette": 3,
  "text": {
-  "title": "Rock Fall",
-  "win": "You survived!",
-  "lose": "Game over"
+  "title": "Teacup Rain",
+  "win": "30 SECONDS. STILL HERE.",
+  "lose": "OUT OF LIVES"
  },
  "flow": {
   "title": true,

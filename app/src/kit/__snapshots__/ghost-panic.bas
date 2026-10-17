@@ -1198,12 +1198,12 @@ drawtitle
  plotchars 'PRESS FIRE' 4 60 12
  return
 drawwon
- plotchars 'THREE MAZES CLEAR!' 4 44 11
+ plotchars 'THREE MAZES CLEAR' 4 46 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return
 drawlost
- plotchars 'GAME OVER' 4 62 11
+ plotchars 'THE GHOSTS WON' 4 52 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return

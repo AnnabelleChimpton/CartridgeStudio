@@ -48,7 +48,7 @@ test.describe("a first visit", () => {
 });
 
 test("the Game menu opens with a click, closes with Escape and starts a new game", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   const menuButton = page.getByRole("button", { name: "Game", exact: true });
   await expect(page.getByRole("button", { name: "New game" })).toBeHidden();
   await menuButton.click();
@@ -60,15 +60,15 @@ test("the Game menu opens with a click, closes with Escape and starts a new game
 
   await menuButton.click();
   await page.getByRole("button", { name: "New game" }).click();
-  await expect(page.getByRole("dialog").getByText("What do you want to make?")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Pick a cart to start from")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 });
 
 test("saving says so in a toast", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save game file" }).click()]);
-  await expect(page.getByRole("status").filter({ hasText: "rock-fall.cartridge" })).toContainText("Saved rock-fall.cartridge to your downloads");
+  await expect(page.getByRole("status").filter({ hasText: "teacup-rain.cartridge" })).toContainText("Saved teacup-rain.cartridge to your downloads");
 });
 
 test("every tab, Show it and a dialog pass axe; Show it leads with making it real", async ({ page }) => {
@@ -87,7 +87,7 @@ test("every tab, Show it and a dialog pass axe; Show it leads with making it rea
 });
 
 test("the colour picker names colours", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   await page.getByRole("tab", { name: "Game" }).click();
   const swatch = page.getByRole("button", { name: /^Background/ }).first();
   await expect(swatch).toHaveAccessibleName(/^Background.*: \$[0-9A-F]{2}, [a-z ]+$/);
@@ -98,7 +98,7 @@ test("the colour picker names colours", async ({ page }) => {
 });
 
 test("an error takes the context strip under the top bar", async ({ page }) => {
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   await page.getByLabel("Open game file").setInputFiles({ name: "notes.cartridge", mimeType: "text/plain", buffer: Buffer.from("hi") });
   const alert = page.locator(".topbar").getByRole("alert");
   await expect(alert).toContainText("Couldn't open notes.cartridge");
