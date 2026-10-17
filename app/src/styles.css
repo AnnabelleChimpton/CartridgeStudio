@@ -482,7 +482,7 @@ input.num { width: 64px; font-variant-numeric: tabular-nums; }
 .thing-editor .field-grid { margin-top: 0; }
 .palette-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font-size: var(--fs-md); }
 details.more { margin-top: var(--s-4); border-top: 1px solid var(--line); padding-top: var(--s-3); }
-details.more > summary, details.dev > summary { font-size: var(--fs-md); }
+details.more > summary { font-size: var(--fs-md); }
 details > summary::marker { color: var(--accent-text); }
 
 /* Sprite editor */
@@ -612,7 +612,6 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-details.dev { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--line); }
 
 /* Console time */
 .cpu-meter { font-size: var(--fs-sm); padding: var(--s-3) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
