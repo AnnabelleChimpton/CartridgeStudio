@@ -14,7 +14,7 @@ const editor = (page: Page) => page.getByRole("textbox", { name: "game.bas", exa
 async function ghostPanic(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
 async function seeTheCode(page: Page) {
@@ -29,7 +29,7 @@ async function eject(page: Page) {
   await expect(dialog).toContainText("one way");
   await dialog.getByRole("button", { name: "Make a code project" }).click();
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
 /** Selects the first match of `text` with the editor's own search, then closes the search panel. */
@@ -63,7 +63,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await find(page, "lives = 3");
   await page.keyboard.type("lives = 7");
   await expect.poll(() => buildCount(page), { timeout: 30_000 }).toBeGreaterThan(n);
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   expect(await page.evaluate(() => window.__cs!.last!.kind === "built" && window.__cs!.last!.source)).toContain(" lives = 7");
 
   // A syntax error is marked on its line, in the gutter and the list.
@@ -93,7 +93,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await page.keyboard.press("Shift+End");
   await page.keyboard.press("Backspace");
   await page.keyboard.type(" rem fixed");
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save game file" }).click()]);
   expect(download.suggestedFilename()).toBe("ghost-panic.cartridge");
   const chunks: Buffer[] = [];
@@ -107,7 +107,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await page.getByLabel("Open game file").setInputFiles({ name: "ghost-panic.cartridge", mimeType: "application/zip", buffer: Buffer.concat(chunks) });
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
   expect(await source(page)).toBe(saved);
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 
   // And it's still there after a reload.
   await page.reload();
@@ -118,7 +118,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
 test("a blank code project builds, and adding a graphic adds its incgraphic line", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /^Write code/ }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await page.getByRole("tab", { name: "Graphics" }).click();
   await page.getByRole("textbox", { name: "Name" }).fill("rock");
   const n = await buildCount(page);
@@ -126,7 +126,7 @@ test("a blank code project builds, and adding a graphic adds its incgraphic line
   await expect(page.getByRole("status").filter({ hasText: "Added rock" })).toBeVisible();
   expect(await source(page)).toContain(" incgraphic rock.png 160A 0 1 2 3");
   await expect.poll(() => buildCount(page), { timeout: 30_000 }).toBeGreaterThan(n);
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 
   // The reference inserts examples at the cursor.
   await page.getByRole("tab", { name: "Reference" }).click();
@@ -170,7 +170,7 @@ test("the code editor, See the code and the eject dialog pass axe", async ({ pag
   await page.getByRole("button", { name: "Edit as code…" }).click();
   expect(await axe(page), "eject dialog").toEqual([]);
   await page.getByRole("dialog").getByRole("button", { name: "Make a code project" }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   expect(await axe(page), "Code").toEqual([]);
   // With an error listed and the search panel open.
@@ -190,7 +190,7 @@ test("the code editor, See the code and the eject dialog pass axe", async ({ pag
 test("the keyboard can leave the code editor", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /^Write code/ }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await editor(page).click();
   // Tab indents…
   await page.keyboard.press("Home");
@@ -221,7 +221,10 @@ test("an ejected game still boxes up: print PDF, submission package and source f
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(new TextDecoder().decode(pdf.bytes.subarray(0, 5))).toBe("%PDF-");
-  const pkg = await downloadOf(page, () => dialog.getByRole("button", { name: "Download everything" }).click());
+  await dialog.getByRole("button", { name: "Close" }).click();
+  const pkg = await downloadOf(page, () =>
+    page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Everything \(game, source, print kit\)/ }).click(),
+  );
   const names = Object.keys(unzipSync(pkg.bytes)).map((n) => n.replace("ghost-panic-submission/", ""));
   expect(names).toEqual(
     expect.arrayContaining([
@@ -229,7 +232,6 @@ test("an ejected game still boxes up: print PDF, submission package and source f
       "source/game.bas", "source/build.sh", "source/RUNTIME.txt",
     ]),
   );
-  await dialog.getByRole("button", { name: "Close" }).click();
 
   const src = await downloadOf(page, () => page.getByRole("button", { name: "Export source", exact: true }).click());
   expect(src.name).toBe("ghost-panic-source.zip");

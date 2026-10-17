@@ -32,7 +32,7 @@ import { GUIDE_STEPS, useCurrentGuide, useGuide, type GuideStep } from "./guide.
 import { explainError } from "./help.ts";
 import { GUIDE_TAB, KitGuide, guideAnnouncement } from "./KitGuide.tsx";
 import { CPU_BUDGET, KIT_RUNTIME_VERSION, cpuCost } from "./generate.ts";
-import { KitPrint } from "./KitPrint.tsx";
+import { KitPrint, kitEverything } from "./KitPrint.tsx";
 import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
 import { KIT_PRESETS, type KitIdea, type KitTab } from "./presets.ts";
@@ -79,9 +79,9 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
   const preview = usePreview(game);
   const [selected, setSelected] = useState<string | null>(() => (game.types.find(isPlayer) ?? game.types[0])?.id ?? null);
   const [chosenTab, setTab] = useState<Tab>("things");
-  // The Code tab is for the Coder tier (design/DIRECTION.md, Three tiers); Starter and Maker see the rest.
+  // The Code tab is for the 7800basic tier; Kit and Rules see the rest.
   const tier = useTier();
-  const tabs = TABS.filter((t) => tier === "coder" || t.id !== "code");
+  const tabs = TABS.filter((t) => tier === "7800basic" || t.id !== "code");
   const tab = tabs.some((t) => t.id === chosenTab) ? chosenTab : "things";
   const [brush, setBrush] = useState<Brush>("wall");
   const ids = useId();
@@ -327,6 +327,8 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
             preview={preview}
             title={game.title}
             print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} />}
+            everything={kitEverything(game, { screenshot: preview.screenshot, buildSigned: preview.buildSigned, cartridgeFile })}
+            jam
           />
           <JamEntryPanel
             preview={preview}

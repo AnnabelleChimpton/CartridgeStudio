@@ -1,5 +1,6 @@
 // Printing for kit games: the shared print controls over a kit game, with a
-// manual drafted from its rules.
+// manual drafted from its rules, and Show it's everything ZIP, which carries
+// the same PDF.
 
 import { KIT_TOOLCHAIN, kitChecklist, kitSourceFiles } from "../files/exports.ts";
 import { packageZip } from "../files/package.ts";
@@ -9,7 +10,9 @@ import { KIT_RUNTIME_VERSION } from "./generate.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { draftKitManual, kitPrintSubject } from "../print/subject.ts";
 import type { Screenshot } from "../print/pdf.ts";
-import { PrintControls, printPdf } from "../ui/PrintPanel.tsx";
+import { PrintControls, defaultPaper, printPdf } from "../ui/PrintPanel.tsx";
+import type { Everything } from "../ui/ShowItPanel.tsx";
+import type { KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 interface Props {
@@ -19,7 +22,46 @@ interface Props {
   onDownload: (bytes: Uint8Array, name: string) => void;
 }
 
-export function KitPrint({ screenshot, buildSigned, cartridgeFile, onDownload }: Props) {
+/** What Show it's everything ZIP holds for a kit game. */
+export const KIT_EVERYTHING = [
+  "The game for a flash cartridge (.a78 and .bin)",
+  "A page that plays it offline (.html)",
+  "The print kit: box, labels and manual (.pdf)",
+  "Your game file (.cartridge)",
+  "Its 7800basic source",
+  "Your latest clip, if you made one (.gif)",
+  "A checklist",
+];
+
+/** The everything ZIP for a kit game: signed ROMs, player, print PDF on the remembered paper, game file and source. */
+export function kitEverything(game: KitGame, { screenshot, buildSigned, cartridgeFile }: Omit<Props, "onDownload">): Everything {
+  return {
+    contents: KIT_EVERYTHING,
+    make: async () => {
+      const [rom, file, pdf, { buildPlayerHtml }] = await Promise.all([
+        buildSigned(),
+        cartridgeFile(),
+        printPdf(kitPrintSubject(game), defaultPaper(), screenshot),
+        import("../player/player.ts"),
+      ]);
+      const pkg = await packageZip({
+        kind: "submission",
+        title: game.title,
+        notes: { name: "CHECKLIST.txt", text: kitChecklist(game) },
+        build: { app: APP_VERSION, runtime: `kit runtime ${KIT_RUNTIME_VERSION}`, toolchain: KIT_TOOLCHAIN },
+        source: kitSourceFiles(game, SOUND_LIBRARY),
+        ...rom,
+        pdf,
+        cartridgeFile: file,
+        player: await buildPlayerHtml(game.title, rom.a78, game),
+        clip: useRecentClip.getState().gif,
+      });
+      return { zip: pkg.zip, name: pkg.name };
+    },
+  };
+}
+
+export function KitPrint({ screenshot, onDownload }: Props) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
   return (
@@ -30,22 +72,6 @@ export function KitPrint({ screenshot, buildSigned, cartridgeFile, onDownload }:
       onText={(t) => edit((d) => void (d.cartridge.manualText = t), "manual")}
       onReset={() => edit((d) => void (d.cartridge.manualText = null))}
       makePdf={(paper) => printPdf(kitPrintSubject(game), paper, screenshot)}
-      makePackage={async (pdf) => {
-        const [rom, file, { buildPlayerHtml }] = await Promise.all([buildSigned(), cartridgeFile(), import("../player/player.ts")]);
-        const pkg = await packageZip({
-          kind: "submission",
-          title: game.title,
-          notes: { name: "CHECKLIST.txt", text: kitChecklist(game) },
-          build: { app: APP_VERSION, runtime: `kit runtime ${KIT_RUNTIME_VERSION}`, toolchain: KIT_TOOLCHAIN },
-          source: kitSourceFiles(game, SOUND_LIBRARY),
-          ...rom,
-          pdf,
-          cartridgeFile: file,
-          player: await buildPlayerHtml(game.title, rom.a78, game),
-          clip: useRecentClip.getState().gif,
-        });
-        return pkg.zip;
-      }}
       onDownload={onDownload}
     />
   );

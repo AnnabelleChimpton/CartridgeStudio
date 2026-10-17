@@ -17,7 +17,7 @@ const card = (page: Page, title: string) => myGames(page).getByRole("listitem").
 
 async function start(page: Page, preset: RegExp) {
   await page.getByRole("button", { name: preset }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
 async function newGameDialog(page: Page) {
@@ -141,7 +141,7 @@ test("a Classic shooter game file opens as a code project, and says so", async (
   await expect(page.getByRole("status").filter({ hasText: "Classic shooter editor, which has been retired" })).toContainText(
     "It now opens as a code project",
   );
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   // The kit game is still in My games.
   await newGameDialog(page);
   await expect(card(page, "Yarn Hunt")).toBeVisible();
@@ -161,5 +161,5 @@ test("saves from before My games move into it on first load", async ({ page }) =
   await expect(card(page, classicSample.title.replace(".", "\\."))).toContainText("Code project");
   await card(page, classicSample.title.replace(".", "\\.")).getByRole("button", { name: new RegExp(`^${classicSample.title.replace(".", "\\.")}`) }).click();
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 });

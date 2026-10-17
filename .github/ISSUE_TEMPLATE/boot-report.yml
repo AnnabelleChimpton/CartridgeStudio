@@ -1,0 +1,62 @@
+name: Boot report
+description: Tried a Cartridge Studio game on a console? Say whether it booted, so the compatibility table can list it.
+title: "Boot report: "
+labels: ["boot report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        In Cartridge Studio, open Show it, then Put it on a cart, and press Copy boot report. Paste it below, then fill in the rest.
+        One console and cartridge per report. Reports that boot are as useful as ones that don't.
+  - type: textarea
+    id: report
+    attributes:
+      label: Boot report
+      description: Pasted from Copy boot report. It names the game, the ROM file and the Cartridge Studio version.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: console
+    attributes:
+      label: Console
+      options:
+        - 7800 (original)
+        - 7800+
+        - 2600+
+        - Other (say which below)
+    validations:
+      required: true
+  - type: input
+    id: cartridge
+    attributes:
+      label: Flash cartridge and firmware version
+      placeholder: e.g. the cartridge's name, firmware 1.2
+    validations:
+      required: true
+  - type: dropdown
+    id: file
+    attributes:
+      label: File used
+      options:
+        - .a78
+        - .bin
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: What happened
+      options:
+        - It booted and played
+        - Black screen
+        - Back to the cartridge's menu
+        - It booted, then stopped or glitched during play
+        - Something else (say what below)
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: What you saw, what you tried, and whether the other file (.a78 or .bin) behaved differently.

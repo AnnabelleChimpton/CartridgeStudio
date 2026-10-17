@@ -24,7 +24,7 @@ async function open(page: Page, url = "/") {
   const status = page.getByTestId("build-status");
   await expect(starter.or(status)).toBeVisible({ timeout: 30_000 });
   if (await starter.isVisible()) await starter.click();
-  await expect(status).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status).toContainText("Built in", { timeout: 30_000 });
 }
 
 /** Sets the Lives slider on the Game tab. */
@@ -397,7 +397,7 @@ test("game keys only reach the game while it has focus", async ({ page }) => {
   await expect(title).toHaveValue("Cat vs. Vacuums ");
   // The new title rebuilds and reloads the ROM (back to its title screen), so wait for that and start again.
   await expect.poll(() => page.evaluate(() => window.__cs!.builds.length), { timeout: 30_000 }).toBeGreaterThan(builds);
-  await expect(page.getByTestId("build-status")).toContainText("Up to date");
+  await expect(page.getByTestId("build-status")).toContainText("Built in");
   await startGame();
 
   // Space presses a focused button rather than firing.
@@ -472,13 +472,13 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
 });
 
 async function downloadBytes(page: Page, button: string) {
-  // Export source is in the Code tab, Download everything in Print the box; Save game file is always on screen.
+  // Export source is in the Code tab, Everything in Show it; Save game file is always on screen.
   if (button === "Export source") await openTab(page, "Code");
-  if (button === "Download everything") await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
-  const [download] = await Promise.all([
-    page.waitForEvent("download", { timeout: 60_000 }),
-    page.getByRole("button", { name: button, exact: true }).click(),
-  ]);
+  const control =
+    button === "Everything"
+      ? page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Everything \(game, source, print kit\)/ })
+      : page.getByRole("button", { name: button, exact: true });
+  const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), control.click()]);
   const chunks: Buffer[] = [];
   for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
   return { name: download.suggestedFilename(), bytes: Buffer.concat(chunks) };
@@ -516,7 +516,7 @@ test("exports the source and the submission package", async ({ page }) => {
   expect(source.name).toBe("cat-vs-vacuums-source.zip");
   expect(Object.keys(unzipSync(source.bytes))).toContain("cat-vs-vacuums-source/game.bas");
 
-  const pkg = await downloadBytes(page, "Download everything");
+  const pkg = await downloadBytes(page, "Everything");
   expect(pkg.name).toBe("cat-vs-vacuums-submission.zip");
   const files = unzipSync(pkg.bytes);
   const root = "cat-vs-vacuums-submission/";

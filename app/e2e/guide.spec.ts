@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function start(page: Page, preset: string) {
   await page.getByRole("button", { name: new RegExp(`^${preset}`) }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 const guide = (page: Page) => page.getByRole("region", { name: /Make it yours|You made it yours/ });
 const announced = (page: Page, text: string) => expect(page.getByRole("status").filter({ hasText: text })).toBeAttached();
@@ -69,7 +69,7 @@ test("a hidden guide stays hidden for that game, comes back from Guide, and a ne
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
 
   await page.reload();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   await expect(guide(page)).toHaveCount(0);
 
   await toggle.click();

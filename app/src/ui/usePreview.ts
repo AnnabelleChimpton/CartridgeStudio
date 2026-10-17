@@ -11,6 +11,7 @@ import type { useKitStore } from "../kit/store.ts";
 import type { useCodeStore } from "../code/store.ts";
 import { isCodeProject } from "../code/schema.ts";
 import { parseBuildLog } from "../code/build-log.ts";
+import { builtStatus, cartFill } from "./build-status.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
 /** In TV mode, holding Select this long leaves (a short press plays again). */
@@ -194,7 +195,7 @@ export function usePreview(source: GameSource) {
       const r = await exporter.build(sourceRef.current, { sign: true });
       if (r.kind === "built" && r.signed) return { a78: r.a78, bin: r.bin };
       if (r.kind === "invalid") throw new Error(r.errors.join(" "));
-      throw new Error("We couldn't make the download; your work is saved. Try again, or reload the page.");
+      throw new Error("The signed build for the download stopped. Your game is saved. Try the download again, or reload the page.");
     } finally {
       exporter.dispose();
     }
@@ -224,18 +225,21 @@ export function usePreview(source: GameSource) {
     return { width: 320, height: 240, rgba: await emu.readPixels(0, 0, 320, 240) };
   };
 
+  /** How full the cartridge is, from the last good build's own report. */
+  const fill = cartFill(lastGood?.stats, lastGood?.source);
+
   const status = !ready
     ? "Starting the game builder…"
     : building
       ? "Building…"
       : result?.kind === "built"
-        ? "Up to date"
+        ? builtStatus(record?.wallMs ?? result.totalMs, cartFill(result.stats, result.source))
         : result?.kind === "invalid"
           ? "Needs a fix: see below"
           : result?.kind === "failed"
             ? isCodeProject(source)
               ? "Doesn't build yet"
-              : "We couldn't build this game; your work is saved. See below for what to do."
+              : "The build stopped. Your game is saved; the details are below."
             : "";
 
   const timing = record
@@ -333,6 +337,7 @@ export function usePreview(source: GameSource) {
     result,
     lastGood,
     status,
+    fill,
     timing,
     error,
     setError,

@@ -19,7 +19,7 @@ import { codeSourceFiles } from "./code-files.ts";
 import { parseBuildLog, type BuildProblem } from "./build-log.ts";
 import { CartridgeSpace } from "./CartridgeSpace.tsx";
 import { RomDownloads } from "./RomDownloads.tsx";
-import { CodePrint } from "./CodePrint.tsx";
+import { CodePrint, codeEverything } from "./CodePrint.tsx";
 import { testsBytes } from "./creator-tests.ts";
 import { DebuggerDrawer } from "./DebuggerDrawer.tsx";
 import { TestsPanel } from "./TestsPanel.tsx";
@@ -256,7 +256,12 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
               </p>
             }
           />
-          <ShowItPanel preview={preview} title={project.title} print={<CodePrint title={project.title} preview={preview} cartridgeFile={cartridgeFile} />} />
+          <ShowItPanel
+            preview={preview}
+            title={project.title}
+            print={<CodePrint title={project.title} preview={preview} cartridgeFile={cartridgeFile} />}
+            everything={codeEverything(project, preview, cartridgeFile)}
+          />
         </div>
       </main>
     </div>

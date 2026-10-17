@@ -1,5 +1,6 @@
-// "Make cartridge": the print PDF with box, labels and manual, as the kit and
-// code editors' print panels show it. pdf-lib and the fonts load only when a
+// "Print the box": the print PDF with box, labels and manual, as the kit and
+// code editors' print panels show it. The everything ZIP, which carries this
+// PDF, is made from Show it. pdf-lib and the fonts load only when a
 // creator downloads.
 
 import { useState } from "react";
@@ -8,7 +9,8 @@ import type { Paper, PrintFonts, PrintSubject, Screenshot } from "../print/pdf.t
 
 const PAPER_KEY = "cartridge-studio:paper";
 
-function defaultPaper(): Paper {
+/** The paper last chosen, or the one the browser's language suggests. */
+export function defaultPaper(): Paper {
   try {
     const saved = localStorage.getItem(PAPER_KEY);
     if (saved === "letter" || saved === "a4") return saved;
@@ -42,14 +44,13 @@ interface ControlsProps {
   onText: (text: string) => void;
   onReset: () => void;
   makePdf: (paper: Paper) => Promise<Uint8Array>;
-  makePackage: (pdf: Uint8Array) => Promise<Uint8Array>;
   onDownload: (bytes: Uint8Array, name: string) => void;
 }
 
-/** The manual editor, paper choice and the PDF and package downloads, for any kind of game. */
-export function PrintControls({ title, text, edited, onText, onReset, makePdf, makePackage, onDownload }: ControlsProps) {
+/** The manual editor, paper choice and the PDF download, for any kind of game. */
+export function PrintControls({ title, text, edited, onText, onReset, makePdf, onDownload }: ControlsProps) {
   const [paper, setPaper] = useState<Paper>(defaultPaper);
-  const [busy, setBusy] = useState<null | "pdf" | "package">(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const choosePaper = (p: Paper) => {
@@ -61,18 +62,15 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
     }
   };
 
-  const run = async (what: "pdf" | "package") => {
-    setBusy(what);
+  const run = async () => {
+    setBusy(true);
     setError(null);
-    const slug = slugify(title);
     try {
-      const pdf = await makePdf(paper);
-      if (what === "pdf") onDownload(pdf, `${slug}-print.pdf`);
-      else onDownload(await makePackage(pdf), `${slug}-submission.zip`);
+      onDownload(await makePdf(paper), `${slugify(title)}-print.pdf`);
     } catch (e) {
-      setError(`We couldn't make the ${what === "pdf" ? "PDF" : "package"}: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`We couldn't make the PDF: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -107,15 +105,9 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
             <option value="a4">A4</option>
           </select>
         </label>
-        <button type="button" onClick={() => void run("pdf")} disabled={busy !== null}>
-          {busy === "pdf" ? "Making PDF…" : "Download print PDF"}
+        <button type="button" onClick={() => void run()} disabled={busy}>
+          {busy ? "Making PDF…" : "Download print PDF"}
         </button>
-      </div>
-      <div className="toolbar">
-        <button type="button" className="secondary" onClick={() => void run("package")} disabled={busy !== null}>
-          {busy === "package" ? "Packing…" : "Download everything"}
-        </button>
-        <span className="muted small">Everything in one zip file: the game for a console, this PDF, your game file, its code and a checklist.</span>
       </div>
       {error && <p className="error">{error}</p>}
     </>

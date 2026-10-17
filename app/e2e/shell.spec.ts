@@ -1,4 +1,4 @@
-// The app shell: the Game menu, the Mode (tier) switch, toasts, the context
+// The app shell: the Game menu, the Mode (tier) switch and its old names, toasts, the context
 // strip, Show it's groups and colour names. Each tier passes axe.
 
 import AxeBuilder from "@axe-core/playwright";
@@ -12,38 +12,55 @@ async function axe(page: Page) {
 async function start(page: Page, preset: RegExp) {
   await page.goto("/");
   await page.getByRole("button", { name: preset }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 test.describe("a first visit", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test("starts in Starter mode, which keeps counters and code out of the way until asked", async ({ page }) => {
+  test("starts in Kit mode, which keeps counters and code out of the way until asked", async ({ page }) => {
     await start(page, /^Ghost Panic/);
     const mode = page.getByRole("radiogroup", { name: "Mode" });
-    await expect(mode.getByRole("radio", { name: "Starter" })).toHaveAttribute("aria-checked", "true");
+    await expect(mode.getByRole("radio")).toHaveText(["Kit", "Rules", "7800basic"]);
+    await expect(mode.getByRole("radio", { name: "Kit" })).toHaveAttribute("aria-checked", "true");
+    // Kit keeps the Rules tab: the guide's third step changes a rule.
     await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await page.getByRole("tab", { name: "Game" }).click();
     await expect(page.getByRole("button", { name: "Add counter" })).toBeHidden();
+    await expect(page.getByTestId("cartridge-stats")).not.toHaveAttribute("open");
     expect(await axe(page)).toEqual([]);
 
-    // Maker shows counters; arrows move through the switch.
-    await mode.getByRole("radio", { name: "Starter" }).focus();
+    // Rules shows counters; arrows move through the switch.
+    await mode.getByRole("radio", { name: "Kit" }).focus();
     await page.keyboard.press("ArrowRight");
-    await expect(mode.getByRole("radio", { name: "Maker" })).toHaveAttribute("aria-checked", "true");
+    await expect(mode.getByRole("radio", { name: "Rules" })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await expect(page.getByRole("button", { name: "Add counter" })).toBeVisible();
 
-    // Coder adds the Code tab; the choice is remembered.
-    await mode.getByRole("radio", { name: "Coder" }).click();
+    // 7800basic adds the Code tab and opens the cartridge stats; the choice is remembered.
+    await mode.getByRole("radio", { name: "7800basic" }).click();
     await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game", "Code"]);
+    await expect(page.getByTestId("cartridge-stats")).toHaveAttribute("open");
     await page.reload();
-    await expect(page.getByRole("radio", { name: "Coder" })).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByRole("radio", { name: "7800basic" })).toHaveAttribute("aria-checked", "true");
 
-    // Back to Starter while on Code: the editor falls back to Things.
+    // Back to Kit while on Code: the editor falls back to Things.
     await page.getByRole("tab", { name: "Code" }).click();
-    await page.getByRole("radio", { name: "Starter" }).click();
+    await page.getByRole("radio", { name: "Kit" }).click();
     await expect(page.getByRole("tab", { name: "Things" })).toHaveAttribute("aria-selected", "true");
+  });
+});
+
+test.describe("a browser that remembers the old tier names", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("reads Maker as Rules and stores the new name", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.setItem("cs-tier", "maker"));
+    await page.reload();
+    await page.getByRole("button", { name: /^Ghost Panic/ }).click();
+    await expect(page.getByRole("radio", { name: "Rules" })).toHaveAttribute("aria-checked", "true");
+    expect(await page.evaluate(() => localStorage.getItem("cs-tier"))).toBe("rules");
   });
 });
 
@@ -71,7 +88,7 @@ test("saving says so in a toast", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: "rock-fall.cartridge" })).toContainText("Saved rock-fall.cartridge to your downloads");
 });
 
-test("every tab, Show it and a dialog pass axe; Show it leads with making it real", async ({ page }) => {
+test("every tab, Show it and a dialog pass axe; Show it is ordered by what you mean to do", async ({ page }) => {
   await start(page, /^Ghost Panic/);
   expect(await axe(page)).toEqual([]);
   for (const name of ["Room", "Rules", "Game"]) {
@@ -79,10 +96,11 @@ test("every tab, Show it and a dialog pass axe; Show it leads with making it rea
     expect(await axe(page), name).toEqual([]);
   }
   const showIt = page.getByRole("region", { name: "Show it" });
-  await expect(showIt.getByRole("heading", { level: 3 })).toHaveText(["Make it real", "Share it"]);
-  await expect(showIt.getByRole("group", { name: "Make it real" }).getByRole("button")).toHaveText([/^Put it on a console/, /^Print the box/]);
-  await expect(showIt.getByRole("group", { name: "Share it" }).getByRole("button")).toHaveText([/^Send to family/, /^Make a clip/]);
-  await showIt.getByRole("button", { name: /Put it on a console/ }).click();
+  await expect(showIt.getByRole("heading", { level: 3 })).toHaveText(["As a file", "Console and box", "One ZIP"]);
+  await expect(showIt.getByRole("group", { name: "As a file" }).getByRole("button")).toHaveText([/^Send to family/, /^Make a clip/]);
+  await expect(showIt.getByRole("group", { name: "Console and box" }).getByRole("button")).toHaveText([/^Put it on a cart/, /^Print the box/]);
+  await expect(showIt.getByRole("group", { name: "One ZIP" }).getByRole("button")).toHaveText([/^Everything \(game, source, print kit\)/]);
+  await showIt.getByRole("button", { name: /Put it on a cart/ }).click();
   expect(await axe(page), "dialog").toEqual([]);
 });
 

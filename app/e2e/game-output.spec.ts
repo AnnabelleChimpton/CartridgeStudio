@@ -11,7 +11,7 @@ import { ntscRgb } from "../src/ui/ntsc.ts";
 async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Ghost Panic") {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 const openTab = (page: Page, name: "Things" | "Room" | "Game") => page.getByRole("tab", { name }).click();
 const game = (page: Page) => page.evaluate(() => window.__cs!.kitStore!.getState().project);
@@ -34,7 +34,7 @@ test("a hard-to-read text color gets a note, and its suggestion fixes it", async
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(axe.violations.map((v) => v.id)).toEqual([]);
   // Advice only: the game still builds.
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 
   await note.getByRole("button", { name: /^Use \$0. [a-z ]+ for the score and title text: \d+\.\d to 1$/ }).click();
   await expect(notes).toBeEmpty();
@@ -89,7 +89,7 @@ test("the easier assist is kept with the game", async ({ page }) => {
   // Saved and read back: reopen the game from My games after a reload.
   await page.waitForTimeout(1500);
   await page.reload();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   expect(((await game(page)) as { assist?: { easier: boolean } }).assist).toEqual({ easier: true });
 });
 

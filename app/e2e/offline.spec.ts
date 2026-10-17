@@ -43,7 +43,7 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
   await expect(page.getByTestId("offline-status")).toHaveText("Offline: everything still works");
 
   await page.getByRole("button", { name: /^Yarn Hunt/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   const build = await page.evaluate(() => {
     const b = window.__cs!.last!;
     return b.kind === "built" ? { cached: b.cached, a78: b.a78.length } : { kind: b.kind };
@@ -56,10 +56,10 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
     .not.toBeNull();
 
   // The signed ROM, from Show it's console guide.
-  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Put it on a console/ }).click();
+  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Put it on a cart/ }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
-    page.getByRole("dialog", { name: "Put it on a console" }).getByRole("button", { name: /\.a78/ }).click(),
+    page.getByRole("dialog", { name: "Put it on a cart" }).getByRole("button", { name: /\.a78/ }).click(),
   ]);
   expect(download.suggestedFilename()).toMatch(/\.a78$/);
   const chunks: Buffer[] = [];

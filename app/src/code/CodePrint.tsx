@@ -6,7 +6,8 @@ import { packageZip } from "../files/package.ts";
 import { useRecentClip } from "../files/recent-clip.ts";
 import { APP_VERSION } from "../version.ts";
 import type { PrintSprite, PrintSubject } from "../print/pdf.ts";
-import { PrintControls, printPdf } from "../ui/PrintPanel.tsx";
+import { PrintControls, defaultPaper, printPdf } from "../ui/PrintPanel.tsx";
+import type { Everything } from "../ui/ShowItPanel.tsx";
 import type { Preview } from "../ui/usePreview.ts";
 import { download } from "../ui/usePreview.ts";
 import { codeCredits, codeSourceFiles } from "./code-files.ts";
@@ -43,7 +44,46 @@ export function codePrintSubject(p: CodeProject): PrintSubject {
   };
 }
 
-export function CodePrint({ title, preview, cartridgeFile }: { title: string; preview: Preview; cartridgeFile: () => Promise<Uint8Array> }) {
+/** What Show it's everything ZIP holds for a code project. */
+export const CODE_EVERYTHING = [
+  "The game for a flash cartridge (.a78 and .bin)",
+  "A page that plays it offline (.html)",
+  "The print kit: box, labels and manual (.pdf)",
+  "Your game file (.cartridge)",
+  "game.bas, its graphics and build scripts",
+  "Your latest clip, if you made one (.gif)",
+  "A checklist",
+];
+
+/** The everything ZIP for a code project: signed ROMs, player, print PDF on the remembered paper, game file and source. */
+export function codeEverything(project: CodeProject, preview: Preview, cartridgeFile: () => Promise<Uint8Array>): Everything {
+  return {
+    contents: CODE_EVERYTHING,
+    make: async () => {
+      const [rom, file, pdf, { buildPlayerHtml }] = await Promise.all([
+        preview.buildSigned(),
+        cartridgeFile(),
+        printPdf(codePrintSubject(project), defaultPaper(), preview.screenshot),
+        import("../player/player.ts"),
+      ]);
+      const pkg = await packageZip({
+        kind: "submission",
+        title: project.title,
+        notes: { name: "CHECKLIST.txt", text: checklistText(project.title, codeCredits()) },
+        build: { app: APP_VERSION, runtime: "hand-written 7800basic", toolchain: KIT_TOOLCHAIN },
+        source: codeSourceFiles(project),
+        ...rom,
+        pdf,
+        cartridgeFile: file,
+        player: await buildPlayerHtml(project.title, rom.a78, project),
+        clip: useRecentClip.getState().gif,
+      });
+      return { zip: pkg.zip, name: pkg.name };
+    },
+  };
+}
+
+export function CodePrint({ title, preview }: { title: string; preview: Preview; cartridgeFile?: () => Promise<Uint8Array> }) {
   const project = useCodeStore((s) => s.project);
   const edit = useCodeStore((s) => s.edit);
   return (
@@ -54,22 +94,6 @@ export function CodePrint({ title, preview, cartridgeFile }: { title: string; pr
       onText={(t) => edit((d) => void (d.manualText = t), "manual")}
       onReset={() => edit((d) => void delete d.manualText)}
       makePdf={(paper) => printPdf(codePrintSubject(project), paper, preview.screenshot)}
-      makePackage={async (pdf) => {
-        const [rom, file, { buildPlayerHtml }] = await Promise.all([preview.buildSigned(), cartridgeFile(), import("../player/player.ts")]);
-        const pkg = await packageZip({
-          kind: "submission",
-          title: project.title,
-          notes: { name: "CHECKLIST.txt", text: checklistText(project.title, codeCredits()) },
-          build: { app: APP_VERSION, runtime: "hand-written 7800basic", toolchain: KIT_TOOLCHAIN },
-          source: codeSourceFiles(project),
-          ...rom,
-          pdf,
-          cartridgeFile: file,
-          player: await buildPlayerHtml(project.title, rom.a78, project),
-          clip: useRecentClip.getState().gif,
-        });
-        return pkg.zip;
-      }}
       onDownload={download}
     />
   );

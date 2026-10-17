@@ -11,7 +11,7 @@ const game = (page: Page) => page.getByRole("application", { name: "Game preview
 async function ghostPanic(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
 async function codeTab(page: Page) {
@@ -24,7 +24,7 @@ async function eject(page: Page) {
   await page.getByRole("button", { name: "Edit as code…" }).click();
   await page.getByRole("dialog", { name: /as code\?/ }).getByRole("button", { name: "Make a code project" }).click();
   await expect(page.getByText("Code project", { exact: true })).toBeVisible();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
 async function axe(page: Page) {
@@ -159,7 +159,7 @@ test("record a check, break the game, see the check fail", async ({ page }) => {
 
   // The test is kept with the game: it's there after a reload.
   await page.reload();
-  await expect(status(page)).toContainText("Up to date", { timeout: 30_000 });
+  await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await codeTab(page);
   await expect(page.getByTestId("test-list").getByRole("listitem")).toContainText("Eats the first yarn");
 });

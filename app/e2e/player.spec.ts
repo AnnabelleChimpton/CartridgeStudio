@@ -10,7 +10,7 @@ type Preset = "Cat vs. Vacuums" | "Rock Fall" | "Ghost Panic";
 async function start(page: Page, preset: Preset) {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 /** Each starter's player file, made once per worker. */
@@ -222,7 +222,7 @@ test("TV mode: a gamepad pauses, plays again and leaves, and the pointer hides o
   });
   expect(resets).toBe(0);
 
-  await page.getByRole("button", { name: "Play on a TV" }).click();
+  await page.getByRole("button", { name: "Full screen (for a TV)" }).click();
   await expect.poll(() => page.evaluate(() => document.fullscreenElement?.className ?? null)).toContain("tv-stage");
   await expect(stage.locator(".tv-hint")).toContainText("Start pauses. Select plays again. Hold Select");
   await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).cursor)).toBe("none");

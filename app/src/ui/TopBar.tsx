@@ -112,7 +112,7 @@ export function Brand() {
   );
 }
 
-/** Starter · Maker · Coder: what the editor shows by default. */
+/** Kit · Rules · 7800basic, named by what you touch: what the editor shows by default. */
 export function ModeSwitch() {
   const tier = useTier();
   return (

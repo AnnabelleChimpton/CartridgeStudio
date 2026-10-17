@@ -10,7 +10,7 @@ const PICTURE = new URL("./fixtures/drawing.png", import.meta.url).pathname;
 async function start(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^Rock Fall/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 const thing = (page: Page, id: string) =>
