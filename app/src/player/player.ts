@@ -1,9 +1,11 @@
 // "Send to family": one self-contained HTML file that plays the game in any
 // modern browser, offline, with no install: the ROM, the js7800 core
-// (unmodified, GPL v2 or later, with its licence) and a small runtime, inline.
+// (built from upstream with two I/O stand-ins, GPL v2 or later, with its
+// licence) and a small runtime, inline.
 
 import runtime from "./runtime.js?raw";
 import { fontRows } from "../kit/font.ts";
+import { PUBLIC_URL } from "../public-url.ts";
 import { controlsText, playerInfo, UNKNOWN_CONTROLS, type PlayerInfo } from "./game-info.ts";
 
 /** A one-file page: the core, runtime and licence are inline. */
@@ -108,6 +110,9 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
   const words = controlsText(controls);
   const fireLabel = controls.button === "start" ? "Start" : "Fire";
   const home = page.home && /^https?:\/\//.test(page.home) ? escapeHtml(page.home) : "";
+  const madeBy = page.info?.madeBy?.trim() ?? "";
+  // "BY SAM AND ROBIN", as the title screen shows it, with the words as they were typed for screen readers.
+  const by = madeBy ? `<p class="by">${kitTitle(`by ${madeBy}`, 2)}</p>` : "";
   const made = home ? `<a href="${home}" rel="noreferrer">Made with Cartridge Studio</a>` : "Made with Cartridge Studio";
   const dpad =
     controls.move === "lr"
@@ -130,7 +135,8 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box;
     min-height: 100vh; min-height: 100dvh; touch-action: manipulation; }
   h1 { margin: 0; text-align: center; font-size: clamp(18px, 4vw, 30px); line-height: 1.2; }
-  h1 svg, #box svg { display: block; margin: 0 auto; max-width: 100%; height: auto; fill: var(--text); }
+  .by { margin: -4px 0 0; color: var(--muted); font-weight: 700; }
+  h1 svg, .by svg, #box svg { display: block; margin: 0 auto; max-width: 100%; height: auto; fill: var(--text); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   #noplay { max-width: 34em; margin: 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--accent); border-radius: 4px; }
   .js #noplay { display: none; }
@@ -214,12 +220,13 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
 <p id="noplay">${escapeHtml(NO_SCRIPTS_TEXT)}</p>
 ${back}<main>
 <h1>${kitTitle(title.trim() || "My game", 4)}</h1>
+${by}
 <div id="game">
   <div class="bezel">
   <span id="power" aria-hidden="true"></span>
   <div id="stage">
     <canvas id="screen" width="320" height="240" tabindex="0" role="application" aria-roledescription="game" aria-label="${t}" aria-describedby="controls"></canvas>
-    <div id="box" aria-hidden="true"><canvas width="320" height="240"></canvas><p class="box-title">${kitTitle(title.trim() || "My game", 8, true)}</p></div>
+    <div id="box" aria-hidden="true"><canvas width="320" height="240"></canvas><p class="box-title">${kitTitle(title.trim() || "My game", 8, true)}${madeBy ? kitTitle(`BY ${madeBy}`, 3, true) : ""}</p></div>
     <p id="paused" role="status" hidden>Paused</p>
     <button id="start" type="button">Press Space or ${fireLabel} to play</button>
     <button id="skip" class="plain" type="button">Skip</button>
@@ -240,11 +247,15 @@ ${back}<main>
 </main>
 <footer>
   <p>${made}. Make your own 7800 game.</p>
-  <p>Plays in <a href="https://github.com/raz0red/js7800">js7800</a> by raz0red (commit fe918ce), unmodified, under the GNU GPL v2 or later.</p>
+  <p>Plays in <a href="https://github.com/raz0red/js7800">js7800</a> by raz0red, built from upstream commit fe918ce with two I/O stand-ins, under the GNU GPL v2 or later.</p>
+  <p>Built with <a href="https://github.com/7800-devtools/7800basic">7800basic</a> by Mike Saarna (RevEng) and <a href="https://github.com/dasm-assembler/dasm">dasm</a>.</p>
   <details>
     <summary>About this page</summary>
     <p>This page holds a 7800 game made with Cartridge Studio and the js7800 emulator that plays it, so it needs no internet
     and sends nothing anywhere. Not affiliated with or endorsed by Atari.</p>
+    <p>js7800 here is built from upstream commit fe918ce, with its audio and mouse modules swapped for two small stand-ins
+    so it runs in a worker, then minified. The stand-ins and the build script are in Cartridge Studio's source
+    (app/js7800-core/ and app/scripts/build-js7800.mjs).</p>
     <p>With a gamepad: Start pauses, Select plays again from the start, and holding Select for a second leaves full screen.</p>
     ${licence}
   </details>
@@ -278,10 +289,9 @@ export async function loadPlayerAssets(): Promise<PlayerAssets> {
   return { core, license: `${license}\n\n${third}` };
 }
 
-/** Where this copy of the app lives, for the page's "Made with" link: a plain address, nothing added. */
+/** The public address for the page's "Made with" link (public-url.ts); none until the owner sets one. */
 export function appHome(): string | undefined {
-  if (typeof location === "undefined" || !/^https?:$/.test(location.protocol)) return undefined;
-  return new URL(import.meta.env.BASE_URL, location.href).href;
+  return /^https:\/\//.test(PUBLIC_URL) ? PUBLIC_URL : undefined;
 }
 
 /** Builds the one-file page; with the game file, its controls line, touch pad and box art follow the game. */

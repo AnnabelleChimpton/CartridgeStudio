@@ -54,7 +54,7 @@ export const CREDITS: Credit[] = [
     version: `commit ${commit.slice(0, 7)}`,
     by: "raz0red, based on the ProSystem emulator by Greg Stanton",
     licence: "GNU GPL v2 or later",
-    note: "Built from unmodified upstream source, with two worker-safe I/O stand-ins.",
+    note: "Built from upstream source at this commit with two worker-safe I/O stand-ins (app/js7800-core/, app/scripts/build-js7800.mjs), then minified.",
     source: `https://github.com/raz0red/js7800/tree/${commit}`,
     files: [
       ["Licence", `${base}vendor/js7800-core/LICENSE`],
@@ -63,13 +63,12 @@ export const CREDITS: Credit[] = [
     ],
   },
   {
-    name: "Press Start 2P and Atkinson Hyperlegible",
-    version: "fonts for the print kit",
-    by: "CodeMan38, and the Braille Institute",
+    name: "Atkinson Hyperlegible",
+    version: "font for the print kit",
+    by: "the Braille Institute",
     licence: "SIL Open Font License 1.1",
     source: "https://fonts.google.com/",
     files: [
-      ["Press Start 2P licence", `${base}fonts/press-start-2p-OFL.txt`],
       ["Atkinson Hyperlegible licence", `${base}fonts/atkinson-hyperlegible-OFL.txt`],
     ],
   },

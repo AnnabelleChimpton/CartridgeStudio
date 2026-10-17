@@ -146,7 +146,9 @@ test("on a computer: a box front, then keys only reach the game away from button
   // No touch pad on a computer, and the line is the keyboard's.
   await expect(player.locator("#pad")).toBeHidden();
   await expect(player.locator("#controls")).toHaveText("Arrow keys move. Space or Z starts the game. P pauses. Gamepads work too.");
-  await expect(player.getByRole("link", { name: "Made with Cartridge Studio" })).toHaveAttribute("href", /^http:\/\/localhost:\d+\/$/);
+  // No public address is set yet (public-url.ts), so the line names the studio without linking anywhere, least of all this dev server.
+  await expect(player.getByText("Made with Cartridge Studio.", { exact: false })).toBeVisible();
+  await expect(player.getByRole("link", { name: "Made with Cartridge Studio" })).toHaveCount(0);
 
   await player.getByRole("button", { name: /to play$/ }).click();
   await expect(player.getByRole("application", { name: "Ghost Panic" })).toBeFocused();

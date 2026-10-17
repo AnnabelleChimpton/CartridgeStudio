@@ -61,19 +61,14 @@ section(
     "By raz0red, based on the ProSystem emulator by Greg Stanton.",
     `Source: https://github.com/raz0red/js7800/tree/${commit}`,
     "Licence: GNU GPL v2 or later.",
-    "Built from unmodified upstream source, with two worker-safe I/O stand-ins",
+    "Built from upstream source at this commit with two worker-safe I/O stand-ins",
     "(app/js7800-core/audio-stub.js and mouse-stub.js) in place of web/audio.js",
-    "and web/mouse.js.",
+    "and web/mouse.js, then minified (app/scripts/build-js7800.mjs).",
   ],
   [read("app", "public", "vendor", "js7800-core", "LICENSE"), read("app", "public", "vendor", "js7800-core", "LICENSE-third-party")],
 );
 
 // ---- Fonts ----
-section(
-  "Press Start 2P (font, used in printed box art)",
-  ["By CodeMan38.", "Source: https://fonts.google.com/specimen/Press+Start+2P", "Licence: SIL Open Font License 1.1."],
-  [read("app", "public", "fonts", "press-start-2p-OFL.txt")],
-);
 section(
   "Atkinson Hyperlegible (font, used in printed box art and manuals)",
   ["By the Braille Institute.", "Source: https://fonts.google.com/specimen/Atkinson+Hyperlegible", "Licence: SIL Open Font License 1.1."],
