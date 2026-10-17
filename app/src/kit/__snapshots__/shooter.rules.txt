@@ -1,0 +1,9 @@
+When Sock touches Vacuum: remove the Sock, remove the Vacuum, add 10 points and play Boom.
+When Dust bomb touches Laundry basket: remove the Dust bomb, take 1 from Lives, send every Laundry basket back to start, protect every Laundry basket for 1.5 seconds and play Falling tone.
+When Vacuum touches Laundry basket: take 1 from Lives, send every Laundry basket back to start, protect every Laundry basket for 1.5 seconds, play Falling tone and start the room again.
+While a Vacuum reaches the bottom edge: take 1 from Lives, send every Laundry basket back to start, protect every Laundry basket for 1.5 seconds and start the room again.
+When the number of Vacuums is 0: play Rising tone and start the room again.
+When button 1 is pressed, only if the number of Socks is 0: create a Sock above the Laundry basket and play Zap.
+Every frame, only if a random number up to 255 is less than 50 and the number of Dust bombs is 0: create a Dust bomb below a random Vacuum.
+When any Vacuum reaches the left or right edge: set every Vacuum's speed across to its speed across, reversed and add 8 to every Vacuum's y.
+When Lives is 0: lose the game.

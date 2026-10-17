@@ -4,7 +4,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { autosaved } from "./wait.ts";
 
-async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Rock Fall" | "Ghost Panic") {
+async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Teacup Rain" | "Ghost Panic") {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
@@ -78,7 +78,7 @@ test("starts from a kit preset and plays it", async ({ page }) => {
 });
 
 test("painting the room rebuilds the game, and a drag is one undo step", async ({ page }) => {
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   const n = await buildCount(page);
   await paint(page, [3, 6], [12, 6]);
   const g = await game(page);
@@ -94,7 +94,7 @@ test("painting the room rebuilds the game, and a drag is one undo step", async (
 });
 
 test("adds a thing, places it and makes it chase the player", async ({ page }) => {
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   await page.getByRole("button", { name: "Add a thing" }).click();
   await page.getByLabel("Name", { exact: true }).fill("Comet");
   await page.getByLabel("How it moves").selectOption({ label: "Chases the player" });
@@ -113,7 +113,7 @@ test("adds a thing, places it and makes it chase the player", async ({ page }) =
 
 test("rules use the game's own things", async ({ page }) => {
   // The Dodger: it already shows a timer, so a timer rule has room in the budget.
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   const rules = (await game(page)).rules.length;
   await openTab(page, "Rules");
   await page.getByRole("button", { name: "Add rule" }).click();
@@ -158,8 +158,8 @@ test("a kit game survives a reload and round-trips through a game file", async (
   // Switch to another game, then open the file again.
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /^Rock Fall/ }).click();
-  await expect(page.getByLabel("Game title")).toHaveValue("Rock Fall");
+  await page.getByRole("dialog").getByRole("button", { name: /^Teacup Rain/ }).click();
+  await expect(page.getByLabel("Game title")).toHaveValue("Teacup Rain");
   await page.getByLabel("Open game file").setInputFiles({ name: download.suggestedFilename(), mimeType: "application/zip", buffer: file });
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish");
   await expect(page.locator(".topbar").getByText("Game kit")).toBeVisible();
@@ -182,6 +182,25 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
   await expect(page.getByLabel("Rule 6 trigger")).toHaveValue("onHazard");
   await expect(page.getByLabel("Rule 8 trigger")).toHaveValue("every");
   await expect(page.getByLabel("Rule 10 counter")).toHaveValue("level");
+  // Each sentence reads as shown (chosen words, typed numbers) with no word twice in a row, like "Lives is is 0".
+  const shown = await page.locator(".rule-sentence").evaluateAll((ps) =>
+    ps.map((p) => {
+      const words = (n: Node): string =>
+        n instanceof HTMLSelectElement
+          ? ` ${n.selectedOptions[0]?.text ?? ""} `
+          : n instanceof HTMLInputElement
+            ? ` ${n.value} `
+            : n instanceof HTMLButtonElement
+              ? " "
+              : n.nodeType === Node.TEXT_NODE
+                ? (n.textContent ?? "")
+                : [...n.childNodes].map(words).join(" ");
+      return words(p).replace(/\s+/g, " ").trim();
+    }),
+  );
+  expect(shown).toHaveLength(g.rules.length);
+  for (const s of shown) expect(s).not.toMatch(/\b(\w+) \1\b/i);
+  expect(shown.filter((s) => /^When Lives is exactly 0\b/.test(s)), shown.join("\n")).toHaveLength(1);
 
   // Changing one word changes just that word.
   await page.getByLabel("Rule 2 action 3 seconds").fill("8");
@@ -191,7 +210,7 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
 });
 
 test("builds a key-and-door rule with a counter and only if", async ({ page }) => {
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   for (const name of ["Key", "Door"]) {
     await page.getByRole("button", { name: "Add a thing" }).click();
     await page.getByLabel("Name", { exact: true }).fill(name);
@@ -242,11 +261,11 @@ test("builds a key-and-door rule with a counter and only if", async ({ page }) =
   ]);
   expect(g.hud.map((h) => h.show)).toContain("counter-1");
   expect(g.rules[key - 1]).toMatchObject({
-    when: { touch: ["ship", ids.Key] },
+    when: { touch: ["cat", ids.Key] },
     then: [{ destroy: "other" }, { add: { what: { counter: "counter-1" }, by: 1 } }],
   });
   expect(g.rules[door - 1]).toMatchObject({
-    when: { touch: ["ship", ids.Door] },
+    when: { touch: ["cat", ids.Door] },
     if: [{ a: { counter: "counter-1" }, op: "gte", b: 1 }],
     then: [{ destroy: "other" }, { take: { what: { counter: "counter-1" }, by: 1 } }, { add: { what: { counter: "score" }, by: 100 } }],
   });
@@ -256,7 +275,7 @@ test("builds a key-and-door rule with a counter and only if", async ({ page }) =
   await openTab(page, "Game");
   await page.getByRole("button", { name: "Remove Keys" }).click();
   const after = await game(page);
-  expect(after.rules[door - 1]).toMatchObject({ when: { touch: ["ship", ids.Door] }, then: [{ destroy: "other" }, { add: { what: { counter: "score" }, by: 100 } }] });
+  expect(after.rules[door - 1]).toMatchObject({ when: { touch: ["cat", ids.Door] }, then: [{ destroy: "other" }, { add: { what: { counter: "score" }, by: 100 } }] });
   expect(after.rules[door - 1]!.if).toBeUndefined();
 });
 
@@ -315,16 +334,16 @@ test("rules can be reordered by keyboard and by dragging", async ({ page, browse
 });
 
 test("deleting a rule announces it and keeps focus in the list", async ({ page }) => {
-  await start(page, "Rock Fall");
+  await start(page, "Teacup Rain");
   await openTab(page, "Rules");
   const count = (await game(page)).rules.length;
   await page.getByRole("button", { name: "Delete rule 2" }).click();
   expect((await game(page)).rules.length).toBe(count - 1);
   await expect(page.getByRole("button", { name: "Move rule 2", exact: true })).toBeFocused();
   await expect(page.getByRole("status").filter({ hasText: "Rule 2 deleted. Undo brings it back." })).toBeAttached();
-  // The last one: focus goes to Add rule.
+  // The last one: focus goes to the add button, which now offers the first rule.
   for (let n = count - 1; n > 0; n--) await page.getByRole("button", { name: `Delete rule ${n}` }).click();
-  await expect(page.getByRole("button", { name: "Add rule" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Add your first rule" })).toBeFocused();
   await expect(page.getByTestId("rules-empty")).toBeVisible();
 });
 

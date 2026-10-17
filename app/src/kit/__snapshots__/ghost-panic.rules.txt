@@ -1,0 +1,12 @@
+When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.
+When Cat touches Catnip: remove the Catnip, set Combo to 0, turn every Dust ghost into a Scared ghost for 6 seconds, turn every Fast ghost into a Scared ghost for 6 seconds and play Rising tone.
+When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.
+When Cat touches Scared ghost: add 1 to Combo, add 200 points, turn the Scared ghost into a Dust ghost, send the Scared ghost back to start and play Boom.
+When Cat touches Dust ghost: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds and play Falling tone.
+When a Cat is on spikes: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds and play Crash.
+When Cat touches Fast ghost: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds and play Falling tone.
+Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.
+When the number of Yarn balls is 0: play Chime, add 1 to Level and start the room again.
+When Level is at least 4: win the game.
+When Lives is 0: lose the game.
+When the room starts, only if Level is at least 3: set Pace to 1.

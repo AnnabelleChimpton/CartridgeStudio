@@ -10,7 +10,8 @@ import { EASIER_EXTRA_LIVES, easierOn, setEasier } from "./assist.ts";
 import { gameContrast, thingContrast } from "./contrast.ts";
 import { ContrastNotes } from "./ContrastNotes.tsx";
 import { kitText } from "./generate.ts";
-import { MAX_COUNTERS, type KitGame } from "./schema.ts";
+import { MAX_COUNTERS, MAX_HUD, type KitGame } from "./schema.ts";
+import { NumberWord } from "../ui/words.ts";
 import { useKitStore } from "./store.ts";
 
 const TEXTS: { key: keyof KitGame["text"]; label: string }[] = [
@@ -178,7 +179,7 @@ export function KitSettingsPanel() {
           ))}
         </ul>
       )}
-      {game.hud.length >= 4 && <p className="muted small">Four numbers fit on screen; untick one to show another.</p>}
+      {game.hud.length >= MAX_HUD && <p className="muted small">{NumberWord(MAX_HUD)} numbers fit on screen; untick one to show another.</p>}
       <button type="button" className="secondary" disabled={game.counters.length >= MAX_COUNTERS} onClick={() => edit((d) => void addCounter(d))}>
         Add counter
       </button>

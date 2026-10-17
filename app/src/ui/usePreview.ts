@@ -51,12 +51,16 @@ declare global {
   }
 }
 
-export function download(data: Uint8Array, name: string) {
+/**
+ * Saves a file to the downloads folder. One confirmation per download: pass
+ * `toast: true` when the caller doesn't say "Saved …" on the page itself.
+ */
+export function download(data: Uint8Array, name: string, { toast: say = false }: { toast?: boolean } = {}) {
   const url = URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: "application/octet-stream" }));
   const a = Object.assign(document.createElement("a"), { href: url, download: name });
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast(`Saved ${name} to your downloads`);
+  if (say) toast(`Saved ${name} to your downloads`);
 }
 
 export function usePreview(source: GameSource) {
@@ -80,6 +84,8 @@ export function usePreview(source: GameSource) {
   const pausedRef = useRef(false);
   /** Whether the game is full screen in TV mode. */
   const [tv, setTv] = useState(false);
+  /** Goes up each time TV mode starts (from enterTv or the browser going full screen), for the guide. */
+  const [tvStarts, setTvStarts] = useState(0);
 
   /**
    * A fresh emulator on a fresh canvas (a canvas can be handed to a worker only
@@ -137,7 +143,7 @@ export function usePreview(source: GameSource) {
         window.__cs!.ready = info;
         setReady(info);
       },
-      (e: unknown) => setError(`The game builder couldn't start (${String(e)}). Reload the page to try again; your work is saved.`),
+      (e: unknown) => setError(`The game builder couldn't start (${String(e)}). Your game is saved. Reload the page to try again.`),
     );
     spawnEmulator();
     return () => {
@@ -173,7 +179,7 @@ export function usePreview(source: GameSource) {
         try {
           await emulator.current?.load(r.a78, "a78");
         } catch (e) {
-          setError(`The game couldn't start (${String(e)}). Press Restart, or reload the page; your work is saved.`);
+          setError(`The game couldn't start in the preview (${String(e)}). Your game is saved. Press Restart to try again.`);
         }
         setLastGood(r);
       } else if (r.kind === "failed") {
@@ -195,7 +201,7 @@ export function usePreview(source: GameSource) {
       const r = await exporter.build(sourceRef.current, { sign: true });
       if (r.kind === "built" && r.signed) return { a78: r.a78, bin: r.bin };
       if (r.kind === "invalid") throw new Error(r.errors.join(" "));
-      throw new Error("The signed build for the download stopped. Your game is saved. Try the download again, or reload the page.");
+      throw new Error(`The cartridge build for the download stopped${r.kind === "failed" ? ` (${r.stage}: ${r.message})` : ""}. Your game is saved. Try the download again.`);
     } finally {
       exporter.dispose();
     }
@@ -264,7 +270,11 @@ export function usePreview(source: GameSource) {
   setPausedRef.current = setPaused;
 
   useEffect(() => {
-    const changed = () => setTv(!!stage.current && document.fullscreenElement === stage.current);
+    const changed = () => {
+      const now = !!stage.current && document.fullscreenElement === stage.current;
+      setTv(now);
+      if (now) setTvStarts((n) => n + 1);
+    };
     document.addEventListener("fullscreenchange", changed);
     return () => document.removeEventListener("fullscreenchange", changed);
   }, []);
@@ -318,6 +328,7 @@ export function usePreview(source: GameSource) {
     if (!el) return;
     void el.requestFullscreen?.().catch(() => {});
     el.querySelector("canvas")?.focus();
+    setTvStarts((n) => n + 1);
   };
 
   /** The game as it is now, e.g. for the offline player's controls and box art. */
@@ -328,6 +339,7 @@ export function usePreview(source: GameSource) {
     stage,
     enterTv,
     tv,
+    tvStarts,
     paused,
     setPaused,
     restart,

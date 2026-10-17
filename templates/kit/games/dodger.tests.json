@@ -64,7 +64,7 @@
     ]
   },
   {
-    "name": "a falling rock costs a life",
+    "name": "a falling teacup costs a life",
     "steps": [
       {
         "frames": 5
@@ -97,7 +97,7 @@
     ]
   },
   {
-    "name": "catching stars scores",
+    "name": "catching fish scores",
     "game": {
       "lives": 9
     },

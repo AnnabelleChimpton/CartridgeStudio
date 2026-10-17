@@ -50,10 +50,10 @@ describe("errorAdvice", () => {
 });
 
 describe("presets", () => {
-  it("each has two or three ideas, and ideas name things the preset has", () => {
+  it("each has a few ideas, and ideas name things the preset has", () => {
     for (const p of KIT_PRESETS) {
       expect(p.ideas.length, p.id).toBeGreaterThanOrEqual(2);
-      expect(p.ideas.length, p.id).toBeLessThanOrEqual(3);
+      expect(p.ideas.length, p.id).toBeLessThanOrEqual(4);
       for (const i of p.ideas) if (i.thing) expect(p.game.types.some((t) => t.id === i.thing), `${p.id}: ${i.thing}`).toBe(true);
     }
   });

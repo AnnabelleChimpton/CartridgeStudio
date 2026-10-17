@@ -10,7 +10,7 @@ export function RomDownloads({ preview, title }: { preview: Preview; title: stri
     setExporting(true);
     try {
       const rom = await preview.buildSigned();
-      download(format === "a78" ? rom.a78 : rom.bin, `${slugify(title)}.${format}`);
+      download(format === "a78" ? rom.a78 : rom.bin, `${slugify(title)}.${format}`, { toast: true });
     } catch (e) {
       preview.setError(e instanceof Error ? e.message : String(e));
     } finally {

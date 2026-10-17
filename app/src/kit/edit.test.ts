@@ -3,6 +3,7 @@ import { SOUND_LIBRARY } from "../project/templates.ts";
 import {
   addCounter,
   addThing,
+  newRule,
   cellAt,
   dropsOf,
   makePlayer,
@@ -23,7 +24,7 @@ import {
 import { validateKit } from "./generate.ts";
 import { presetOf } from "./parts.ts";
 import { KIT_PRESETS } from "./presets.ts";
-import { MAX_COUNTERS } from "./schema.ts";
+import { MAX_COUNTERS, type KitGame } from "./schema.ts";
 
 const preset = (id: string) => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
 
@@ -52,6 +53,21 @@ describe("kit editing", () => {
     paintCell(g, 10, 5, "cat");
     const cats = placements(g).filter((p) => g.types[p.type]!.id === "cat");
     expect(cats).toEqual([{ type: 0, col: 10, row: 5 }]);
+  });
+
+  it("Add rule starts from a pair no rule mentions yet, player first", () => {
+    const touches = (g: KitGame) => g.rules.flatMap((x) => ("touch" in x.when ? [x.when.touch.join(" "), [...x.when.touch].reverse().join(" ")] : []));
+    // Every Cat pair in Ghost Panic has a rule already, so it's two other things.
+    const g = preset("ghost-panic");
+    const r = newRule(g);
+    expect("touch" in r.when && touches(g)).not.toContain("touch" in r.when && r.when.touch.join(" "));
+    // A new thing pairs with the player.
+    const id = addThing(g, "bounce");
+    expect(newRule(g).when).toEqual({ touch: ["cat", id] });
+    // Every pair taken: a timer that only plays a sound.
+    const one = preset("ghost-panic");
+    one.types = one.types.slice(0, 1);
+    expect(newRule(one)).toMatchObject({ when: { after: 30 }, then: [{ sound: "blip" }] });
   });
 
   it("adds a thing that can be painted and keeps the game valid", () => {
@@ -128,10 +144,10 @@ describe("kit editing", () => {
 
   it("making a thing the player demotes the old player and stops it shooting", () => {
     const g = preset("shooter");
-    expect(shootsOf(g, "ship")).toBe("shot");
+    expect(shootsOf(g, "basket")).toBe("shot");
     setBehaviour(g, "invader", "player-lr");
-    expect(presetOf(g.types.find((t) => t.id === "ship")!)?.behaviour).toBe("still");
-    expect(shootsOf(g, "ship")).toBeNull();
+    expect(presetOf(g.types.find((t) => t.id === "basket")!)?.behaviour).toBe("still");
+    expect(shootsOf(g, "basket")).toBeNull();
     // The march's turn went with the march.
     expect(g.rules.some((r) => "edge" in r.when && r.when.edge[1] === "sides")).toBe(false);
     expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
@@ -143,10 +159,10 @@ describe("kit editing", () => {
 
   it("shooting and dropping are rules the Things tab edits in plain words", () => {
     const g = preset("shooter");
-    setShoots(g, "ship", "bomb");
-    expect(shootsOf(g, "ship")).toBe("bomb");
-    setShoots(g, "ship", null);
-    expect(shootsOf(g, "ship")).toBeNull();
+    setShoots(g, "basket", "bomb");
+    expect(shootsOf(g, "basket")).toBe("bomb");
+    setShoots(g, "basket", null);
+    expect(shootsOf(g, "basket")).toBeNull();
     expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 4 });
     setDrops(g, "invader", { type: "bomb", chance: 20 });
     expect(dropsOf(g, "invader")).toEqual({ type: "bomb", chance: 20 });

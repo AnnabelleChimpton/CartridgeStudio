@@ -1,5 +1,5 @@
 // "Import a picture": turns a photo or a scanned drawing into the sprite's
-// current frame. The picture comes from a file, a drop or a paste; the user
+// current frame. The picture comes from a file, a drop or a paste; the creator
 // moves and zooms a crop the sprite's on-screen shape, and sees the result
 // live before using it. The maths is in import.ts.
 
@@ -41,9 +41,9 @@ export interface ImportPictureProps {
   colors: readonly string[];
   /** Names the frame being replaced when there are several, e.g. "frame 2". */
   frameName?: string;
-  /** Whether the user can choose new colors from the picture (and what that does to other things). */
+  /** Whether the creator can choose new colors from the picture (and what that does to other things). */
   newColors?: { note?: string; affectsOthers: boolean } | null;
-  /** Sizes the user can choose from; the biggest shaped like the picture is picked when it loads. */
+  /** Sizes the creator can choose from; the biggest shaped like the picture is picked when it loads. */
   sizes?: { widths: readonly number[]; heights: readonly number[] } | null;
   onApply: (frame: Frame, colors?: string[], size?: [number, number]) => void;
   onClose: () => void;
@@ -292,7 +292,7 @@ export function ImportPicture(props: ImportPictureProps) {
         {!source ? (
           <div className="ip-drop">
             <p>
-              Turn a photo or a drawing into <strong>{changing}</strong>. {sizes ? "You can choose its size next." : `It becomes ${width}×${height} pixels in 3 colors.`}
+              Turn a photo or a drawing into {changing}. {sizes ? "You can choose its size next." : `It becomes ${width}×${height} pixels in 3 colors.`}
             </p>
             <button type="button" onClick={() => fileInput.current?.click()}>
               Choose a picture

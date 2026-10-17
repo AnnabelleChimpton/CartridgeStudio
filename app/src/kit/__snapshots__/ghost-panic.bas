@@ -403,10 +403,6 @@ srplaced
  rem audio: a room's music starts here (reserved for kit/audio.ts)
  gosub rule12
  if ruleexit then return
- gosub rule13
- if ruleexit then return
- gosub rule14
- if ruleexit then return
 startroomdone
  rem ---- user_startroom: your code, at the end of every room start ----
  rem (empty)
@@ -995,7 +991,7 @@ rule8
  if ruleexit then return
 rule8_end
 
- rem rule 9: When the number of Yarn ball is 0: play Chime, add 1 to Level and start the room again.
+ rem rule 9: When the number of Yarn balls is 0: play Chime, add 1 to Level and start the room again.
 rule9
  if oddframe = 0 then goto rule9_end
  tmp2 = 0
@@ -1045,18 +1041,6 @@ rule11_end
 rule12
  if levelnum < 3 then return
  gosub rule12_do
- return
-
- rem rule 13: When the room starts, only if Level is at least 5: set Pace to 2.
-rule13
- if levelnum < 5 then return
- gosub rule13_do
- return
-
- rem rule 14: When the room starts, only if Level is at least 7: set Pace to 3.
-rule14
- if levelnum < 7 then return
- gosub rule14_do
  return
 
  rem ---- what each rule does ----
@@ -1181,16 +1165,6 @@ rule12_do
  if cnt_pace > 99 then cnt_pace = 99
  return
 
-rule13_do
- cnt_pace = 2
- if cnt_pace > 99 then cnt_pace = 99
- return
-
-rule14_do
- cnt_pace = 3
- if cnt_pace > 99 then cnt_pace = 99
- return
-
  rem ---- your routines (run code) ----
 
 drawtitle
@@ -1198,12 +1172,12 @@ drawtitle
  plotchars 'PRESS FIRE' 4 60 12
  return
 drawwon
- plotchars 'THREE MAZES CLEAR!' 4 44 11
+ plotchars 'CLEARED THREE TIMES' 4 42 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return
 drawlost
- plotchars 'GAME OVER' 4 62 11
+ plotchars 'THE GHOSTS WON' 4 52 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return

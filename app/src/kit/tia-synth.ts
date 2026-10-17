@@ -75,7 +75,7 @@ export function synthesizeFrames(frames: VoiceOut[][], tailSeconds = 0.15): { sa
   return { samples, rate };
 }
 
-/** A tune's sound; a loop comes out exactly one pass long, with no tail, so it can repeat seamlessly. */
+/** A tune's sound; a loop comes out exactly one pass long, with no tail, so it repeats with no gap. */
 export function synthesize(c: CompiledTune): { samples: Float32Array<ArrayBuffer>; rate: number } {
   return synthesizeFrames(renderFrames(c), c.loop ? 0 : 0.15);
 }

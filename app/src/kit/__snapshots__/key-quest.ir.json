@@ -2053,8 +2053,8 @@
  "wallPalette": 4,
  "text": {
   "title": "Key Quest",
-  "win": "The crown is yours",
-  "lose": "Game over"
+  "win": "THE CROWN IS YOURS",
+  "lose": "OUT OF LIVES"
  },
  "flow": {
   "title": true,

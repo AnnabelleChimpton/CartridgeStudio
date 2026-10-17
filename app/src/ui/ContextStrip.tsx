@@ -1,29 +1,27 @@
 // The context strip: one line under the top bar for the one thing that
-// matters right now. Several parts of the app want that space; it shows a
-// single item, by priority: an error, then a note (something that changed
-// about your game), then a guide step, then the jam theme,
-// then offline status. See design/DIRECTION.md, Context strip.
+// matters right now. It shows a single item: an error first, otherwise a
+// note (something that changed about your game). See design/DIRECTION.md,
+// Context strip.
 //
-// Anywhere in the app:
-//   useContextItem(failed && { kind: "error", message: "Couldn't open it", onDismiss })
-//   <ContextItem kind="guide" message="Step 1 of 3: draw your hero" action={<button …>Next</button>} />
+//   useContextItem(failed && { kind: "error", message: "The file isn't a Cartridge Studio game.", onDismiss })
+//
 // The strip itself is part of the top bar.
 
 import { useId, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 
-export type ContextKind = "error" | "note" | "guide" | "jam" | "offline";
+export type ContextKind = "error" | "note";
 
 export interface ContextItemProps {
   kind: ContextKind;
   message: ReactNode;
-  /** One control at the end of the line, e.g. "Next step" or "Read the brief". */
+  /** One control at the end of the line. */
   action?: ReactNode;
   /** Shows a Dismiss button. */
   onDismiss?: () => void;
 }
 
-const PRIORITY: ContextKind[] = ["error", "note", "guide", "jam", "offline"];
+const PRIORITY: ContextKind[] = ["error", "note"];
 
 let items = new Map<string, ContextItemProps>();
 let top: ContextItemProps | null = null;
@@ -66,7 +64,7 @@ export function ContextStrip() {
     },
     () => top,
   );
-  // Errors interrupt; everything else waits its turn. Both regions stay in the
+  // Errors interrupt; notes wait their turn. Both regions stay in the
   // page so screen readers hear what is added to them.
   return (
     <div className="context-strip" data-kind={item?.kind}>
@@ -74,7 +72,7 @@ export function ContextStrip() {
         {item?.kind === "error" && <Line item={item} />}
       </div>
       <div role="status" className="context-line">
-        {item && item.kind !== "error" && <Line item={item} />}
+        {item?.kind === "note" && <Line item={item} />}
       </div>
     </div>
   );

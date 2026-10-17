@@ -1,0 +1,8 @@
+When Cat touches Teacup: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds, send the Teacup back to start and play Boom.
+When Cat touches Teapot: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds, send the Teapot back to start and play Boom.
+When Cat touches Fish: add 50 points, send the Fish back to start and play Blip.
+When 30 seconds have passed: play Chime and win the game.
+When a Teacup leaves the screen: set the Teacup's x to a random number up to 19 × 8 and set the Teacup's y to 16.
+When a Teapot leaves the screen: set the Teapot's x to a random number up to 19 × 8 and set the Teapot's y to 16.
+When a Fish leaves the screen: set the Fish's x to a random number up to 19 × 8 and set the Fish's y to 16.
+When Lives is 0: lose the game.

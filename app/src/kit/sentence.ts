@@ -6,6 +6,10 @@ import { SOUND_LIBRARY } from "../project/templates.ts";
 import { SCORE, SECONDS, type KitAction, type KitCompare, type KitGame, type KitRule, type KitTarget, type KitTrigger, type KitValue } from "./schema.ts";
 import { itTypes, stateDefault, triggerThing } from "./ir.ts";
 
+/** English plurals for thing names ("Dust ghost" → "Dust ghosts"). */
+export const plural = (s: string) =>
+  /(s|x|z|ch|sh)$/i.test(s) ? `${s}es` : /[^aeiou]y$/i.test(s) ? `${s.slice(0, -1)}ies` : `${s}s`;
+
 const OPS: Record<KitCompare["op"], string> = { eq: "is", ne: "isn't", gt: "is more than", gte: "is at least", lt: "is less than", lte: "is at most" };
 const SIDE: Record<string, string> = {
   left: "the left edge",
@@ -41,7 +45,7 @@ export function ruleSentence(r: KitRule, g: KitGame): string {
     let s: string;
     if ("counter" in v) s = counter(v.counter);
     else if ("prop" in v) s = whose(v.of, v.prop);
-    else if ("count" in v) s = `the number of ${name(v.count)}`;
+    else if ("count" in v) s = `the number of ${plural(name(v.count))}`;
     else if ("random" in v) s = `a random number up to ${v.random}`;
     else if ("joy" in v) s = `joystick ${v.joy}'s ${v.axis === "x" ? "left-right" : "up-down"} push`;
     else if ("facing" in v) s = `${whose(v.of, "facing")} ${v.facing === "x" ? "across" : "down"}`;

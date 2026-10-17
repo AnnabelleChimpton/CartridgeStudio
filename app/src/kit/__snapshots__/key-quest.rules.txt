@@ -1,0 +1,8 @@
+When Knight touches Key: remove the Key, add 1 to Keys, add 50 points and play Rising tone.
+When Knight touches Locked door, only if Keys is at least 1: remove the Locked door, take 1 from Keys, add 100 points and play Chime.
+When Knight touches Locked door, only if Keys is 0: send the Knight back to start and play Falling tone.
+When Knight touches Gem: remove the Gem, add 20 points and play Blip.
+When Knight touches Shadow: take 1 from Lives, send every Knight back to start, protect every Knight for 1.5 seconds and play Crash.
+When a Knight is on spikes: take 1 from Lives, send every Knight back to start, protect every Knight for 1.5 seconds and play Falling tone.
+When Knight touches Crown: add 500 points, play Chime and win the game.
+When Lives is 0: lose the game.

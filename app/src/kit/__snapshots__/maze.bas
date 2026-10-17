@@ -722,7 +722,7 @@ rule3_nj_5
 rule3_ni
 rule3_end
 
- rem rule 4: When the number of Yarn ball is 0: play Chime and win the game.
+ rem rule 4: When the number of Yarn balls is 0: play Chime and win the game.
 rule4
  if oddframe = 0 then goto rule4_end
  tmp2 = 0
@@ -809,12 +809,12 @@ drawtitle
  plotchars 'PRESS FIRE' 4 60 12
  return
 drawwon
- plotchars 'ALL THE YARN!' 4 54 11
+ plotchars 'ALL THE YARN' 4 56 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return
 drawlost
- plotchars 'GAME OVER' 4 62 11
+ plotchars 'CAUGHT BY DUST' 4 52 11
  plotchars 'SCORE' 4 56 14
  plotvalue font 4 score0 6 80 14
  return

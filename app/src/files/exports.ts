@@ -85,9 +85,9 @@ What's in this package
 
 Before you send it
   [ ] Play it start to finish in the Cartridge Studio preview.
-  [ ] If you have real hardware, try rom/${slug}.bin on it with a flash cart,
-      and note the console and firmware version. Cartridge Studio has been
-      tested in emulators, not yet on real consoles, so your report helps.
+  [ ] If you have a real console, try rom/${slug}.bin on it with a flash cart,
+      and note the console and firmware version in what you send. Cartridge
+      Studio has been tested in emulators, not yet on real consoles.
   [ ] Print the PDF at actual size (100%) and check the 1-inch square, then
       check the box and label sizes against your box and cartridge shell.
   [ ] Read the manual once more for typos.

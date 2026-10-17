@@ -105,7 +105,7 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
       tests: testsBytes(tests.file),
       cartridge: { name: `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, bytes: await cartridgeFile() },
     });
-    download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`);
+    download(folderZip(project.title, "source", files), `${slugify(project.title)}-source.zip`, { toast: true });
   };
 
   const goToLine = (line: number) => {
@@ -132,7 +132,7 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
         undo={undo}
         redo={redo}
         onOpen={onOpen}
-        onSave={async () => download(await cartridgeFile(), `${slugify(project.title)}${CARTRIDGE_EXTENSION}`)}
+        onSave={async () => download(await cartridgeFile(), `${slugify(project.title)}${CARTRIDGE_EXTENSION}`, { toast: true })}
         onNew={onNew}
       />
       {(project.origin || back) && (

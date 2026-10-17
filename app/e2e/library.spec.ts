@@ -23,7 +23,7 @@ async function start(page: Page, preset: RegExp) {
 async function newGameDialog(page: Page) {
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  return page.getByRole("dialog", { name: "What do you want to make?" });
+  return page.getByRole("dialog", { name: "Pick a cart to start from" });
 }
 
 /** Runs `fn` on the app's IndexedDB store, then closes it. */
@@ -49,7 +49,7 @@ const withStore = (page: Page, entries: Record<string, unknown>, remove: string[
 test("new games add to My games, and each one opens, renames, duplicates and deletes", async ({ page }) => {
   await page.goto("/");
   // A first visit has no games yet.
-  await expect(page.getByText("What do you want to make?")).toBeVisible();
+  await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   await expect(myGames(page)).toHaveCount(0);
   await start(page, /^Yarn Hunt/);
   await page.getByLabel("Game title").fill("Mine");
@@ -60,8 +60,8 @@ test("new games add to My games, and each one opens, renames, duplicates and del
   // Starting another game keeps this one: no "will be replaced".
   let chooser = await newGameDialog(page);
   await expect(card(page, "Mine")).toContainText("open now");
-  await chooser.getByRole("button", { name: /^Rock Fall/ }).click();
-  await expect(page.getByLabel("Game title")).toHaveValue("Rock Fall");
+  await chooser.getByRole("button", { name: /^Teacup Rain/ }).click();
+  await expect(page.getByLabel("Game title")).toHaveValue("Teacup Rain");
   await expect(status(page)).not.toHaveText("Building…");
 
   chooser = await newGameDialog(page);
@@ -73,8 +73,8 @@ test("new games add to My games, and each one opens, renames, duplicates and del
 
   // Rename a game that isn't open.
   chooser = await newGameDialog(page);
-  await chooser.getByRole("button", { name: "Rename Rock Fall" }).click();
-  const rename = page.getByRole("dialog", { name: "Rename “Rock Fall”" });
+  await chooser.getByRole("button", { name: "Rename Teacup Rain" }).click();
+  const rename = page.getByRole("dialog", { name: "Rename “Teacup Rain”" });
   await rename.getByLabel("New name").fill("Pebbles");
   await rename.getByRole("button", { name: "Rename" }).click();
   await expect(card(page, "Pebbles")).toBeVisible();
@@ -109,14 +109,14 @@ test("new games add to My games, and each one opens, renames, duplicates and del
 
 test("deleting the open game goes back to the start screen", async ({ page }) => {
   await page.goto("/");
-  await start(page, /^Rock Fall/);
+  await start(page, /^Teacup Rain/);
   const chooser = await newGameDialog(page);
-  await chooser.getByRole("button", { name: "Delete Rock Fall" }).click();
-  await page.getByRole("dialog", { name: "Delete “Rock Fall”?" }).getByRole("button", { name: "Delete game" }).click();
-  await expect(page.getByRole("heading", { name: "What do you want to make?" })).toBeVisible();
+  await chooser.getByRole("button", { name: "Delete Teacup Rain" }).click();
+  await page.getByRole("dialog", { name: "Delete “Teacup Rain”?" }).getByRole("button", { name: "Delete game" }).click();
+  await expect(page.getByRole("heading", { name: "Pick a cart to start from" })).toBeVisible();
   await expect(myGames(page)).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "What do you want to make?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Pick a cart to start from" })).toBeVisible();
 });
 
 test("an edit is saved when the page goes away, even inside the autosave pause", async ({ page }) => {
@@ -149,7 +149,7 @@ test("a Classic shooter game file opens as a code project, and says so", async (
 
 test("saves from before My games move into it on first load", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("What do you want to make?")).toBeVisible();
+  await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   // As an older version left them: one kit game, one Classic shooter game, no library yet.
   await withStore(page, { "current-kit": maze, current: classicSample, mode: "kit" }, ["library", "open"]);
   await page.reload();

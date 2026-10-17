@@ -15,6 +15,7 @@ import { CartridgeSpace } from "./CartridgeSpace.tsx";
 import { parseBuildLog, type BuildProblem } from "./build-log.ts";
 import { markedLines, type CodeRef } from "./markers.ts";
 import { RomDownloads } from "./RomDownloads.tsx";
+import { failureHeadline } from "../ui/PreviewPanel.tsx";
 import type { Preview } from "../ui/usePreview.ts";
 import "./code.css";
 
@@ -76,7 +77,8 @@ export function CodeTier({ preview, title, jumps, selected, onSelect, changed, g
       </div>
       {failed && (
         <div className="code-ours" role="alert">
-          <strong>The generated code didn't build.</strong> That's a Cartridge Studio bug, not something you did; your game is saved.
+          {failureHeadline(failed.stage)} Your game is saved{lastGood ? ", and the last good build still plays." : "."} The kit wrote code the
+          toolchain refused, which is a Cartridge Studio bug. Press Undo to take back your last change; the build log below has the details.
           {problems.length > 0 && " The toolchain's complaints are marked in the code."}
         </div>
       )}

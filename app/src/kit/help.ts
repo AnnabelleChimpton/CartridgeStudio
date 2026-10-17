@@ -6,11 +6,7 @@ import { isPlayer, placements } from "./edit.ts";
 import { CPU_BUDGET, cpuCost } from "./generate.ts";
 import type { KitTab } from "./presets.ts";
 import type { KitGame } from "./schema.ts";
-import { ruleSentence } from "./sentence.ts";
-
-/** English plurals for thing names ("Dust ghost" → "Dust ghosts"). */
-const plural = (s: string) =>
-  /(s|x|z|ch|sh)$/i.test(s) ? `${s}es` : /[^aeiou]y$/i.test(s) ? `${s.slice(0, -1)}ies` : `${s}s`;
+import { plural, ruleSentence } from "./sentence.ts";
 
 export interface BusyFix {
   text: string;

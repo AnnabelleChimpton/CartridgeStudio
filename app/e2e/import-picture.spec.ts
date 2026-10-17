@@ -9,7 +9,7 @@ const PICTURE = new URL("./fixtures/drawing.png", import.meta.url).pathname;
 
 async function start(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: /^Rock Fall/ }).click();
+  await page.getByRole("button", { name: /^Teacup Rain/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
@@ -25,7 +25,7 @@ const thing = (page: Page, id: string) =>
       palettes: g.palettes.length,
     };
   }, id);
-const hero = (page: Page) => thing(page, "ship");
+const hero = (page: Page) => thing(page, "cat");
 
 async function axe(page: Page) {
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -36,7 +36,7 @@ test("a picture becomes the player's sprite, and one Undo puts it back", async (
   await start(page);
   const before = await hero(page);
   // The player is picked to start with, and its size is out in the open.
-  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Ship");
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Cat");
   await expect(page.getByLabel("Width", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Import a picture" }).click();
@@ -71,21 +71,21 @@ test("a picture becomes the player's sprite, and one Undo puts it back", async (
 
 test("a thing sharing colors gets its own, so the others keep theirs", async ({ page }) => {
   await start(page);
-  const rock = await thing(page, "rock");
-  const before = await thing(page, "boulder");
-  await page.getByRole("button", { name: /^Fast rock/ }).click();
+  const teacup = await thing(page, "teacup");
+  const before = await thing(page, "teapot");
+  await page.getByRole("button", { name: /^Teapot/ }).click();
   await page.getByRole("button", { name: "Import a picture" }).click();
   const dialog = page.getByRole("dialog", { name: "Import a picture" });
   await dialog.getByTestId("import-picture-file").setInputFiles(PICTURE);
-  await expect(dialog.getByText("Fast rock gets its own colors, so Rock won't change.")).toBeVisible();
+  await expect(dialog.getByText("Teapot gets its own colors, so Teacup won't change.")).toBeVisible();
   await dialog.getByRole("button", { name: "Use this picture" }).click();
 
-  const after = await thing(page, "boulder");
+  const after = await thing(page, "teapot");
   expect(after.palette).not.toBe(before.palette);
   expect(after.palettes).toBe(before.palettes + 1);
-  expect(await thing(page, "rock")).toEqual({ ...rock, palettes: rock.palettes + 1 });
+  expect(await thing(page, "teacup")).toEqual({ ...teacup, palettes: teacup.palettes + 1 });
   await page.getByRole("button", { name: "Undo" }).click();
-  expect(await thing(page, "boulder")).toEqual(before);
+  expect(await thing(page, "teapot")).toEqual(before);
 });
 
 test("works from the keyboard, keeping the colors, as one undo step", async ({ page }) => {

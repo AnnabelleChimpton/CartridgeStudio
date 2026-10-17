@@ -1,0 +1,5 @@
+When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.
+When Cat touches Dust ghost: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds and play Falling tone.
+When Cat touches Bat: take 1 from Lives, send every Cat back to start, protect every Cat for 1.5 seconds and play Falling tone.
+When the number of Yarn balls is 0: play Chime and win the game.
+When Lives is 0: lose the game.

@@ -219,7 +219,7 @@
    ]
   }
  ],
- "text": { "title": "Yarn Hunt", "win": "All the yarn!", "lose": "Game over" },
+ "text": { "title": "Yarn Hunt", "win": "ALL THE YARN", "lose": "CAUGHT BY DUST" },
  "flow": {
   "title": true,
   "attract": { "after": 20 },

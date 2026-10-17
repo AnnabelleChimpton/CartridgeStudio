@@ -92,7 +92,7 @@ export function JamGallery() {
       download(zip, file);
       setBuilt(file);
     } catch (e) {
-      setError(`We couldn't build the gallery: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`Building the gallery stopped: ${e instanceof Error ? e.message : String(e)}. The entries you added are still here; press Build the gallery to try again.`);
     } finally {
       setBusy(false);
     }
@@ -115,7 +115,7 @@ export function JamGallery() {
     <JamPageShell title="Build the jam gallery" current="gallery">
       <p>
         Add every entry ZIP your creators sent. You'll get one ZIP with a gallery page and a player for each game: post it on itch.io as
-        an HTML project, put it on GitHub Pages, or just open <code>index.html</code> from a folder. It works with no internet.
+        an HTML project, put it on GitHub Pages, or open <code>index.html</code> from a folder. It works with no internet.
       </p>
 
       <section aria-labelledby={`${id}-add`}>
@@ -123,7 +123,7 @@ export function JamGallery() {
         <p className="muted small">
           {brief ? (
             <>
-              Checking entries against the brief for <strong>{brief.name}</strong>.
+              Checking entries against the brief for {brief.name}.
             </>
           ) : (
             <>Add the jam's .jam.json brief too, to check entries against its limits and version.</>
@@ -257,7 +257,7 @@ export function JamGallery() {
             type="button"
             className="secondary"
             disabled={added.length === 0}
-            onClick={() => download(new TextEncoder().encode(judgesCsv(galleryInfo(), added, { anonymous })), `${slugify(galleryInfo().name)}-judges.csv`)}
+            onClick={() => download(new TextEncoder().encode(judgesCsv(galleryInfo(), added, { anonymous })), `${slugify(galleryInfo().name)}-judges.csv`, { toast: true })}
           >
             Download the judges' sheet (.csv)
           </button>
@@ -287,7 +287,7 @@ export function JamGallery() {
             <>
               <p className="small">
                 {results.sheets} {results.sheets === 1 ? "sheet" : "sheets"} added. The gallery will include a results page. In the lead:{" "}
-                <strong>{results.rows[0]?.overall === null ? "nobody scored yet" : results.rows[0]?.title}</strong>
+                {results.rows[0]?.overall === null ? "nobody scored yet" : results.rows[0]?.title}
               </p>
               {results.problems.length > 0 && (
                 <ul className="error small">
@@ -311,7 +311,7 @@ export function JamGallery() {
         <div aria-live="polite">
           {built && (
             <p className="jam-done">
-              Saved <strong>{built}</strong>. Unzip it and open <code>index.html</code> to check it, then post the folder.
+              Saved “{built}”. Unzip it and open <code>index.html</code> to check it, then post the folder.
             </p>
           )}
         </div>

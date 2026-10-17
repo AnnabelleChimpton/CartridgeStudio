@@ -94,7 +94,7 @@ export function CodePrint({ title, preview }: { title: string; preview: Preview;
       onText={(t) => edit((d) => void (d.manualText = t), "manual")}
       onReset={() => edit((d) => void delete d.manualText)}
       makePdf={(paper) => printPdf(codePrintSubject(project), paper, preview.screenshot)}
-      onDownload={download}
+      onDownload={(bytes, name) => download(bytes, name, { toast: true })}
     />
   );
 }

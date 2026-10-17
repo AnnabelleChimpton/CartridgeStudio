@@ -68,7 +68,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, o
     try {
       onDownload(await makePdf(paper), `${slugify(title)}-print.pdf`);
     } catch (e) {
-      setError(`We couldn't make the PDF: ${e instanceof Error ? e.message : String(e)}`);
+      setError(`Making the PDF stopped: ${e instanceof Error ? e.message : String(e)}. Your game is saved; press the button again to retry.`);
     } finally {
       setBusy(false);
     }

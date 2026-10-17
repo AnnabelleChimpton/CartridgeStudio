@@ -63,7 +63,7 @@ async function makeEntry(page: Page, words: { title: string; credits: string; de
   await form.getByLabel("Short description").fill(words.description);
   await form.getByLabel("Controls").fill(words.controls);
   const file = await downloadOf(page, () => form.getByRole("button", { name: "Make my jam entry" }).click());
-  await expect(form).toContainText(`Saved ${file.name}`);
+  await expect(form).toContainText(`Saved “${file.name}”`);
   return file;
 }
 
@@ -82,8 +82,14 @@ test("a jam link shows the brief, and the brief survives a reload", async ({ pag
   expect(await axe(page)).toEqual([]);
   await page.reload();
   await expect(banner(page)).toContainText("It's behind you");
-  page.once("dialog", (d) => void d.accept());
+  // Leaving asks first, in the app's own dialog.
+  const leave = page.getByRole("dialog", { name: "Leave Spooky Cartridge Jam?" });
   await banner(page).getByRole("button", { name: "Leave jam" }).click();
+  await leave.getByRole("button", { name: "Stay in the jam" }).click();
+  await expect(banner(page)).toBeVisible();
+  await banner(page).getByRole("button", { name: "Leave jam" }).click();
+  expect(await axe(page)).toEqual([]);
+  await leave.getByRole("button", { name: "Leave jam" }).click();
   await expect(banner(page)).toHaveCount(0);
   await expect(entryForm(page)).toHaveCount(0);
 });
