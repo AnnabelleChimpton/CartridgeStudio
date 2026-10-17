@@ -14,12 +14,16 @@ import {
   LEVEL,
   LIVES,
   MAX_COUNTERS,
+  MAX_MESSAGES,
+  MAX_OBJECTS,
   ROOM_COLS,
   ROOM_ROWS,
   SCORE,
+  SPEED_STEPS,
   TILES,
   type KitAction,
   type KitCompare,
+  type KitDisplay,
   type KitGame,
   type KitRule,
   type KitTarget,
@@ -232,9 +236,10 @@ export function resizeThing(g: KitGame, id: string, width: number, height: numbe
 export function setAnimated(g: KitGame, id: string, animated: boolean) {
   const t = g.types.find((x) => x.id === id);
   if (!t) return;
-  if (t.display?.directions && t.display.directions !== "none") return;
-  if (animated && t.frames.length === 1) t.frames.push([...t.frames[0]!]);
-  if (!animated) t.frames = [t.frames[0]!];
+  if (t.frames.length !== directionSets(t.display?.directions) && !isAnimated(t)) return;
+  // Each direction set gets a second frame (a copy to draw on), or loses it.
+  if (animated && !isAnimated(t)) t.frames = t.frames.flatMap((f) => [f, [...f]]);
+  if (!animated && isAnimated(t)) t.frames = t.frames.filter((_, n) => n % 2 === 0);
   if (animated) t.display = { ...t.display, animate: t.display?.animate ?? 16 };
 }
 
@@ -316,6 +321,106 @@ export function makePlayer(g: KitGame, id: string): string | null {
   Object.assign(p, b);
   Object.assign(t, a);
   return p.id;
+}
+
+// ---- custom parts (the "Customise" editor) ----
+
+export type Mover = "none" | "joystick" | "steer";
+/** What drives a thing besides its own velocity: a joystick, steering toward a kind, or nothing. */
+export const moverOf = (t: KitType): Mover => (t.control ? "joystick" : t.steer ? "steer" : "none");
+
+/** Switches what drives a thing. A joystick and steering can't both move it, so one replaces the other. */
+export function setMover(g: KitGame, id: string, mover: Mover) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t || moverOf(t) === mover) return;
+  const speed = t.control?.speed ?? t.steer?.speed ?? { step: 2 };
+  delete t.control;
+  delete t.steer;
+  if (mover === "joystick") t.control = { joystick: 1, axes: "4way", mode: "direct", speed: { step: speed.step } };
+  if (mover === "steer") {
+    const toward = playerOf(g) ?? g.types.find((x) => x.id !== id)?.id ?? id;
+    t.steer = { toward, speed: { step: speed.step }, every: 1 };
+  }
+  if (mover !== "joystick") removeShooting(g, id);
+}
+
+/**
+ * Changes a thing's velocity and reactions. A thing that speeds up with a
+ * counter needs its speeds to be speed steps, so the pace goes when they aren't.
+ */
+export function setMove(g: KitGame, id: string, patch: Partial<KitType["move"]>) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  Object.assign(t.move, patch);
+  if (patch.smooth === false) delete t.move.smooth;
+  const steps = SPEED_STEPS as readonly number[];
+  if (t.move.pace && [t.move.vx, t.move.vy].some((v) => v && !steps.includes(Math.abs(v)))) delete t.move.pace;
+}
+
+/** Gravity along an axis ("down" pulls toward the bottom), or none. */
+export const GRAVITY_WAYS = ["none", "down", "up", "right", "left"] as const;
+export type GravityWay = (typeof GRAVITY_WAYS)[number];
+export function gravityWay(t: KitType): GravityWay {
+  const gr = t.gravity;
+  if (!gr) return "none";
+  const negative = typeof gr.amount === "number" && gr.amount < 0;
+  return gr.axis === "x" ? (negative ? "left" : "right") : negative ? "up" : "down";
+}
+export function setGravity(g: KitGame, id: string, way: GravityWay, strength?: number | "a" | "b", max?: number) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  if (way === "none") return void delete t.gravity;
+  const old = t.gravity?.amount;
+  const s = strength ?? (typeof old === "object" ? old.prop : Math.abs(old ?? 2) || 2);
+  const sign = way === "up" || way === "left" ? -1 : 1;
+  t.gravity = {
+    amount: typeof s === "number" ? sign * Math.max(1, Math.min(32, s)) : { prop: s },
+    max: Math.max(1, Math.min(112, max ?? t.gravity?.max ?? 48)),
+    axis: way === "left" || way === "right" ? "x" : "y",
+  };
+}
+
+const directionSets = (d: KitDisplay["directions"]) => (d === "lr" ? 2 : d === "4" ? 4 : 1);
+/** Frames ordered by direction set, then animation frame (as the runtime reads them). */
+const isAnimated = (t: KitType) => t.frames.length === 2 * directionSets(t.display?.directions);
+
+/** Changes how many direction sets a thing draws, keeping its drawings: new sets start as copies of the first. */
+export function setDirections(g: KitGame, id: string, directions: NonNullable<KitDisplay["directions"]>) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  const from = directionSets(t.display?.directions);
+  const to = directionSets(directions);
+  const anim = isAnimated(t) ? 2 : 1;
+  const frame = (set: number, k: number) => [...t.frames[Math.min(set, from - 1) * anim + k]!];
+  t.frames = Array.from({ length: to * anim }, (_, n) => frame(Math.floor(n / anim), n % anim));
+  t.display = { ...t.display, directions };
+  if (directions === "none") delete t.display.directions;
+  if (!Object.keys(t.display).length) delete t.display;
+}
+
+/** How fast a 2-frame animation changes (every 4, 8, 16 or 32 frames, or while moving). */
+export function setAnimateRate(g: KitGame, id: string, rate: NonNullable<KitDisplay["animate"]>) {
+  const t = g.types.find((x) => x.id === id);
+  if (t) t.display = { ...t.display, animate: rate };
+}
+
+/** Names (and starts) one of a thing's two variables, or removes it with null. */
+export function setVar(g: KitGame, id: string, which: "a" | "b", v: { name: string; start: number } | null) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  if (v) t.vars = { ...t.vars, [which]: { name: v.name.slice(0, 12), start: Math.max(0, Math.min(255, Math.round(v.start))) } };
+  else if (t.vars) {
+    delete t.vars[which];
+    if (!t.vars.a && !t.vars.b) delete t.vars;
+  }
+}
+
+/** The most of a kind at once (1-24), or null for the default. */
+export function setCap(g: KitGame, id: string, cap: number | null) {
+  const t = g.types.find((x) => x.id === id);
+  if (!t) return;
+  if (cap === null) delete t.cap;
+  else t.cap = Math.max(1, Math.min(MAX_OBJECTS, Math.round(cap)));
 }
 
 // ---- shooting and dropping, as rules ----
@@ -489,6 +594,15 @@ export function showCounter(g: KitGame, id: string, show: boolean) {
 export function nextLevel(g: KitGame): KitAction[] {
   if (!g.counters.some((c) => c.id === LEVEL) && g.counters.length < MAX_COUNTERS) g.counters.push({ id: LEVEL, label: "Level", start: 1 });
   return [act(g, { add: { what: { counter: LEVEL }, by: 1 } }), act(g, { restartRoom: true })];
+}
+
+/** Adds a message rules can send and listen for (message-1, message-2…) and returns it; when there's no room, the first one. */
+export function newMessage(g: KitGame): string {
+  if (g.messages.length >= MAX_MESSAGES) return g.messages[0]!;
+  let n = g.messages.length + 1;
+  while (g.messages.includes(`message-${n}`)) n++;
+  g.messages.push(`message-${n}`);
+  return `message-${n}`;
 }
 
 /** Moves a rule to another place in the list: rules run in order, top first. */

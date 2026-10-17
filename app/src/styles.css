@@ -535,6 +535,12 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .field-grid > label > span:first-child, .field-grid > .field > span:first-child, .color-row > span:first-child { font-weight: 700; }
 .field-grid > label.slider { grid-template-columns: 120px 1fr 22px; }
 .field-grid .muted.small { grid-column: 2; }
+.field-grid > label.inline { display: flex; }
+/* A note between fields lines up with the fields, without adding a column to the grid. */
+.field-grid > p.muted.small { grid-column: 1; margin: 0; padding-left: calc(120px + var(--s-3)); }
+.workspace-panel .field-grid > p.muted.small { padding-left: calc(130px + var(--s-3)); }
+.field-grid > label.inline { padding-left: calc(120px + var(--s-3)); }
+.workspace-panel .field-grid > label.inline { padding-left: calc(130px + var(--s-3)); }
 .workspace-panel .field-grid { font-size: var(--fs-md); }
 .workspace-panel .field-grid > label, .workspace-panel .field-grid > .field, .workspace-panel .color-row { grid-template-columns: 130px minmax(0, 340px); }
 .workspace-panel .field-grid > label.slider { grid-template-columns: 130px minmax(0, 300px) 32px; }
@@ -561,8 +567,8 @@ input.num { width: 64px; font-variant-numeric: tabular-nums; }
 .thing-editor { border: 0; margin: 0; padding: 0; }
 .thing-editor .field-grid { margin-top: 0; }
 .palette-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; font-size: var(--fs-md); }
-details.more { margin-top: var(--s-4); border-top: 1px solid var(--line); padding-top: var(--s-3); }
-details.more > summary, details.dev > summary { font-size: var(--fs-md); }
+details.more, details.parts { margin-top: var(--s-4); border-top: 1px solid var(--line); padding-top: var(--s-3); }
+details.more > summary, details.parts > summary, details.dev > summary { font-size: var(--fs-md); }
 details > summary::marker { color: var(--accent-text); }
 
 /* Sprite editor */
@@ -607,6 +613,8 @@ button.brush.active, .brush.active { background: var(--accent); color: var(--on-
 .rule-sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: var(--fs-body); line-height: 2; }
 .rule-sentence .kw { width: auto; font-size: var(--fs-body); color: var(--text); font-weight: 400; }
 .rule-action { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.value-field { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.rule-sentence button.link[aria-pressed="true"] { font-weight: 700; text-decoration: none; }
 /* "Fit" selects: words in the sentence, not boxes. */
 select.fit, input.fit {
   flex: none; max-width: 100%; background-color: transparent; background-image: none; border: 0; border-radius: 4px 4px 0 0;
