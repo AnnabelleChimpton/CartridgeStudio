@@ -8,23 +8,33 @@ import {
   dropsOf,
   makePlayer,
   moveRule,
+  moverOf,
+  newMessage,
   paintCell,
   placements,
   removeCounter,
   removeThing,
   resizeThing,
+  gravityWay,
+  setAnimateRate,
   setAnimated,
   setBehaviour,
+  setCap,
+  setDirections,
   setDrops,
+  setGravity,
+  setMove,
+  setMover,
   setShoots,
   setSpeed,
+  setVar,
   shootsOf,
   showCounter,
 } from "./edit.ts";
 import { validateKit } from "./generate.ts";
 import { presetOf } from "./parts.ts";
 import { KIT_PRESETS } from "./presets.ts";
-import { MAX_COUNTERS, type KitGame } from "./schema.ts";
+import { MAX_COUNTERS, type KitGame, type KitRule } from "./schema.ts";
 
 const preset = (id: string) => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
 
@@ -183,10 +193,10 @@ describe("rule sentences", () => {
     expect(lines).toContain("When Level is at least 4: win the game.");
     expect(lines).toContain("When the room starts, only if Level is at least 3: set Pace to 1.");
     expect(g.rules.every(editableRule)).toBe(true);
-    // A shape the menus don't offer shows as a sentence instead.
-    const fancy = { id: "r-x", when: { touch: ["cat", "ghost"] }, then: [{ id: "a-x", step: { who: { nearest: "ghost" }, dx: 8, dy: 0 } }] } as const;
+    // A shape the menus don't offer ("any") shows as a sentence instead.
+    const fancy = { id: "r-x", when: { touch: ["cat", "ghost"] }, any: true, then: [{ id: "a-x", step: { who: { nearest: "ghost" }, dx: 8, dy: 0 } }] } as const;
     expect(editableRule(fancy as never)).toBe(false);
-    expect(ruleSentence(fancy as never, g)).toBe("When Cat touches Dust ghost: step the nearest Dust ghost by (8, 0).");
+    expect(ruleSentence(fancy as never, g)).toBe("When any Cat touches Dust ghost: step the nearest Dust ghost by (8, 0).");
   });
 
   it("every preset's rules can be edited, or read as a sentence", async () => {
@@ -200,6 +210,143 @@ describe("rule sentences", () => {
         if (!editableRule(r)) expect(r.id, p.id).toMatch(/^r-p-(shoot|drop|march|fall)/);
       }
     }
+  });
+});
+
+describe("customising parts", () => {
+  const thing = (g: ReturnType<typeof preset>, id: string) => g.types.find((t) => t.id === id)!;
+
+  it("a joystick and steering replace each other, and only the joystick keeps the shooting", () => {
+    const g = preset("shooter");
+    expect(shootsOf(g, "ship")).toBe("shot");
+    setMover(g, "ship", "steer");
+    expect(moverOf(thing(g, "ship"))).toBe("steer");
+    expect(thing(g, "ship").control).toBeUndefined();
+    expect(thing(g, "ship").steer).toMatchObject({ speed: { step: 4 }, every: 1 });
+    expect(g.rules.some((r) => "button" in r.when)).toBe(false);
+    setMover(g, "ship", "joystick");
+    expect(thing(g, "ship").steer).toBeUndefined();
+    expect(thing(g, "ship").control).toEqual({ joystick: 1, axes: "4way", mode: "direct", speed: { step: 4 } });
+    setMover(g, "ship", "none");
+    expect(moverOf(thing(g, "ship"))).toBe("none");
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+  });
+
+  it("custom velocity and reactions make a thing move its own way, and still build", () => {
+    const g = preset("maze");
+    setMove(g, "bat", { vx: 20, vy: -12, wall: "turn", edge: "wrap", smooth: true });
+    const t = thing(g, "bat");
+    expect(t.move).toMatchObject({ vx: 20, vy: -12, wall: "turn", edge: "wrap", smooth: true });
+    expect(presetOf(t)).toBeNull();
+    setMove(g, "bat", { smooth: false });
+    expect(t.move.smooth).toBeUndefined();
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+  });
+
+  it("drops the pace when the speeds stop being speed steps", () => {
+    const g = preset("ghost-panic");
+    const paced = g.types.find((t) => t.move.pace && (t.move.vx || t.move.vy));
+    if (!paced) {
+      // Ghost Panic's pace is on steering; give a walker one to check.
+      const t = thing(g, "ghost");
+      t.move = { ...t.move, vx: 16, pace: { plus: "pace", max: 4 } };
+    }
+    const t = paced ?? thing(g, "ghost");
+    setMove(g, t.id, { vx: 32 });
+    expect(t.move.pace).toBeDefined();
+    setMove(g, t.id, { vx: 20 });
+    expect(t.move.pace).toBeUndefined();
+  });
+
+  it("gravity pulls any way, by a number or a variable", () => {
+    const g = preset("dodger");
+    const id = g.types.find((t) => !t.control)!.id;
+    setGravity(g, id, "down");
+    expect(thing(g, id).gravity).toEqual({ amount: 2, max: 48, axis: "y" });
+    setGravity(g, id, "left", 6, 30);
+    expect(thing(g, id).gravity).toEqual({ amount: -6, max: 30, axis: "x" });
+    expect(gravityWay(thing(g, id))).toBe("left");
+    setGravity(g, id, "up");
+    expect(thing(g, id).gravity).toEqual({ amount: -6, max: 30, axis: "y" });
+    setGravity(g, id, "up", "a");
+    expect(thing(g, id).gravity!.amount).toEqual({ prop: "a" });
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+    setGravity(g, id, "none");
+    expect(thing(g, id).gravity).toBeUndefined();
+  });
+
+  it("direction frames and animation keep a frame count the game accepts", () => {
+    const g = preset("maze");
+    const id = "cat";
+    const first = thing(g, id).frames[0]!;
+    setAnimated(g, id, true);
+    setDirections(g, id, "4");
+    expect(thing(g, id).frames).toHaveLength(8);
+    expect(thing(g, id).frames[6]).toEqual(first);
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+    setAnimated(g, id, false);
+    expect(thing(g, id).frames).toHaveLength(4);
+    setDirections(g, id, "lr");
+    expect(thing(g, id).frames).toHaveLength(2);
+    setAnimated(g, id, true);
+    expect(thing(g, id).frames).toHaveLength(4);
+    setAnimateRate(g, id, "moving");
+    expect(thing(g, id).display).toEqual({ directions: "lr", animate: "moving" });
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+    setDirections(g, id, "none");
+    expect(thing(g, id).frames).toHaveLength(2);
+    expect(thing(g, id).display).toEqual({ animate: "moving" });
+  });
+
+  it("names variables and sets the cap", () => {
+    const g = preset("maze");
+    setVar(g, "bat", "a", { name: "hit points here", start: 300 });
+    expect(thing(g, "bat").vars).toEqual({ a: { name: "hit points h", start: 255 } });
+    setVar(g, "bat", "a", null);
+    expect(thing(g, "bat").vars).toBeUndefined();
+    setCap(g, "bat", 40);
+    expect(thing(g, "bat").cap).toBe(24);
+    setCap(g, "bat", null);
+    expect(thing(g, "bat").cap).toBeUndefined();
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+  });
+});
+
+describe("rules with targets, values, events and messages", () => {
+  it("can be edited in the rules editor, and build", async () => {
+    const { editableRule } = await import("./KitRulesPanel.tsx");
+    const g = preset("ghost-panic");
+    const ping = newMessage(g);
+    expect(ping).toBe("message-1");
+    expect(newMessage(g)).toBe("message-2");
+    const rules = [
+      { id: "r-t1", when: { touch: ["cat", "ghost"] }, fires: "once", then: [{ id: "a-t1", step: { who: { nearest: "ghost" }, dx: { joy: 1, axis: "x", times: 4 }, dy: 0 } }] },
+      { id: "r-t2", when: { created: "ghost" }, then: [{ id: "a-t2", set: { what: { prop: "vx", of: "it" }, to: { random: 32, plus: -16 } } }] },
+      { id: "r-t3", when: { destroyed: "scared" }, then: [{ id: "a-t3", send: ping }] },
+      { id: "r-t4", when: { message: ping }, then: [{ id: "a-t4", destroy: { every: "ghost", where: { a: { prop: "x", of: "target" }, op: "lt", b: 80 } } }] },
+      {
+        id: "r-t5",
+        when: { test: { a: { count: "ghost" }, op: "gte", b: 3 } },
+        if: [{ a: { facing: "x", of: "it" }, op: "eq", b: 1 }],
+        then: [{ id: "a-t5", toStart: { random: "ghost" } }],
+      },
+      { id: "r-t6", when: { every: 4, frames: true }, then: [{ id: "a-t6", create: { type: "ghost", at: { x: { random: 120 }, y: 40 }, vx: { random: 16, neg: true } } }] },
+    ] as const;
+    for (const r of rules) expect(editableRule(r as never), r.id).toBe(true);
+    g.rules.push(...(structuredClone(rules) as unknown as KitRule[]));
+    // r-t5 reads "it", which a test doesn't have; the rest is valid.
+    const errors = validateKit(g, SOUND_LIBRARY);
+    expect(errors.ok).toBe(false);
+    if (!errors.ok) expect(errors.errors).toEqual([`Rule ${g.rules.length - 1} reads a thing, but there isn't one here.`]);
+    g.rules.find((r) => r.id === "r-t5")!.if = [{ a: { count: "scared" }, op: "eq", b: 0 }];
+    expect(validateKit(g, SOUND_LIBRARY).ok).toBe(true);
+  });
+
+  it("a full message list gives back the first message", () => {
+    const g = preset("maze");
+    for (let n = 0; n < 8; n++) newMessage(g);
+    expect(g.messages).toHaveLength(8);
+    expect(newMessage(g)).toBe("message-1");
   });
 });
 

@@ -1,7 +1,7 @@
 // Things: the kinds of thing in a kit game. Each has a sprite, a way of
 // moving (a preset of movement parts), a speed and, for the player, what it
-// shoots; anything can drop something. Parts that aren't a preset show as
-// "Moves its own way", read-only until the parts editor comes.
+// shoots; anything can drop something. "Customise how it moves" opens the
+// parts themselves; parts that aren't a preset show as "Moves its own way".
 
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
 import { SOUND_LIBRARY } from "../project/templates.ts";
@@ -12,28 +12,40 @@ import { SpritePreview } from "../ui/SpritePreview.tsx";
 import {
   BEHAVIOURS,
   BEHAVIOUR_LABELS,
+  GRAVITY_WAYS,
   SPEED_LABELS,
   addThing,
   dropsOf,
+  gravityWay,
   isPlayer,
   launchedBy,
   makePlayer,
+  moverOf,
   movementLabel,
   placements,
   removeThing,
   resizeThing,
+  setAnimateRate,
   setAnimated,
   setBehaviour,
+  setCap,
+  setDirections,
   setDrops,
+  setGravity,
+  setMove,
+  setMover,
   setShoots,
   setSpeed,
+  setVar,
   shootsOf,
   type Behaviour,
+  type GravityWay,
+  type Mover,
 } from "./edit.ts";
 import { thingContrast } from "./contrast.ts";
 import { ContrastNotes } from "./ContrastNotes.tsx";
 import { presetOf } from "./parts.ts";
-import { MAX_TYPES, type KitGame, type KitType } from "./schema.ts";
+import { AXES, EDGE_REACTIONS, MAX_OBJECTS, MAX_TYPES, WALL_REACTIONS, type KitDisplay, type KitGame, type KitType } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const WIDTHS = [4, 8, 12, 16];
@@ -174,6 +186,7 @@ function ThingEditor({
   const launched = launchedBy(game, thing.id);
   const launcher = launched && game.types.find((t) => t.id === launched.by);
   const preset = presetOf(thing);
+  const [customising, setCustomising] = useState(!preset);
   const shoots = shootsOf(game, thing.id);
   const drops = dropsOf(game, thing.id);
   const change = (recipe: (t: KitType) => void, key?: string) =>
@@ -291,13 +304,17 @@ function ThingEditor({
         </label>
         {!preset && (
           <p className="muted small">
-            {thing.label} moves by its own parts (from a file or another tool), and it still works in the game. Changing them here is coming soon; picking a way to
-            move above replaces them.
+            {thing.label} moves by its own parts: change them under “Customise how it moves” below. Picking a way to move above replaces them.
           </p>
         )}
         {shootsField}
         {isPlayer(thing) && sizeField}
       </div>
+
+      <details className="parts" open={customising} onToggle={(e) => setCustomising(e.currentTarget.open)}>
+        <summary>Customise how it moves</summary>
+        {customising && <PartsEditor thing={thing} />}
+      </details>
 
       <PixelEditor
         label={thing.label}
@@ -429,6 +446,289 @@ function ThingEditor({
           )}
         </div>
       </details>
+    </div>
+  );
+}
+
+const MOVERS: { mover: Mover; label: string }[] = [
+  { mover: "none", label: "Nothing (its own speed)" },
+  { mover: "joystick", label: "The joystick" },
+  { mover: "steer", label: "Steering by itself" },
+];
+const AXIS_LABELS: Record<(typeof AXES)[number], string> = { lr: "Left and right", ud: "Up and down", "4way": "4 directions", "8way": "8 directions" };
+const GRAVITY_LABELS: Record<GravityWay, string> = { none: "None", down: "Pulls down", up: "Pulls up", right: "Pulls right", left: "Pulls left" };
+const GRAVITY_STRENGTHS = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32];
+const WALL_LABELS: Record<(typeof WALL_REACTIONS)[number], string> = {
+  stop: "Stops",
+  slide: "Slides along it",
+  bounce: "Bounces off",
+  turn: "Turns a corner",
+  destroy: "Is removed",
+  through: "Goes through walls",
+};
+const EDGE_LABELS: Record<(typeof EDGE_REACTIONS)[number], string> = {
+  stop: "Stops",
+  bounce: "Bounces off",
+  wrap: "Comes back on the other side",
+  turn: "Turns a corner",
+  destroy: "Is removed",
+  pass: "Goes off the screen",
+};
+const DIRECTION_LABELS: Record<NonNullable<KitDisplay["directions"]>, string> = { none: "One look", lr: "Looks left and right", "4": "Looks 4 ways" };
+const ANIMATE_LABELS: [NonNullable<KitDisplay["animate"]>, string][] = [
+  [4, "Very fast"],
+  [8, "Fast"],
+  [16, "Medium"],
+  [32, "Slow"],
+  ["moving", "Only while moving"],
+];
+const STEER_EVERY: [1 | 2 | 4, string][] = [
+  [1, "Every frame"],
+  [2, "Every 2nd frame"],
+  [4, "Every 4th frame"],
+];
+const clampInt = (v: string, min: number, max: number) => Math.max(min, Math.min(max, Math.round(Number(v) || 0)));
+
+/** The movement parts themselves: what drives it, gravity, velocity, reactions, drawing by direction, variables. */
+function PartsEditor({ thing }: { thing: KitType }) {
+  const game = useKitStore((s) => s.project);
+  const edit = useKitStore((s) => s.edit);
+  const id = thing.id;
+  const mover = moverOf(thing);
+  const gravity = gravityWay(thing);
+  const sets = thing.display?.directions === "lr" ? 2 : thing.display?.directions === "4" ? 4 : 1;
+  const animated = thing.frames.length === 2 * sets;
+  const varLabel = (p: "a" | "b") => thing.vars?.[p]?.name || `its ${p}`;
+  const change = (recipe: (t: KitType) => void, key?: string) =>
+    edit((d) => {
+      const t = d.types.find((x) => x.id === id);
+      if (t) recipe(t);
+    }, key);
+  const speedSelect = (label: string, step: number, set: (step: number) => void) => (
+    <label>
+      <span>{label}</span>
+      <select value={step} onChange={(e) => set(Number(e.target.value))}>
+        {[1, 2, 3, 4, 5, 6].map((s) => (
+          <option key={s} value={s}>
+            {SPEED_LABELS[s]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  return (
+    <div className="field-grid parts-editor">
+      <label>
+        <span>Moved by</span>
+        <select value={mover} onChange={(e) => edit((d) => setMover(d, id, e.target.value as Mover))}>
+          {MOVERS.map((m) => (
+            <option key={m.mover} value={m.mover}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {thing.control && (
+        <>
+          <label>
+            <span>Joystick moves it</span>
+            <select value={thing.control.axes} onChange={(e) => change((t) => void (t.control!.axes = e.target.value as (typeof AXES)[number]))}>
+              {AXES.map((a) => (
+                <option key={a} value={a}>
+                  {AXIS_LABELS[a]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {speedSelect("Joystick speed", thing.control.speed.step, (s) => change((t) => void (t.control!.speed.step = s)))}
+          <label className="inline small">
+            <input type="checkbox" checked={thing.control.mode === "keep"} onChange={(e) => change((t) => void (t.control!.mode = e.target.checked ? "keep" : "direct"))} />
+            Keeps going the last way pushed
+          </label>
+        </>
+      )}
+      {thing.steer && (
+        <>
+          <div className="field" role="group" aria-label="Steering">
+            <span>Steers</span>
+            <span className="inline">
+              <select aria-label="Toward or away" value={thing.steer.away ? "away" : "toward"} onChange={(e) => change((t) => (e.target.value === "away" ? (t.steer!.away = true) : delete t.steer!.away))}>
+                <option value="toward">Toward the nearest</option>
+                <option value="away">Away from the nearest</option>
+              </select>
+              <select aria-label="Steers toward" value={thing.steer.toward} onChange={(e) => change((t) => void (t.steer!.toward = e.target.value))}>
+                {game.types.filter((t) => t.id !== id || t.id === thing.steer!.toward).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          {speedSelect("Steering speed", thing.steer.speed.step, (s) => change((t) => void (t.steer!.speed.step = s)))}
+          <label>
+            <span>Changes course</span>
+            <select value={thing.steer.every} onChange={(e) => change((t) => void (t.steer!.every = Number(e.target.value) as 1 | 2 | 4))}>
+              {STEER_EVERY.map(([n, l]) => (
+                <option key={n} value={n}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
+      <label>
+        <span>Speed across</span>
+        <input
+          type="number"
+          min={-112}
+          max={112}
+          value={thing.move.vx}
+          onChange={(e) => edit((d) => setMove(d, id, { vx: clampInt(e.target.value, -112, 112) }), `vx:${id}`)}
+        />
+      </label>
+      <label>
+        <span>Speed down</span>
+        <input
+          type="number"
+          min={-112}
+          max={112}
+          value={thing.move.vy}
+          onChange={(e) => edit((d) => setMove(d, id, { vy: clampInt(e.target.value, -112, 112) }), `vy:${id}`)}
+        />
+      </label>
+      <p className="muted small">Starting speeds in sixteenths of a pixel a frame: 16 is one pixel, and minus goes left or up.</p>
+      <label>
+        <span>Gravity</span>
+        <select value={gravity} onChange={(e) => edit((d) => setGravity(d, id, e.target.value as GravityWay))}>
+          {GRAVITY_WAYS.map((w) => (
+            <option key={w} value={w}>
+              {GRAVITY_LABELS[w]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {thing.gravity && (
+        <>
+          <label>
+            <span>Gravity strength</span>
+            <select
+              value={typeof thing.gravity.amount === "number" ? Math.abs(thing.gravity.amount) : thing.gravity.amount.prop}
+              onChange={(e) => edit((d) => setGravity(d, id, gravity, e.target.value === "a" || e.target.value === "b" ? e.target.value : Number(e.target.value)))}
+            >
+              {[...new Set([...GRAVITY_STRENGTHS, typeof thing.gravity.amount === "number" ? Math.abs(thing.gravity.amount) : 1])].sort((a, b) => a - b).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+              <option value="a">{varLabel("a")}</option>
+              <option value="b">{varLabel("b")}</option>
+            </select>
+          </label>
+          <label>
+            <span>Fastest fall</span>
+            <input
+              type="number"
+              min={1}
+              max={112}
+              value={thing.gravity.max}
+              onChange={(e) => edit((d) => setGravity(d, id, gravity, undefined, clampInt(e.target.value, 1, 112)), `gmax:${id}`)}
+            />
+          </label>
+        </>
+      )}
+      <label>
+        <span>At a wall</span>
+        <select value={thing.move.wall} onChange={(e) => edit((d) => setMove(d, id, { wall: e.target.value as KitType["move"]["wall"] }))}>
+          {WALL_REACTIONS.map((r) => (
+            <option key={r} value={r}>
+              {WALL_LABELS[r]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>At the screen edge</span>
+        <select value={thing.move.edge} onChange={(e) => edit((d) => setMove(d, id, { edge: e.target.value as KitType["move"]["edge"] }))}>
+          {EDGE_REACTIONS.map((r) => (
+            <option key={r} value={r}>
+              {EDGE_LABELS[r]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {!thing.control && (
+        <label className="inline small">
+          <input type="checkbox" checked={!!thing.move.smooth} onChange={(e) => edit((d) => setMove(d, id, { smooth: e.target.checked }))} />
+          Smooth: move every frame (costs more of the console's time)
+        </label>
+      )}
+      <label>
+        <span>Drawings</span>
+        <select value={thing.display?.directions ?? "none"} onChange={(e) => edit((d) => setDirections(d, id, e.target.value as NonNullable<KitDisplay["directions"]>))}>
+          {(Object.keys(DIRECTION_LABELS) as NonNullable<KitDisplay["directions"]>[]).map((k) => (
+            <option key={k} value={k}>
+              {DIRECTION_LABELS[k]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {animated && (
+        <label>
+          <span>Animation</span>
+          <select
+            value={thing.display?.animate ?? 16}
+            onChange={(e) => edit((d) => setAnimateRate(d, id, (e.target.value === "moving" ? "moving" : Number(e.target.value)) as NonNullable<KitDisplay["animate"]>))}
+          >
+            {ANIMATE_LABELS.map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {(["a", "b"] as const).map((p) => {
+        const v = thing.vars?.[p];
+        return (
+          <div key={p} className="field" role="group" aria-label={`Variable ${p}`}>
+            <span>Variable {p}</span>
+            <span className="inline">
+              <input
+                aria-label={`Variable ${p} name`}
+                placeholder="No name"
+                maxLength={12}
+                value={v?.name ?? ""}
+                onChange={(e) => edit((d) => setVar(d, id, p, e.target.value ? { name: e.target.value, start: v?.start ?? 0 } : null), `var:${id}:${p}`)}
+              />
+              <span className="small">starts at</span>
+              <input
+                type="number"
+                className="num"
+                aria-label={`Variable ${p} start`}
+                min={0}
+                max={255}
+                disabled={!v}
+                value={v?.start ?? 0}
+                onChange={(e) => edit((d) => setVar(d, id, p, { name: v?.name ?? p, start: clampInt(e.target.value, 0, 255) }), `var:${id}:${p}`)}
+              />
+            </span>
+          </div>
+        );
+      })}
+      <label>
+        <span>Most at once</span>
+        <select value={thing.cap ?? ""} onChange={(e) => edit((d) => setCap(d, id, e.target.value ? Number(e.target.value) : null))}>
+          <option value="">As many as it needs</option>
+          {Array.from({ length: MAX_OBJECTS }, (_, n) => n + 1).map((n) => (
+            <option key={n} value={n}>
+              {n}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }
