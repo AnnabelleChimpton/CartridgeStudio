@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function start(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   await page.getByRole("tab", { name: "Game" }).click();
 }
 const madeBy = (page: Page) => page.evaluate(() => (window.__cs!.kitStore!.getState().project as { madeBy?: string }).madeBy);
@@ -27,7 +27,7 @@ test("Made by starts empty, counts toward one title-screen line, and is kept wit
   await expect(page.getByText("13 of 29 characters")).toBeVisible();
   await page.waitForTimeout(1500);
   await page.reload();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   expect(await madeBy(page)).toBe("Sam and Robin");
 
   // Clearing it takes it out of the game again.

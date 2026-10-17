@@ -60,7 +60,12 @@ test("a clip records play and saves an animated GIF", async ({ page }) => {
   expect(gif.bytes.readUInt16LE(6)).toBe(640);
 });
 
-const dialogAxe = (page: Page) =>
+// Colours are checked once they settle: a button mid-transition is between its two states.
+const dialogAxe = async (page: Page) => {
+  await page.waitForFunction(() => !document.getAnimations().some((a) => a instanceof CSSTransition));
+  return axeDialog(page);
+};
+const axeDialog = (page: Page) =>
   new AxeBuilder({ page })
     .include("dialog")
     .analyze()

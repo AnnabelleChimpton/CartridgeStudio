@@ -666,7 +666,9 @@ table.compat caption { text-align: left; font-weight: 700; color: var(--text); p
 table.compat th, table.compat td { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 table.compat thead th { color: var(--muted); font-weight: 700; }
 .boot-ask { margin-top: var(--s-2); }
-.boot-ask button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
+/* Pressed stays pressed under the pointer: the hover background would drop the text below 4.5:1. */
+.boot-ask button[aria-pressed="true"],
+.boot-ask button.secondary[aria-pressed="true"]:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
 .first-boot { margin-top: var(--s-2); padding-left: var(--s-3); border-left: 4px solid var(--ok); }
 .boot-report-block { margin-top: var(--s-2); }
 
