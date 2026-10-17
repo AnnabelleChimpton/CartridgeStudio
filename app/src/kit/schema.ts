@@ -19,6 +19,8 @@ export const MAX_ROOMS = 8;
 /** Named numbers (lives, keys, combo…). Score and seconds are built in besides these. */
 export const MAX_COUNTERS = 8;
 export const MAX_MESSAGES = 8;
+/** "Made by" fits the title screen's credit line: "BY " plus this many characters is one 32-character line. */
+export const MADE_BY_MAX = 29;
 /** Characters the kit font can draw (also used by alphachars). `#`, `~` and `*` are the wall, hazard and goal tiles. */
 export const FONT_CHARS = "0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ.!?-:#~*";
 /** Room tiles besides empty. Walls block movement; hazards and goals are only noticed by rules. */
@@ -381,6 +383,8 @@ export const KitGameSchema = z
   .object({
     kit: z.literal(KIT_VERSION),
     title: z.string().max(60),
+    /** Who made it, as typed ("Sam and Robin"). Shown on the title screen, box, label, manual and player when set; never filled in from an account. */
+    madeBy: z.string().max(MADE_BY_MAX).optional(),
     palettes: z.array(PaletteSchema).min(1).max(8),
     background: ColorSchema,
     wallPalette: Id,

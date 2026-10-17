@@ -990,6 +990,7 @@
   "win": "All the yarn!",
   "lose": "Game over"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": {

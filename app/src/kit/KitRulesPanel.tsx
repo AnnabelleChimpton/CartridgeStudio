@@ -3,7 +3,7 @@
 // offered (e.g. "the second thing" only exists when two things touch), and
 // the rarer parts ("only if", "for N seconds") appear when asked for.
 //
-// Kit model v2 rules can say more than these menus offer (targets like "the
+// Kit rules can say more than these menus offer (targets like "the
 // nearest X", values, messages…). The editor recognises the shapes it can
 // edit; any other rule shows as its sentence, still in the game and movable,
 // with a note that editing it here is coming. Lists are keyed on the rules'

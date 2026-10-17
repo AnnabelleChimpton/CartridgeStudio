@@ -6,7 +6,7 @@
 
 import { readAssist } from "./assist.ts";
 import { BEHAVIOURS, PLAYER_BEHAVIOURS, presetParts, presetRule, type Behaviour } from "./parts.ts";
-import { KIT_VERSION, KitGameSchema, LEVEL, LIVES, SCORE, type KitAction, type KitCompare, type KitCounter, type KitGame, type KitHud, type KitRule, type KitType } from "./schema.ts";
+import { KIT_VERSION, KitGameSchema, LEVEL, MADE_BY_MAX, LIVES, SCORE, type KitAction, type KitCompare, type KitCounter, type KitGame, type KitHud, type KitRule, type KitType } from "./schema.ts";
 import { KitGameV1Schema, type KitActionV1, type KitConditionV1, type KitGameV1, type KitRuleV1, type KitTriggerV1, type KitTypeV1 } from "./schema-v1.ts";
 
 type Migration = (game: Record<string, unknown>) => Record<string, unknown>;
@@ -237,6 +237,14 @@ export function loadKit(input: unknown): KitLoad {
   if ("assist" in game && !readAssist(game)) {
     game = { ...game };
     delete game.assist;
+  }
+  // "Made by" is optional and newer than version 2's first saves: a blank one is dropped and an overlong
+  // one (edited by hand) is cut to the title screen's line rather than damaging the game.
+  if ("madeBy" in game) {
+    const made = typeof game.madeBy === "string" ? game.madeBy.trim().slice(0, MADE_BY_MAX) : "";
+    game = { ...game };
+    if (made) game.madeBy = made;
+    else delete game.madeBy;
   }
   const parsed = KitGameSchema.safeParse(game);
   if (!parsed.success) {

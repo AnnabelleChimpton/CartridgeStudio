@@ -1,6 +1,6 @@
 // Kit game format version 1, frozen (kit runtime 0.2/0.3). Only migrations.ts
 // and tests that build old-style games read it; never change it: it stands for
-// the games people saved before kit model v2.
+// the games people saved before format 2.
 
 import { z } from "zod";
 import { ColorSchema, PaletteSchema } from "../project/schema.ts";
@@ -41,7 +41,7 @@ export const LEVEL = "level";
 const Id = z.string().regex(/^[a-z][a-z0-9-]{0,23}$/, "Ids are short lowercase names");
 
 /**
- * Model v2 spike (docs/kit-model-v2.md): movement built from parts. A type
+ * Movement built from parts (format 1, late): a type
  * with `move` ignores its behaviour's movement and moves by its own velocity
  * properties instead, reacting to walls and screen edges.
  */

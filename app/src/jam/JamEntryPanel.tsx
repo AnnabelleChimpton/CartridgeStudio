@@ -1,7 +1,7 @@
 // The creator's side of a jam: a few words about the game, a licence, then one
 // button that packs everything the organizer needs into a ZIP.
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ENTRY_LIMITS, LICENCES } from "../files/package.ts";
 import { useRecentClip } from "../files/recent-clip.ts";
 import type { Preview } from "../ui/usePreview.ts";
@@ -15,6 +15,8 @@ import "./jam.css";
 interface Props {
   preview: Preview;
   gameTitle: string;
+  /** The game's "Made by", which fills in Credits while Credits is empty. */
+  madeBy?: string;
   /** The .cartridge game file, with its thumbnail; games without one leave it out. */
   cartridgeFile?: () => Promise<Uint8Array>;
   /** tests.json, when the game has creator tests. */
@@ -28,7 +30,7 @@ interface Props {
 
 type TextKey = "title" | "credits" | "description" | "controls";
 
-export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts, runtime, toolchain }: Props) {
+export function JamEntryPanel({ preview, gameTitle, madeBy, cartridgeFile, tests, facts, runtime, toolchain }: Props) {
   const brief = useJamStore((s) => s.brief);
   const words = useJamStore((s) => s.words);
   const clip = useRecentClip((s) => s.gif);
@@ -38,6 +40,14 @@ export function JamEntryPanel({ preview, gameTitle, cartridgeFile, tests, facts,
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const id = useId();
+  // Credits starts as the game's "Made by" when it's empty as the entry opens; clearing it afterwards sticks.
+  const made = madeBy?.trim() ?? "";
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!brief || prefilled.current) return;
+    prefilled.current = true;
+    if (made && !useJamStore.getState().words.credits) setWords({ credits: made });
+  }, [brief, made, setWords]);
   if (!brief) return null;
   const ready = !!preview.lastGood;
   const title = entryTitle(words, gameTitle);

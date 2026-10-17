@@ -11,7 +11,8 @@ import { SOUND_LIBRARY, TEMPLATES } from "../project/templates.ts";
 import { APP_VERSION } from "../version.ts";
 import { KIT_RUNTIME_VERSION, validateKit } from "./generate.ts";
 import { NEWER_KIT, loadKit } from "./migrations.ts";
-import { KIT_VERSION } from "./schema.ts";
+import { KIT_PRESETS } from "./presets.ts";
+import { KIT_VERSION, MADE_BY_MAX } from "./schema.ts";
 import { buildKitRom } from "./tests.ts";
 
 const fixtures = import.meta.glob<unknown>("./fixtures/v*/*.json", { import: "default", eager: true });
@@ -46,6 +47,23 @@ describe("loadKit", () => {
     expect(loadKit(unversioned).ok).toBe(false);
     expect(loadKit("hello").ok).toBe(false);
     expect(loadKit([]).ok).toBe(false);
+  });
+
+  const current = () => structuredClone(KIT_PRESETS.find((p) => p.id === "ghost-panic")!.game) as Record<string, unknown>;
+
+  it("keeps a \"Made by\", drops a blank one and cuts an overlong one to the title-screen line", () => {
+    const keep = loadKit({ ...current(), madeBy: "Sam and Robin" });
+    expect(keep.ok && keep.game.madeBy).toBe("Sam and Robin");
+    const blank = loadKit({ ...current(), madeBy: "   " });
+    expect(blank.ok && "madeBy" in blank.game).toBe(false);
+    const long = loadKit({ ...current(), madeBy: "x".repeat(80) });
+    expect(long.ok && long.game.madeBy).toBe("x".repeat(MADE_BY_MAX));
+    const wrong = loadKit({ ...current(), madeBy: 7 });
+    expect(wrong.ok && "madeBy" in wrong.game).toBe(false);
+    // Older games have none, and gain none: it's never filled in for the creator.
+    const old = loadKit(maze());
+    expect(old.ok).toBe(true);
+    expect(old.ok && "madeBy" in old.game).toBe(false);
   });
 
   it("says when a current game is damaged", () => {

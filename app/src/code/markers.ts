@@ -1,8 +1,8 @@
 // Finds the lines the kit generator wrote for one rule or one thing, from the
 // markers it leaves in game.bas: `rem rule N: …` and the ruleN… labels for
 // a rule, `rem <label>` (and `rem <label> frame 2`) for a thing's graphics and
-// draw loop, `rem ---- <label>: …` for its movement, `rem palette <id>` for
-// its colors. Reading the output keeps this independent of the generator's
+// draw loop, `rem ---- <label>: …` for its movement, `rem P<n>: <labels>`
+// for its colors. Reading the output keeps this independent of the generator's
 // internals. (generateKit also returns exact source spans from its IR,
 // `KitResult.spans`, keyed on rule and thing ids, for a future switch.)
 
@@ -54,7 +54,9 @@ function owns(marker: string, ref: CodeRef): boolean {
   if (!marker.startsWith("rem:")) return false;
   const text = marker.slice(4);
   if (text === ref.thing || new RegExp(`^${escape(ref.thing)} frame \\d+$`).test(text) || text.startsWith(`---- ${ref.thing}: `)) return true;
-  return ref.palette !== undefined && text === `palette ${ref.palette}`;
+  // `rem P2: Dust ghost, Fast ghost`: the palette line names the kinds that use it.
+  const pal = /^P\d+: (.*)$/.exec(text);
+  return ref.palette !== undefined && !!pal && pal[1]!.split(", ").includes(ref.thing);
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -260,7 +260,7 @@ function runMame(mame: Mame, dir: string, rom: string, script: string, timeoutMs
     "-rompath", mame.rompath,
     "-autoboot_script", script,
     "-autoboot_delay", "0",
-    // Headless, unthrottled, and nothing read from or saved to the user's MAME setup.
+    // Headless, unthrottled, and nothing read from or saved to a local MAME setup.
     "-video", "none",
     "-sound", "none",
     "-nothrottle",

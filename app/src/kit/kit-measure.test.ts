@@ -188,7 +188,7 @@ const VARIANTS: Variant[] = [
   },
 ];
 
-describe.skipIf(!process.env.KIT_MEASURE)("kit model v2 cost measurements", () => {
+describe.skipIf(!process.env.KIT_MEASURE)("kit cost measurements", () => {
   it("prices each part", { timeout: 3_600_000 }, async () => {
     const hero = base(0, 0);
     const n0 = await headroom(hero);

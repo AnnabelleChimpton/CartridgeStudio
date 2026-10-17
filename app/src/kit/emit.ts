@@ -1,4 +1,4 @@
-// Kit model v2, step 3 of 3: emit 7800basic from the IR (ir.ts). Compiled,
+// Kit code generation, step 3 of 3: emit 7800basic from the IR (ir.ts). Compiled,
 // not interpreted: each kind of thing gets its own update and draw loop over
 // its known slot range, with its size, speeds and reactions written in as
 // literals, and a part it doesn't have is no code at all. Rules compile to
@@ -1023,6 +1023,8 @@ export function emitKit(ir: IR, opts: EmitOptions): Emitted {
     if (!t) return "";
     return ` plotchars '${t}' ${ir.textPalette} ${Math.floor((160 - t.length * 4) / 2)} ${y}`;
   };
+  /** The credit under the title, one line in the kit font: "BY SAM AND ROBIN". */
+  const madeByLine = (by: string) => (kitText(by) ? textLine(kitText(`BY ${by}`).replace(/ +/g, " "), 10) : "");
   const HUD_X = { left: 4, middle: 76, "middle-right": 120, right: 152 };
   const hud = ir.hud.map((h, i) => {
     if (h.name === "score") return ` plotvalue font ${ir.textPalette} score0 6 ${HUD_X[h.at] === 4 ? 4 : HUD_X[h.at] - 8} 0`;
@@ -1040,6 +1042,9 @@ export function emitKit(ir: IR, opts: EmitOptions): Emitted {
   const indentBody = (s: string) => indent(s).join("\n");
   const graphics: Emitted["graphics"] = ir.types.flatMap((t) => t.frames.map((rows, n) => ({ name: n === 0 ? t.sprite : `${t.sprite}_${n + 1}`, rows, label: `${t.label}${n ? ` frame ${n + 1}` : ""}` })));
 
+  /** Who draws with palette i, for its rem line: the labels of the kinds that use it, "walls", "text". */
+  const paletteUsers = (i: number) =>
+    [...ir.types.filter((t) => t.palette === i).map((t) => t.label), ...(ir.wallPalette === i ? ["walls"] : []), ...(ir.textPalette === i ? ["text"] : [])].join(", ");
   const counterInit = ir.counters.map((c) => ` ${c.name} = ${c.start}`);
   const autos = [
     ...ir.hud.map((_, i) => `hud${i}`),
@@ -1058,7 +1063,7 @@ export function emitKit(ir: IR, opts: EmitOptions): Emitted {
     autodims: autos.map((a) => ` autodim byte ${a}`).join("\n"),
     memoryMap: memory.map((m) => ` rem ${m.at} ${m.name.padEnd(9)} ${String(m.bytes).padStart(3)} bytes: ${m.what}`).join("\n"),
     graphics: graphics.map((g) => ` rem ${g.label}\n incgraphic ${g.name}.png 160A 0 1 2 3`).join("\n"),
-    palettes: ir.palettes.map((p, i) => ` rem palette ${p.id}\n P${i}C1 = ${p.colors[0]} : P${i}C2 = ${p.colors[1]} : P${i}C3 = ${p.colors[2]}`).join("\n"),
+    palettes: ir.palettes.map((p, i) => `${remLines(`P${i}: ${paletteUsers(i) || `nothing uses it (${p.id})`}`).join("\n")}\n P${i}C1 = ${p.colors[0]} : P${i}C2 = ${p.colors[1]} : P${i}C3 = ${p.colors[2]}`).join("\n"),
     background: ir.background,
     counterInit: counterInit.join("\n") || " rem no counters",
     titleScreen: ir.flow.title,
@@ -1080,7 +1085,7 @@ export function emitKit(ir: IR, opts: EmitOptions): Emitted {
     roomStartRules: [...roomStartCalls, ...paceAfterStart].join("\n") || " rem no room start rules",
     hud: hud.join("\n"),
     draws: draws.join("\n"),
-    titleText: [textLine(ir.text.title, 9), textLine("PRESS FIRE", 12)].filter(Boolean).join("\n") || " rem no title",
+    titleText: [textLine(ir.text.title, 9), madeByLine(ir.madeBy), textLine("PRESS FIRE", 12)].filter(Boolean).join("\n") || " rem no title",
     winText: [textLine(ir.text.win, 11), ...endValues].filter(Boolean).join("\n") || " rem no win text",
     loseText: [textLine(ir.text.lose, 11), ...endValues].filter(Boolean).join("\n") || " rem no lose text",
     demoText: textLine("DEMO", 2),

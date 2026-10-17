@@ -2,7 +2,7 @@
 // shooting sound and the counters rules can keep. Lives is a counter too,
 // shown as a slider; the shooting sound is an action in the shooting rule.
 
-import { Fragment, useState } from "react";
+import { Fragment, useId, useState } from "react";
 import { ColorPicker } from "../ui/ColorPicker.tsx";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { addCounter, livesOf, removeCounter, setLives, setShootSound, shootSoundOf, shootsOf, showCounter, shown } from "./edit.ts";
@@ -10,7 +10,7 @@ import { EASIER_EXTRA_LIVES, easierOn, setEasier } from "./assist.ts";
 import { gameContrast, thingContrast } from "./contrast.ts";
 import { ContrastNotes } from "./ContrastNotes.tsx";
 import { kitText } from "./generate.ts";
-import { MAX_COUNTERS, type KitGame } from "./schema.ts";
+import { MADE_BY_MAX, MAX_COUNTERS, type KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 
 const TEXTS: { key: keyof KitGame["text"]; label: string }[] = [
@@ -33,6 +33,37 @@ function NameInput({ value, label, maxLength, onChange }: { value: string; label
       }}
       onBlur={() => setDraft(null)}
     />
+  );
+}
+
+/** "Made by": one title-screen line, typed by the creator (never taken from an account). */
+function MadeByField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const id = useId();
+  const shown = kitText(value).replace(/ +/g, " ");
+  return (
+    <div className="field">
+      <label htmlFor={`${id}-made-by`}>
+        <span>Made by</span>
+      </label>
+      <input
+        id={`${id}-made-by`}
+        value={value}
+        maxLength={MADE_BY_MAX}
+        placeholder="e.g. Sam and Robin"
+        autoComplete="off"
+        aria-describedby={`${id}-made-by-count ${id}-made-by-hint`}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <span className="muted small" id={`${id}-made-by-count`}>
+        {value.length} of {MADE_BY_MAX} characters
+      </span>
+      <p className="muted small" id={`${id}-made-by-hint`}>
+        Optional. It goes under the title on the TV as “BY …”, and on the box, labels, manual and player page: anything you share.
+      </p>
+      {value.trim() && shown !== value.trim().toUpperCase().replace(/ +/g, " ") && (
+        <span className="muted small">On the TV it shows as “BY {shown}”: capitals, numbers and . ! ? - : only.</span>
+      )}
+    </div>
   );
 }
 
@@ -119,6 +150,7 @@ export function KitSettingsPanel() {
             )}
           </Fragment>
         ))}
+        <MadeByField value={game.madeBy ?? ""} onChange={(v) => edit((d) => void (v.trim() ? (d.madeBy = v) : delete d.madeBy), "madeBy")} />
         {shooter && (
           <label>
             <span>Shooting sound</span>

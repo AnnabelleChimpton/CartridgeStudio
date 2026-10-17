@@ -8,7 +8,7 @@ Tests that run games in emulators other than the app's own js7800 core. SPEC.md 
 npm run test:mame
 ```
 
-This runs every `templates/<id>/tests/*.json` file in MAME and reports pass or fail for each one. The test format is the same one the js7800 runner uses (see `templates/README.md`, "Behaviour tests"). If MAME isn't installed, the suite is skipped with a message saying how to install it.
+This runs every `templates/<id>/tests/*.json` file, and every kit starter game's `templates/kit/games/*.tests.json`, in MAME and reports pass or fail for each one. The test format is the same one the js7800 runner uses (see `templates/README.md`, "Behaviour tests"). If MAME isn't installed, the suite is skipped with a message saying how to install it.
 
 ### Installing MAME
 

@@ -1277,6 +1277,7 @@
   "win": "You win!",
   "lose": "Game over"
  },
+ "madeBy": "",
  "flow": {
   "title": true,
   "attract": {

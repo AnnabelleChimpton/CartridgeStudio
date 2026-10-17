@@ -2,8 +2,8 @@
 // frame in the headless core. Each kind of thing has its own slots, in kind
 // order (kind 0 first): what's placed, then room for what rules create.
 //
-// The first groups write kit v1 games (as saved before model v2) and run them
-// through the v1 → v2 migration, so they check the migration keeps each v1
+// The first groups write kit format 1 games (as saved before format 2) and run
+// them through the 1 → 2 migration, so they check the migration keeps each v1
 // behaviour. Later groups write v2 games and cover the new vocabulary.
 
 import { beforeAll, describe, expect, it } from "vitest";
@@ -13,7 +13,7 @@ import { runRomOnHost, type Step, type WatchMap } from "../harness/behaviour.ts"
 import { nodeBuilder, nodeHost } from "../harness/node.ts";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import type { Behaviour, KitCounterV1 as KitCounter, KitGameV1 as KitGame, KitRuleV1 as KitRule, KitTypeV1 as KitType } from "./schema-v1.ts";
-import type { KitOptions } from "./generate.ts";
+import { validateKit, type KitOptions } from "./generate.ts";
 import { loadKit } from "./migrations.ts";
 import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
@@ -165,9 +165,9 @@ describe("kit runtime behaviours", () => {
   });
 });
 
-describe("kit runtime: batch 1 (state)", () => {
+describe("kit runtime: counters, tiles and state", () => {
   const counters = (...ids: string[]): KitCounter[] => ids.map((id) => ({ id, label: id, start: 0 }));
-  const CNT: WatchMap = { c0: { symbol: "cnt_keys" }, coins: { symbol: "cnt_coins" }, level: { symbol: "levelnum" } };
+  const CNT: WatchMap = { c0: { symbol: "c_keys" }, coins: { symbol: "c_coins" }, level: { symbol: "levelnum" } };
 
   it("counters and 'only if': a door opens only with a key", async () => {
     const rules: KitRule[] = [
@@ -255,7 +255,7 @@ describe("kit runtime: batch 1 (state)", () => {
   });
 });
 
-describe("kit runtime: fixes from the phase 2 audit", () => {
+describe("kit runtime: fixed bugs", () => {
   it("a tile rule doesn't stop later event rules from firing (no border wall)", async () => {
     // The hero sits in column 0, where the tile lookup's column is 0; that used to clear the
     // odd-frame gate the event rules share, so the timer rule never fired.
@@ -292,7 +292,7 @@ describe("kit runtime: fixes from the phase 2 audit", () => {
   });
 });
 
-// ---- kit model v2: the general vocabulary ----
+// ---- kit format 2: the general vocabulary ----
 
 type V2Type = import("./schema.ts").KitGameInput["types"][number];
 type V2Rule = import("./schema.ts").KitRule;
@@ -332,7 +332,7 @@ const walledRoom = (row: string, heroRow = "# P                #") => {
 };
 const VEL: WatchMap = { vx1: { symbol: "ovx", offset: 1 }, vy1: { symbol: "ovy", offset: 1 }, vx0: { symbol: "ovx", offset: 0 }, vy0: { symbol: "ovy", offset: 0 } };
 
-describe("kit model v2: movement parts", () => {
+describe("kit format 2: movement parts", () => {
   it("velocity bounces at a wall, and 8.8 fractions add up", async () => {
     // 2 pixels a frame (32 sixteenths) to the right; the wall at x = 152 stops an 8-wide thing at x = 144.
     const fast = v2(walledRoom("#       A          #"), [player(), thing("ball", { move: { vx: 32, wall: "bounce", edge: "bounce" } })]);
@@ -391,8 +391,8 @@ describe("kit model v2: movement parts", () => {
   });
 });
 
-describe("kit model v2: events", () => {
-  const CNT: WatchMap = { hits: { symbol: "cnt_hits" }, n: { symbol: "cnt_n" } };
+describe("kit format 2: events", () => {
+  const CNT: WatchMap = { hits: { symbol: "c_hits" }, n: { symbol: "c_n" } };
   const hits = [{ id: "lives", label: "Lives", start: 3 }, { id: "hits", label: "Hits", start: 0 }, { id: "n", label: "N", start: 0 }];
 
   it("a thing that's removed can leave something where it was (destroyed, created)", async () => {
@@ -463,8 +463,8 @@ describe("kit model v2: events", () => {
 
 const SCORE_ID = "score";
 
-describe("kit model v2: targets, values and actions", () => {
-  const CNT: WatchMap = { hits: { symbol: "cnt_hits" }, a1: { symbol: "oa", offset: 1 }, a2: { symbol: "oa", offset: 2 }, a3: { symbol: "oa", offset: 3 } };
+describe("kit format 2: targets, values and actions", () => {
+  const CNT: WatchMap = { hits: { symbol: "c_hits" }, a1: { symbol: "oa", offset: 1 }, a2: { symbol: "oa", offset: 2 }, a3: { symbol: "oa", offset: 3 } };
   const hits = [{ id: "lives", label: "Lives", start: 3 }, { id: "hits", label: "Hits", start: 0 }];
 
   it("every X whose …, the nearest X, a random X; per-thing variables", async () => {
@@ -508,11 +508,20 @@ describe("kit model v2: targets, values and actions", () => {
   });
 
   it("counters named like 7800basic's own variables still build", async () => {
-    // `a` is one of 7800basic's built-in variables; the runtime names counters cnt_<id>.
-    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ add: { what: { counter: "a" }, by: 1 } }] })], {
-      counters: [{ id: "a", label: "A", start: 0 }, { id: "switch", label: "Switch", start: 0 }],
+    // `a` is one of 7800basic's built-in variables, score0 its score, and no variable may start with
+    // "switch"; the runtime names counters c_<label>, numbered when two labels come out the same.
+    const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ add: { what: { counter: "a" }, by: 1 } }, { add: { what: { counter: "again" }, by: 2 } }] })], {
+      counters: [
+        { id: "a", label: "a", start: 0 },
+        { id: "points", label: "Score", start: 0 },
+        { id: "again", label: "A!", start: 0 },
+        { id: "switch", label: "Switch", start: 0 },
+        { id: "then", label: "then to next", start: 0 },
+      ],
     });
-    await runV2(g, [{ frames: 130 }, { expect: { a: 2 } }], { a: { symbol: "cnt_a" } });
+    const low = validateKit(g, SOUND_LIBRARY);
+    expect(low.ok && low.ir.counters.map((c) => c.name)).toEqual(["c_a", "c_score", "c_a2", "c_switch", "c_then_to_next"]);
+    await runV2(g, [{ frames: 130 }, { expect: { a: 2, again: 4 } }], { a: { symbol: "c_a" }, again: { symbol: "c_a2" } });
     // "score" is the built-in score, so a counter can't take the name.
     expect(await buildKitRom(v2(["P"], [player()], [], { counters: [{ id: "score", label: "Score", start: 0 }] }), SOUND_LIBRARY, builder)).toMatchObject({ ok: false });
   });
@@ -520,13 +529,13 @@ describe("kit model v2: targets, values and actions", () => {
   it("run code: a rule calls the game's own routine; hooks run each frame", async () => {
     const g = v2(["", "", "", "", "P"], [player()], [rule({ when: { every: 1 }, then: [{ run: "bonus" }] })], {
       counters: hits,
-      code: { frame: " cnt_hits = 7", routines: [{ label: "bonus", body: " score0 = score0 + 100" }] },
+      code: { frame: " c_hits = 7", routines: [{ label: "bonus", body: " score0 = score0 + 100" }] },
     });
     await runV2(g, [{ frames: 130 }, { expect: { score: 200, hits: 7 } }], CNT);
   });
 });
 
-describe("kit model v2: rooms and flow", () => {
+describe("kit format 2: rooms and flow", () => {
   it("exits lead to the next room, the hero comes along, and taken things stay taken", async () => {
     const rules = [rule({ when: { touch: ["hero", "gem"] }, then: [{ destroy: "other" }, { add: { what: { counter: SCORE_ID }, by: 10 } }] })];
     const g = v2(["", "", "", "", "P  A"], [player(), thing("gem")], rules, {

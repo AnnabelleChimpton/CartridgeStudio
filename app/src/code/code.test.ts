@@ -116,7 +116,7 @@ describe("generated-code markers", () => {
     const ghost = game.types.find((t) => t.frames.length > 1)!;
     const got = text(markedLines(gen.input.source, { thing: ghost.label, palette: ghost.palette }));
     expect(got).toContain(` rem ${ghost.label} frame 2`);
-    expect(got).toContain(` rem palette ${ghost.palette}`);
+    expect(got.some((l) => /^ rem P\d+: /.test(l) && l.includes(ghost.label))).toBe(true);
     expect(got.some((l) => l.includes("plotsprite"))).toBe(true);
     expect(markedLines(gen.input.source, { thing: "Nobody" })).toEqual([]);
   });

@@ -1,4 +1,4 @@
-// Kit code generation (kit model v2): validate → a typed IR (ir.ts) → emit
+// Kit code generation: validate → a typed IR (ir.ts) → emit
 // 7800basic (emit.ts) into the runtime template. The cost model lives here
 // too: it prices a game from its IR, part by part, and generation refuses a
 // game that wouldn't hold 60 fps.
@@ -229,6 +229,7 @@ export function generateKit(input: unknown, library: SoundEffect[], opts: KitOpt
     .compile(kitEngine, { noEscape: true, strict: true, ignoreStandalone: true })({
       ...emitted.view,
       title: sanitizeTitle(g.title),
+      madeBy: g.madeBy?.trim() ? sanitizeTitle(g.madeBy) : "",
       runtimeVersion: KIT_RUNTIME_VERSION,
       alphachars: FONT_CHARS,
       soundData: soundBlocks,

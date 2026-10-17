@@ -28,7 +28,7 @@ import { MAX_COUNTERS } from "./schema.ts";
 const preset = (id: string) => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
 
 describe("kit presets", () => {
-  it("are the spike genres, Ghost Panic and Key Quest, all valid", () => {
+  it("are the five starter games, all valid", () => {
     expect(KIT_PRESETS.map((p) => p.id)).toEqual(["shooter", "maze", "ghost-panic", "dodger", "key-quest"]);
     for (const p of KIT_PRESETS) expect(validateKit(p.game, SOUND_LIBRARY).ok, p.id).toBe(true);
   });

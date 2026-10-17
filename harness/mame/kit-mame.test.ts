@@ -1,4 +1,4 @@
-// Game kit spike: the kit genres' behaviour tests (templates/kit/games/*.tests.json)
+// The kit starter games' behaviour tests (templates/kit/games/*.tests.json)
 // in MAME's a7800 driver, the same files the js7800 suite runs.
 
 import fs from "node:fs";
