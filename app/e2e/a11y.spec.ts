@@ -8,7 +8,7 @@ import { colorName } from "../src/ui/ntsc.ts";
 async function start(page: Page, choice: RegExp) {
   await page.goto("/");
   await page.getByRole("button", { name: choice }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 const openTab = (page: Page, name: string) => page.getByRole("tab", { name }).click();
@@ -34,7 +34,7 @@ test("the start screen, the kit editor and My games pass axe", async ({ page }) 
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
   await page.getByRole("dialog").getByRole("button", { name: /^Ghost Panic/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   for (const name of ["Rules", "Game"]) {
     await openTab(page, name);
     expect(await axe(page), `Ghost Panic ${name}`).toEqual([]);

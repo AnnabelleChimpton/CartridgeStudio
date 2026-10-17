@@ -647,10 +647,9 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 .print-paper { display: flex; align-items: center; gap: 6px; }
 .print-paper select { flex: none; }
 
-/* Tiers: what each mode shows by default (design/DIRECTION.md, Three tiers). */
-[data-tier="starter"] details.dev,
-[data-tier="starter"] #kit-counters-h,
-[data-tier="starter"] #kit-counters-h ~ * { display: none; }
+/* Tiers: what each mode shows by default. Kit keeps Rules and hides Counters. */
+[data-tier="kit"] #kit-counters-h,
+[data-tier="kit"] #kit-counters-h ~ * { display: none; }
 
 /* 6. Play column --------------------------------------------------------- */
 

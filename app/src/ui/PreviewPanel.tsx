@@ -1,9 +1,13 @@
-// The Play panel: the emulator, its controls and build status, in plain
-// words. ROM files are in Show it; build details and the code are in the
-// Code tab.
+// The Play panel: the emulator, its controls and the build's own numbers
+// (time, and how full the cartridge is). ROM files are in Show it; the code
+// is in the Code tab.
 
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { parseBuildLog } from "../code/build-log.ts";
+import { CartridgeStats } from "../code/CartridgeSpace.tsx";
+import { kb, type CartFill } from "./build-status.ts";
 import { Icon } from "./Icon.tsx";
+import { useTier } from "./prefs.ts";
 import { toast } from "./Toaster.tsx";
 import "./preview-faults.css";
 import type { Preview } from "./usePreview.ts";
@@ -13,6 +17,8 @@ const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to 
 /** On the TV, for the gamepad in someone's hands. */
 const TV_HINT = "Stick or d-pad to move, any face button to fire. Start pauses. Select plays again. Hold Select, or press Esc, to leave.";
 const TV_PAUSED = "Paused. Press Start to carry on. Hold Select, or press Esc, to leave.";
+/** Beside the full-screen button, before anyone presses it. */
+export const TV_BUTTON_HINT = "Plug the laptop into the TV with HDMI first; a USB gamepad works.";
 
 interface Props {
   preview: Preview;
@@ -26,8 +32,9 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, error, emuFault, restartPreview, paused, setPaused, restart } = preview;
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, fill, error, emuFault, restartPreview, paused, setPaused, restart } = preview;
   const [muted, setMuted] = useState(false);
+  const tvHint = useId();
 
   return (
     <section className="panel preview" aria-labelledby="preview-h">
@@ -66,17 +73,22 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
           <Icon name={muted ? "mute" : "sound"} />
           {muted ? "Sound off" : "Sound on"}
         </button>
-        <button type="button" className="secondary" onClick={enterTv} disabled={!lastGood} title="Full screen, with the title and a gamepad prompt">
-          <Icon name="tv" />
-          Play on a TV
-        </button>
         <span className="hint" id="emu-hint">
           {PLAY_HINT}
+        </span>
+      </div>
+      <div className="emu-controls tv-row">
+        <button type="button" className="secondary" onClick={enterTv} disabled={!lastGood} aria-describedby={tvHint}>
+          Full screen (for a TV)
+        </button>
+        <span className="hint" id={tvHint}>
+          {TV_BUTTON_HINT}
         </span>
       </div>
       <p className={`status ${result?.kind ?? ""}`} data-testid="build-status" role="status">
         {status}
       </p>
+      {fill && lastGood?.stats && <CartFillMeter fill={fill} stats={lastGood.stats} />}
       {result?.kind === "invalid" && (
         <>
           <p className="small">
@@ -103,7 +115,11 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
               {failureHeadline(result.stage)} Your game is saved
               {lastGood ? ", and the last good build still plays." : "."} Press Undo to take back your last change.
             </p>
-            <RawLog text={`${result.message}${result.log ? `\n\n${result.log}` : ""}`} copyLabel="Copy build log" />
+            <RawLog
+              summary={failureDetails(result.stage, result.message, result.log)}
+              text={`${result.message}${result.log ? `\n\n${result.log}` : ""}`}
+              copyLabel="Copy build log"
+            />
           </div>
         ))}
       {emuFault && (
@@ -150,11 +166,54 @@ export function failureHeadline(stage: string): string {
   }
 }
 
+/** The disclosure's line for a failed build: "Details: dasm, line 212: Branch out of range". */
+export function failureDetails(stage: string, message: string, log: string): string {
+  const p = parseBuildLog(log).find((x) => x.severity === "error");
+  if (!p) return message ? `Details: ${stage}: ${message}` : "Details";
+  return `Details: ${p.tool}${p.line !== undefined ? `, line ${p.line}` : ""}: ${p.message}`;
+}
+
+const FILL_WORDS = { ok: "Room to spare", near: "Nearly full", over: "Too big" };
+
+/** "How full the cartridge is": the compiler's ROM report as a bar, with its figures one click away (open in the 7800basic tier). */
+function CartFillMeter({ fill, stats }: { fill: CartFill; stats: Parameters<typeof CartridgeStats>[0]["stats"] }) {
+  const id = useId();
+  const tier = useTier();
+  const pct = Math.round((fill.used / fill.total) * 100);
+  const text = `${kb(fill.used)} of ${kb(fill.total)} KB`;
+  return (
+    <div className="cpu-meter cart-fill" data-testid="cart-fill">
+      <div className="cpu-label">
+        <span id={`${id}-label`}>How full the cartridge is</span>
+        <span className={`cpu-word ${fill.level}`}>
+          {text}, {FILL_WORDS[fill.level].toLowerCase()}
+        </span>
+      </div>
+      <div
+        className="cpu-bar"
+        role="meter"
+        aria-labelledby={`${id}-label`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.min(100, pct)}
+        aria-valuetext={`${text}, ${FILL_WORDS[fill.level].toLowerCase()}`}
+      >
+        <span className={fill.level} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      {/* Keyed by tier, so switching to 7800basic opens it and switching away closes it. */}
+      <details key={tier} className="small" open={tier === "7800basic"} data-testid="cartridge-stats">
+        <summary>Cartridge stats</summary>
+        <CartridgeStats stats={stats} />
+      </details>
+    </div>
+  );
+}
+
 /** The raw message or log, one click away, with a copy button. */
-function RawLog({ text, copyLabel }: { text: string; copyLabel: string }) {
+function RawLog({ text, copyLabel, summary = "Details" }: { text: string; copyLabel: string; summary?: string }) {
   return (
     <details className="raw-log">
-      <summary>Details</summary>
+      <summary>{summary}</summary>
       <pre>{text}</pre>
       <button
         type="button"

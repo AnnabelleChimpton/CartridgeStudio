@@ -47,7 +47,7 @@ async function joinAndStart(page: Page) {
   await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
   expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 async function makeEntry(page: Page, words: { title: string; credits: string; description: string; controls: string; compilation?: boolean }) {
@@ -66,6 +66,15 @@ async function makeEntry(page: Page, words: { title: string; credits: string; de
   await expect(form).toContainText(`Saved ${file.name}`);
   return file;
 }
+
+test("in a jam, Show it's one ZIP is the jam entry", async ({ page }) => {
+  await joinAndStart(page);
+  const zip = page.getByRole("region", { name: "Show it" }).getByRole("group", { name: "One ZIP" });
+  await expect(zip.getByRole("button", { name: /^Everything/ })).toHaveCount(0);
+  await zip.getByRole("button", { name: /^Jam entry for Spooky Cartridge Jam/ }).click();
+  // It hands over to the entry form, where the words and licence are.
+  await expect(entryForm(page).getByLabel("Title")).toBeFocused();
+});
 
 test("a jam link shows the brief, and the brief survives a reload", async ({ page }) => {
   await joinAndStart(page);

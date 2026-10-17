@@ -7,7 +7,7 @@ import { autosaved } from "./wait.ts";
 async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Rock Fall" | "Ghost Panic") {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 const buildCount = (page: Page) => page.evaluate(() => window.__cs!.builds.length);
@@ -140,7 +140,7 @@ test("the CPU meter stops a game that's too busy", async ({ page }) => {
   await expect(page.getByTestId("build-errors")).toContainText("too busy for the console", { timeout: 30_000 });
   await expect(page.getByTestId("build-errors")).toContainText("The meter under the game lists what to take out.");
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 });
 
 test("a kit game survives a reload and round-trips through a game file", async ({ page }) => {
@@ -343,7 +343,7 @@ test("a thing can be put in the room or made the player, and the title screen fo
   const g = await game(page);
   expect(g.types.find((t) => t.id === "cat")!.label).toBe("Lily");
   await expect(page.locator(".sprite-select[aria-pressed=true]", { hasText: "Lily" })).toBeVisible();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 
   await page.getByLabel("Game title").fill("Lily's Yarn");
   expect((await game(page)).text.title).toBe("Lily's Yarn");

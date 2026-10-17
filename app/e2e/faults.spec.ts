@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function start(page: Page) {
   await page.goto("/");
   await page.getByRole("button", { name: /^Cat vs\. Vacuums/ }).click();
-  await expect(page.getByTestId("build-status")).toContainText("Up to date", { timeout: 30_000 });
+  await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
 }
 
 /** Resolves with the next frame number the current emulator draws (or null after 5 s). */
