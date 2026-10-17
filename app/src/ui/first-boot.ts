@@ -20,14 +20,14 @@ export function firstBootCardHtml({ title, file, date }: FirstBootInfo): string 
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>First boot: ${name}</title>
 <style>
-  body { margin: 0; padding: 24px; background: #fff; color: #111; font: 16px/1.45 system-ui, sans-serif; }
-  .card { box-sizing: border-box; width: 3.5in; min-height: 2in; padding: 0.2in; border: 2px solid #111; }
+  body { margin: 0; padding: 24px; background: white; color: black; font: 16px/1.45 system-ui, sans-serif; }
+  .card { box-sizing: border-box; width: 3.5in; min-height: 2in; padding: 0.2in; border: 2px solid black; }
   .card h1 { margin: 0 0 4px; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; }
   .card p { margin: 0; }
   .card .title { font-size: 22px; font-weight: 700; line-height: 1.15; margin: 6px 0 10px; }
   .card dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 13px; }
   .card dt { font-weight: 700; }
-  .card dd { margin: 0; border-bottom: 1px solid #111; min-height: 1.2em; }
+  .card dd { margin: 0; border-bottom: 1px solid black; min-height: 1.2em; }
   .note { max-width: 3.5in; font-size: 14px; }
   button { font: inherit; padding: 6px 14px; margin-top: 16px; }
   @media print { .note, button { display: none; } body { padding: 0; } }
