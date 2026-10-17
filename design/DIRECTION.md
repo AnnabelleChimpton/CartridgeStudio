@@ -1,8 +1,7 @@
 # Cartridge Studio: design direction
 
 This is the look and feel of Cartridge Studio, and the rules that keep it
-consistent as more people add to it. It follows the phase 2 audit's design
-guidance. The code that carries it out is `app/src/styles.css` (tokens first,
+consistent as more people add to it. The code that carries it out is `app/src/styles.css` (tokens first,
 then components, then screens) and the shell in `app/src/ui/`:
 
 - `TopBar`, `ContextStrip` and `StartChooser`;
@@ -225,24 +224,24 @@ spark: it is not a console and not anyone's logo.
 Cartridge Studio serves three kinds of maker. They see the same app, words
 and files; the tier only decides what is shown by default.
 
-| Tier | Who | Sees by default |
+| Tier | Detail line in the switch | Sees by default |
 | --- | --- | --- |
-| **Starter** | Families, kids, first-timers working from a preset | Things, Room and Game tabs, the game, Show it and the console-time meter. No rule editor, no counters, no developer drawer. (The classic shooter keeps all its tabs.) |
-| **Maker** | Hobbyists building their own game from rules | Everything in Starter, plus the Rules tab, counters and "For developers". |
-| **Coder** | People who want 7800basic itself | Everything in Maker, with the developer drawer open. The code workspace (coder-mode branch) plugs in here. |
+| **Kit** | "Things, the room and the game settings." | The Things, Room, Rules and Game tabs, the game and the console-time meter. Counters and the developer drawer are hidden. |
+| **Rules** | Adds counters. | Everything in Kit, plus counters and the developer drawer. |
+| **7800basic** | Adds the Code tab and opens Cartridge stats. | Everything in Rules, plus the Code tab (the generated 7800basic, editable after eject), with Cartridge stats open. |
 
-- **One control:** the Mode switch in the top bar (Starter · Maker · Coder),
+- **One control:** the tier switch in the top bar (Kit · Rules · 7800basic),
   stored per browser in `localStorage["cs-tier"]` and written to
   `<html data-tier="…">`.
-- **First visit is Starter.** The switch is always visible, so the next step
-  up is one click away.
+- **First visit is Kit.** The switch is always visible, so the next step up
+  is one click away.
 - **Nothing is lost.** Switching down hides editors, never data.
-- **For code:** `useTier()` in `app/src/ui/prefs.ts`; in CSS,
+- **For code:** `TIERS` and `useTier()` in `app/src/ui/prefs.ts`; in CSS,
   `[data-tier="…"]`. Tier-gated tabs carry `data-tab="…"`.
 
-The audit's Make, Shape and Code proposal (depth revealed in place through
-"Customise", with Dodger leading the chooser) is the likely next step for
-naming and placement. It changes copy and placement, not this structure.
+Owner's note, October 2026: the Kit tier keeps the Rules tab visible
+(decided October 16). Tier names and detail lines change with the code, in
+the same commit, and this table follows them.
 
 ## 10. Components
 

@@ -56,17 +56,18 @@ export function sourceZip(project: Project, template: Template): Uint8Array {
 }
 
 /** How the package credits its tools. */
-const templateCredits = (template: Template) =>
-  `It was built with ${template.manifest.toolchain}
-  (GPL v2; ROMs built from your own source are yours, and its runtime
-  routines are CC0) and the "${template.manifest.name}" template ${template.manifest.version} (CC0).`;
-const kitCredits = () =>
-  `It was built with ${KIT_TOOLCHAIN}
-  (GPL v2; ROMs built from your own source are yours, and its runtime
-  routines are CC0) and the Cartridge Studio game kit runtime ${KIT_RUNTIME_VERSION} (CC0).`;
+export const toolCredits = (toolchain: string) =>
+  `It was built with ${toolchain} by Mike Saarna (RevEng) and dasm
+  (both GPL v2; ROMs built from your own source are yours, and 7800basic's
+  runtime routines are CC0)`;
+const templateCredits = (template: Template) => `${toolCredits(template.manifest.toolchain)} and the "${template.manifest.name}" template ${template.manifest.version} (CC0).`;
+const kitCredits = () => `${toolCredits(KIT_TOOLCHAIN)} and the Cartridge Studio game kit runtime ${KIT_RUNTIME_VERSION} (CC0).`;
 
 export const checklist = (project: Project, template: Template) => checklistText(project.title, templateCredits(template));
 export const kitChecklist = (game: KitGame) => checklistText(game.title, kitCredits());
+
+/** Where boot results go: the project's GitHub issue form. Nothing about the game is added to the address. */
+export const BOOT_REPORT_URL = "https://github.com/AnnabelleChimpton/CartridgeStudio/issues/new?template=boot-report.yml";
 
 export function checklistText(title: string, credits: string): string {
   const slug = slugify(title);
@@ -85,19 +86,26 @@ What's in this package
 
 Before you send it
   [ ] Play it start to finish in the Cartridge Studio preview.
-  [ ] If you have real hardware, try rom/${slug}.bin on it with a flash cart,
-      and note the console and firmware version. Cartridge Studio has been
-      tested in emulators, not yet on real consoles, so your report helps.
+  [ ] If you have a console, try rom/${slug}.bin on it with a flash cart,
+      and note the console, firmware version and cartridge. Cartridge Studio
+      is tested in the js7800 and MAME emulators, not yet on a console.
   [ ] Print the PDF at actual size (100%) and check the 1-inch square, then
       check the box and label sizes against your box and cartridge shell.
   [ ] Read the manual once more for typos.
   [ ] Decide how you want to be credited, and how people can reach you.
 
+If it doesn't boot, or boots wrong
+  Post the console, firmware, cartridge and what you saw on Cartridge
+  Studio's boot report form:
+  ${BOOT_REPORT_URL}
+  Every report, booted or not, goes into the compatibility table.
+
 Sending it
-  There's no automatic way to submit a game, so send this package by hand,
-  for example by posting in the 7800 homebrew forum on AtariAge or by
-  contacting a homebrew publisher. Include a short description, your
-  credits, and which hardware you tested on.
+  There's no automatic way to submit a game, so send this package by hand
+  to whoever you want to play it, or to a homebrew publisher. To show a
+  finished game to other 7800 players, the 7800 homebrew forum on AtariAge
+  is one place to post it. Include a short description, your credits, and
+  which hardware you tested on.
 
 Credits and licences
   The game is yours to license as you wish. ${credits}
