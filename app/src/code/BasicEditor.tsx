@@ -95,7 +95,7 @@ const highlightStyle = HighlightStyle.define([
 
 const theme = EditorView.theme(
   {
-    "&": { backgroundColor: "var(--code-bg)", color: "var(--code-text)", fontSize: "13px", borderRadius: "6px", border: "1px solid var(--code-edge)" },
+    "&": { backgroundColor: "var(--code-bg)", color: "var(--code-text)", fontSize: "13px", borderRadius: "2px", border: "1px solid var(--code-edge)" },
     "&.cm-focused": { outline: "2px solid var(--code-focus)", outlineOffset: "2px" },
     ".cm-scroller": { fontFamily: "var(--code-font)", lineHeight: "1.5" },
     ".cm-content": { caretColor: "var(--code-focus)" },

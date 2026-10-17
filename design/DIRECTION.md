@@ -2,12 +2,19 @@
 
 This is the look and feel of Cartridge Studio, and the rules that keep it
 consistent as more people add to it. It follows the phase 2 audit's design
-guidance. The code that carries it out is `app/src/styles.css` (tokens first,
-then components, then screens) and the shell in `app/src/ui/`:
+guidance and the identity brief. The code that carries it out is:
 
-- `TopBar`, `ContextStrip` and `StartChooser`;
-- `Toaster`, `Icon` and `BrandMark`;
-- `prefs.ts`, which holds the tier.
+- `app/src/ui/tokens.ts`, the one token set, which
+  `app/scripts/make-identity.mjs` writes out as `app/src/tokens.css`, the
+  tokens block in `site/styles.css`, the manifest, every `theme-color` and
+  the icons;
+- `app/src/styles.css` (components, then screens);
+- the shell in `app/src/ui/`: `TopBar`, `ContextStrip` and `StartChooser`;
+  `Toaster`, `Icon`, `brand.ts` and `BrandMark` (with `KitText`); `prefs.ts`,
+  which holds the tier.
+
+`node harness/check-hex.mjs` fails on any hex colour outside the generated
+files and `ui/ntsc.ts`, and on generated files that are out of date.
 
 ## 1. Identity: the console's own workbench
 
@@ -20,12 +27,15 @@ brightest thing on screen.
   the 7800's NTSC palette (§3). Neutral console greys carry the chrome, and
   `$3B` *cartridge orange* marks the one thing to do next.
 - **Tactile.** Buttons have a small solid "keycap" edge and press down when
-  clicked. Panels are soft-cornered trays.
+  clicked. Panels are flat trays with 4 px corners, one level deep.
 - **Honest pixels.** Editor canvases draw exactly what the ROM draws: room
   tiles come from the kit's own tile glyphs, and sprites use 2:1 pixels.
 - **Restrained.** A plain CSS TV bezel frames the game. There are no CRT
-  shaders or scanlines, no curvature, no mascot, no illustrated hardware, and
-  no UI sound effects.
+  shaders or scanlines, no curvature, no glows, no blur, no dot grids, no
+  mascot, no illustrated hardware, and no UI sound effects.
+- **Two registers only.** Everything is made of what goes on the cart, or
+  borrows from 1980s cartridge-era print (box backs, end labels, booklets,
+  crop marks). Nothing else: no retro costume fonts, no AI sparkle.
 - **Ours.** No console makers' logos, wordmarks, rainbow stripes, fonts, trade
   dress or console likenesses. Consoles are named in plain text only where a
   creator needs to know what plays their game.
@@ -37,19 +47,25 @@ built so one could be added later by redefining the semantic layer.
 
 | Role | Font | Where |
 | --- | --- | --- |
-| Interface and reading | **Atkinson Hyperlegible** (OFL, `app/public/fonts/`) | Everything you read or operate. It was designed for low vision; the slashed zero and distinct I, l and 1 matter in names, numbers and `$XX` colours. |
-| Brand wordmark | **The kit's own 3×5 font** (`kit/font.ts`), drawn as SVG | The top-bar wordmark: the same letters every game's title screen uses. |
-| Display moments | **Press Start 2P** (OFL, `app/public/fonts/`) | The start screen headline, preset card names and the title in TV mode. Never for body text, controls or anything longer than a line. |
-| Code | System monospace | Code views, the build log. |
+| Interface and reading | **Atkinson Hyperlegible** (OFL, `app/public/fonts/`) | Everything you read or operate, including the start screen headline, step numbers, badges and site headings. It was designed for low vision; the slashed zero and distinct I, l and 1 matter in names, numbers and `$XX` colours. |
+| Game-derived display | **The kit's own 3×5 font** (`kit/font.ts`), drawn as square pixels by `KitText` (`ui/BrandMark.tsx`) | Short strings that come from the game: the wordmark, preset and game titles on cards, the TV-mode title, box, label and player titles, and the "BY …" credit. Uppercase, at whole-number scales of 3× or more. |
+| Code and bytes | System monospace | Code views, the build log, ROM sizes in tables. |
 
-All three fonts ship with the app, so it looks the same offline.
+The kit font has A to Z, 0 to 9 and `. ! ? - : '`. A title with any other
+character (lowercase is uppercased; `&`, accents and the rest are not) is
+set in Atkinson Hyperlegible bold instead. Kit-font text always keeps the
+words as real text (visually hidden beside the SVG), so screen readers,
+search and copying get them.
+
+There is no third display face. Press Start 2P is gone from the app, the
+site and the player page; print loads it only until its titles move to the
+kit font.
 
 Scale (px): `--fs-xs` 12 (hints, `.small`), `--fs-sm` 13 (secondary UI,
 badges), `--fs-md` 14 (controls, panel body), `--fs-body` 15 (reading text,
-rule sentences), `--fs-lg` 18 (titles), `--fs-xl` 22 (dialog titles). Press
-Start 2P is used at 13, 22 and 28 px only, with line height 1.45 or more.
-Panel headings (`h2` in panels) are small tracked labels: 13 px, 700,
-uppercase, muted.
+rule sentences), `--fs-lg` 18 (titles), `--fs-xl` 22 (dialog titles),
+`--fs-2xl` 30 (the start screen headline). Panel headings (`h2` in panels)
+are small tracked labels: 13 px, 700, uppercase, muted.
 
 ## 3. Colour: tokens named after the palette
 
@@ -58,7 +74,8 @@ Two layers.
 1. **Palette tokens** are real entries from the console's palette, named by
    their `$hue luma` value, with the colours `ui/ntsc.ts` computes for them:
    `--ntsc-00` `#0d0d0d`, `--ntsc-3b` `#eda37e`, and so on. To change a colour,
-   pick another entry; never type in a hex that isn't one.
+   pick another entry in `ui/tokens.ts` and rerun
+   `node app/scripts/make-identity.mjs`; never type in a hex.
 2. **Semantic tokens** say what a colour is for, and point at a palette token.
    Markup and components use only these.
 
@@ -79,16 +96,23 @@ Two layers.
 | `--focus` | `$2E` `#ffe188` | The focus ring |
 | `--ok` | `$CB` `#76d8a7` | Built, room to spare, the bezel's power light |
 | `--error` | `$4B` `#f597ab` | Errors, danger |
-| `--teal` | `$BB` `#78ced6` | Second accent: "play", the jam strip |
+| `--teal` | `$BB` `#78ced6` | Second accent: "play", the jam banner |
+| `--accent-soft`, `--error-soft`, `--teal-soft`, `--ok-soft` | `$21`, `$41`, `$B1`, `$C1` | Dark fills under `--text` (or their own colour): the selected row, an error line, the jam banner |
+| `--power-off`, `--power-paused`, `--power-on` | `$04`, `$C6`, `$CB` | The bezel's power light |
+| `--code-*` | `$00` to `$4B` | The 7800basic editor: keyword `$3C`, number `$BB`, string `$CB`, label `$2E`, builtin `$4B`, comment `$0B`, selection `$03`, on `$00` |
 
-Soft tints (`--accent-soft`, `--error-soft`, `--teal-soft`) are a palette
-token mixed with transparency. They are used only as backgrounds under
-`--text`.
+The soft fills are palette entries too, not a colour mixed with
+transparency. The only mixed values are the dialog scrim and the one shadow,
+both `$00` at partial opacity.
+
+There are no violet, gold, cream or navy tokens. The site and the player
+page use the same set.
 
 **Invariants**, which are the design system's acceptance criteria:
 
 - Text is at least 4.5:1 against every surface it can sit on (`--sunken`,
-  `--bg`, `--surface`, `--raised`).
+  `--bg`, `--surface`, `--raised`). `PAIRS` in `ui/tokens.ts` lists every
+  pair, and `ui/tokens.test.ts` checks each one.
 - Field edges and the focus ring are at least 3:1.
 - Every control is at least 24 × 24 px.
 - There is one focus ring style: `--focus`, 2 px, 2 px offset.
@@ -96,17 +120,24 @@ token mixed with transparency. They are used only as backgrounds under
 axe checks contrast on every tab, Show it and a dialog in
 `e2e/a11y.spec.ts` and `e2e/shell.spec.ts`.
 
-The emulator, sprite mats and room canvas sit on `$00`: pixel art is drawn
-for a TV, and its colours read truest on black.
+The emulator, sprite mats and room canvas sit on plain `$00`, with no dot
+grid: pixel art is drawn for a TV, and its colours read truest on black.
 
 ## 4. Space, shape, depth
 
 - **Spacing** is a 4 px grid: `--s-1` 4, `--s-2` 8, `--s-3` 12, `--s-4` 16,
   `--s-5` 24, `--s-6` 32, `--s-7` 48.
-- **Radii:** `--r-sm` 6 (fields), `--r-md` 10 (buttons, rows), `--r-lg` 16
-  (panels, cards, dialogs), `--r-pill` (badges, the Mode switch).
-- **Depth:** flat, `--shadow-1` (panels) and `--shadow-2` (menus, toasts,
-  dialogs). Buttons use a 2 px solid edge, not a blur.
+- **Radii:** `--r-lg` 4 px (panels, cards, dialogs, menus, the bezel) and
+  `--r-sm` 2 px (chips, badges, fields, keycap buttons, the Mode switch).
+  `--r-md` is kept as an alias of 2 px. Nothing is a pill, and nothing is
+  round except a native control.
+- **Depth:** flat. Panels are separated by a 1 px `--line`, with no shadow.
+  `--shadow-2` is only for dialogs, menus and toasts. Keycap buttons, here
+  and on the site, use a 2 px solid edge, not a blur.
+- **One container level.** A panel or tray holds rows, not cards. Inside it,
+  rules and spacing separate things: rules and counters are rows with
+  dividers, guide steps are an inline list, the CPU meter is a plain row
+  under the bezel.
 - **Targets:** 24 px minimum (WCAG 2.5.8). Main buttons are 32 to 36 px tall
   and tabs 44 px.
 - **Layout:** a two-column workbench, with tabs and editing on the left and
@@ -152,7 +183,8 @@ useContextItem(failed && { kind: "error", message: "Couldn't open it", onDismiss
 
 Each item has `kind`, `message`, an optional single `action` element and an
 optional `onDismiss`. CSS lives under `.context-strip` and
-`.context-item.{error|guide|jam|offline}`. Don't add a second strip or a
+`.context-item.{error|guide|jam|offline}`. Only errors carry a mark (the
+pixel `error` icon, in `--error`); the others are a tinted line of text. Don't add a second strip or a
 banner elsewhere: offer an item here.
 
 ### Show it
@@ -170,9 +202,13 @@ gamepad prompt.
 
 ### The game's bezel
 
-A plain dark-plastic frame in CSS around the screen. It has slightly rounded
-corners and a small power light that turns `--ok` when the game is built.
-There is no logo, no brand and no curvature, and it disappears in TV mode.
+A plain, flat frame in CSS around the screen: `--raised` with a 1 px
+`--line` and 4 px corners. Its square power light is the one status light in
+the app. It is `--power-off` before the first build, `--power-on` (`$CB`)
+while the game runs and `--power-paused` while it is paused, flat, with no
+glow. The Play panel says the same thing in words. There is no logo, no
+brand and no curvature, and it disappears in TV mode. The site's clips and
+the player page use the same bezel and light.
 
 ## 6. Editors
 
@@ -191,34 +227,53 @@ There is no logo, no brand and no curvature, and it disappears in TV mode.
 | Token | Value | Use |
 | --- | --- | --- |
 | `--dur-fast` | 120 ms | Hover, press |
-| `--dur` | 200 ms | Menus, tabs, toasts, the context strip |
-| `--dur-slow` | 420 ms | Cartridge insert, dialog in |
-| `--ease-out` | `cubic-bezier(.2,.8,.2,1)` | Most things |
-| `--ease-spring` | `cubic-bezier(.34,1.56,.64,1)` | Small overshoots |
+| `--dur` | 160 ms | Menus, tabs, toasts, the context strip |
+| `--dur-slow` | 200 ms | Cartridge insert, dialog in |
+| `--ease-out` | `cubic-bezier(.2,.8,.2,1)` | Everything. Nothing overshoots. |
 
 Entrances **move rather than fade**, so text is never shown at reduced
-contrast.
+contrast. Nothing lifts on hover: hover and `:focus-visible` give a card or
+button an `--accent-text` border. `steps()` is only for sprite-like things.
 
-The small delights:
+Each animation, and what it tells you:
 
-- **Build tick:** a pixel check pops in beside "Up to date".
 - **Cartridge insert:** the game screen settles into its bezel when an editor
-  opens.
+  opens: the game is loaded. The one themed motion; ease-out, no overshoot.
+- **Build tick:** a pixel check steps in beside "Up to date": the build
+  finished.
 - **Preset cards** cycle their cast's animation frames while hovered or
-  focused, and lift a little.
-- **Toasts** slide up for saves and downloads, then leave on their own.
+  focused: these sprites are what the game draws.
+- **Menus and dialogs** drop in 4 to 8 px: this opened from where you clicked.
+- **Toasts** slide up, then leave on their own: a save or download happened.
+- **Tabs:** the underline grows under the chosen tab: this is where you are.
+- **Recording:** the square beside "Recording" blinks once a second: a clip
+  is being made.
 
 With `prefers-reduced-motion: reduce`, durations drop to near zero,
 entrances are removed and the cards show their first frame only.
 
-## 8. Iconography
+## 8. Iconography and the mark
 
-Small inline SVG icons drawn for this app (`app/src/ui/Icon.tsx`): a 20 px
-grid with 1.75 px round-capped strokes in `currentColor`. There is no icon
-font and no third-party set. Icons always sit beside a text label, or the
-button has an `aria-label`; the SVG itself is always `aria-hidden`. The brand
-mark (`BrandMark.tsx`) is an original chunky cartridge with a four-pixel
-spark: it is not a console and not anyone's logo.
+**Icons** (`app/src/ui/Icon.tsx`) are filled square pixels on a 10 × 10 grid,
+drawn at 2× (20 px) with `crispEdges` in `currentColor`. The set is small:
+play, pause, restart, sound, mute, undo, redo, copy, close, a menu chevron,
+and one `error` mark for the context strip. Icons are square-pixelled (1:1);
+2:1 pixels are only for game content. There is no icon font and no
+third-party set.
+
+Icons appear only where a word would be too many: the emulator's controls,
+undo and redo, copy, and a dialog's close button. Buttons whose label says
+everything (Show it, Save game file, menu items, toasts, the context strip
+apart from errors) have no icon. The SVG is always `aria-hidden`; the button
+has a text label or an `aria-label`.
+
+**The mark** (`ui/brand.ts`, drawn by `BrandMark.tsx`) is a cartridge on a
+16 × 16 grid: the shell in `$3B` with its `$37` keycap edge one pixel lower,
+a square grip bar, and "CS" in the kit's 3×5 font on a `$0F` label. It is
+original artwork: not a console and not anyone's logo. `make-identity.mjs`
+draws the same rects into `icon.svg`, the 192 and 512 PNGs, the
+apple-touch icon, the maskable icon (the whole mark inside the 80% safe
+circle), the 32 px favicon and the site's mark. It reads at 16 px.
 
 ## 9. Three tiers, one app
 
@@ -258,8 +313,10 @@ from before the redesign keep working and keep their meaning.
 - **Tabs:** `.workspace-tabs`.
 - **Containers and overlays:** panels (`.panel`), dialogs (`.dialog`), the
   context strip (`.context-strip`), toasts (`.toast`) and menus (`.menu`).
-- **Small parts:** badges (`.badge`), segmented controls (`.segmented`) and
-  empty states (`.empty`).
+- **Small parts:** badges (`.badge`, square tags), the Mode switch
+  (`.segmented`, a square-ended radio group whose chosen option is filled
+  `--accent`), kit-font titles (`.kit-text`) and empty states (`.empty`,
+  inline and left-aligned, no dashed box).
 
 ## 11. Not doing
 

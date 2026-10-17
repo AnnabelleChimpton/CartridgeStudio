@@ -1,53 +1,83 @@
-// The Cartridge Studio mark: a chunky cartridge with a four-pixel spark on
-// its label. Original artwork; see design/DIRECTION.md.
+// The Cartridge Studio mark and the kit-font display text. Both are drawn
+// from the kit's own 3×5 font (kit/font.ts), the letters every game's title
+// screen uses. See design/DIRECTION.md, §2 and §8.
 
-import { fontRows } from "../kit/font.ts";
+import { glyphRuns, MARK_GRID, markRects } from "./brand.ts";
 
+/** The cartridge with "CS" on its label (ui/brand.ts). The icons and favicon are generated from the same rects. */
 export function BrandMark({ size = 32 }: { size?: number }) {
   return (
-    <svg className="brand-mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      {/* Shell, with a keycap-style shadow edge. */}
-      <path d="M6 5.5A2.5 2.5 0 0 1 8.5 3h15A2.5 2.5 0 0 1 26 5.5V22l-3 3v3.5H9V25l-3-3Z" fill="var(--brand-edge)" transform="translate(0 1.5)" />
-      <path d="M6 5.5A2.5 2.5 0 0 1 8.5 3h15A2.5 2.5 0 0 1 26 5.5V22l-3 3v3.5H9V25l-3-3Z" fill="var(--brand-body)" />
-      {/* Label. */}
-      <rect x="9" y="6" width="14" height="11" rx="1.5" fill="var(--brand-label)" />
-      {/* The spark: four square pixels. */}
-      <rect x="15" y="7.5" width="2" height="2" fill="var(--brand-body)" />
-      <rect x="12.5" y="10.5" width="2" height="2" fill="var(--brand-body)" />
-      <rect x="17.5" y="10.5" width="2" height="2" fill="var(--brand-body)" />
-      <rect x="15" y="13.5" width="2" height="2" fill="var(--brand-body)" />
-      {/* Contacts. */}
-      <path d="M11 25.5v2M14 25.5v2M18 25.5v2M21 25.5v2" stroke="var(--brand-edge)" strokeWidth="1.5" />
+    <svg
+      className="brand-mark"
+      width={size}
+      height={size}
+      viewBox={`0 0 ${MARK_GRID} ${MARK_GRID}`}
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {markRects().map((r, i) => (
+        <rect key={i} x={r.x} y={r.y} width={r.w} height={r.h} fill={`var(--${r.role})`} />
+      ))}
     </svg>
   );
 }
 
-/** "CARTRIDGE STUDIO" in the kit's own 3×5 font: the letters every game's title screen uses. */
+/** "CARTRIDGE STUDIO" in the kit's 3×5 font. */
 export function Wordmark({ pixel = 3 }: { pixel?: number }) {
-  const rows = fontRows("CARTRIDGE STUDIO").slice(1, 6);
-  const runs: { x: number; y: number; w: number }[] = [];
-  rows.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
-      if (row[x] === "0") continue;
-      const start = x;
-      while (x + 1 < row.length && row[x + 1] !== "0") x++;
-      runs.push({ x: start, y, w: x - start + 1 });
-    }
-  });
-  const width = rows[0]!.length - 1;
+  return <KitText text="Cartridge Studio" scale={pixel} className="brand-name" maxChars={Infinity} />;
+}
+
+/** Characters the kit font draws. Anything else falls back to Atkinson bold. */
+const KIT_CHARS = /^[A-Z0-9 .!?\-:']+$/;
+
+export const canKitText = (text: string) => KIT_CHARS.test(text.toUpperCase());
+
+/** Words packed into lines of at most `max` characters; a longer word gets a line to itself. */
+function lines(text: string, max: number): string[] {
+  const out: string[] = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = out[out.length - 1];
+    if (last !== undefined && last.length + 1 + word.length <= max) out[out.length - 1] = `${last} ${word}`;
+    else out.push(word);
+  }
+  return out;
+}
+
+/**
+ * A short game-derived title (a preset or game name, the TV title, "BY …")
+ * in the kit's 3×5 font, uppercase, as square pixels at an integer scale.
+ * The words stay real text for screen readers, search and copying; a title
+ * with a character the font lacks is plain Atkinson bold instead.
+ */
+export function KitText({
+  text,
+  scale = 3,
+  maxChars = 12,
+  className = "",
+}: {
+  text: string;
+  /** Screen pixels per font pixel: a whole number, 3 or more. */
+  scale?: number;
+  /** Wrap at word breaks to keep each line this many characters or fewer. */
+  maxChars?: number;
+  className?: string;
+}) {
+  const cls = `kit-text ${className}`.trim();
+  if (!canKitText(text) || !text.trim()) return <span className={`${cls} kit-fallback`}>{text}</span>;
+  const rows = lines(text.toUpperCase(), maxChars);
+  const width = Math.max(...rows.map((l) => l.length)) * 4 - 1;
+  // Each line is 5 pixels tall with 3 between lines, as on the title screen.
+  const height = rows.length * 8 - 3;
+  const s = Math.max(3, Math.round(scale));
   return (
-    <svg
-      className="brand-name"
-      width={width * pixel}
-      height={5 * pixel}
-      viewBox={`0 0 ${width} 5`}
-      shapeRendering="crispEdges"
-      role="img"
-      aria-label="Cartridge Studio"
-    >
-      {runs.map((r) => (
-        <rect key={`${r.x},${r.y}`} x={r.x} y={r.y} width={r.w} height={1} />
-      ))}
-    </svg>
+    <span className={cls}>
+      <svg width={width * s} height={height * s} viewBox={`0 0 ${width} ${height}`} shapeRendering="crispEdges" aria-hidden="true" focusable="false">
+        {rows.flatMap((line, li) =>
+          glyphRuns(line).map((r) => <rect key={`${li}:${r.x},${r.y}`} x={r.x} y={li * 8 + r.y} width={r.w} height={1} />),
+        )}
+      </svg>
+      <span className="visually-hidden">{text}</span>
+    </span>
   );
 }

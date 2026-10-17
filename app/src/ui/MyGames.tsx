@@ -3,6 +3,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { duplicateGame, listGames, type GameEntry } from "../project/persist.ts";
+import { KitText } from "./BrandMark.tsx";
 import { ConfirmDialog, Dialog } from "./Dialog.tsx";
 
 export interface LibraryActions {
@@ -89,7 +90,9 @@ export function MyGames({ current, onOpen, onRename, onDelete }: LibraryActions)
                 {pictures.has(g.id) && <img src={pictures.get(g.id)} alt="" width={320} height={240} />}
               </span>
               <span className="card-body">
-                <strong>{name(g)}</strong>
+                <strong>
+                  <KitText text={name(g)} />
+                </strong>
                 <span className="muted small">
                   {KIND[g.kind]} · {g.id === current ? "open now" : `changed ${when(g.updated)}`}
                 </span>

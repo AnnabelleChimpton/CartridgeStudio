@@ -6,6 +6,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog.tsx";
 import { ntscCss } from "../ui/ntsc.ts";
+import { paint as tokenColour } from "../ui/tokens.ts";
 import { radioProps, arrowKeys } from "../ui/a11y.ts";
 import {
   bestColors,
@@ -75,7 +76,7 @@ function paint(canvas: HTMLCanvasElement | null, p: Pixels, scaleX: number, scal
       const k = (y * p.width + x) * 4;
       const a = p.data[k + 3]!;
       if (a < 255) {
-        ctx.fillStyle = (Math.floor((x * scaleX) / 8) + Math.floor((y * scaleY) / 8)) % 2 ? "#23262e" : "#1a1d23";
+        ctx.fillStyle = (Math.floor((x * scaleX) / 8) + Math.floor((y * scaleY) / 8)) % 2 ? tokenColour("checker-b") : tokenColour("checker-a");
         ctx.fillRect(x * scaleX, y * scaleY, scaleX, scaleY);
       }
       if (a > 0) {
@@ -92,7 +93,7 @@ function paintFrame(canvas: HTMLCanvasElement | null, frame: Frame, colors: read
   frame.forEach((row, y) =>
     [...row].forEach((ch, x) => {
       const v = Number(ch);
-      ctx.fillStyle = v && colors[v - 1] ? ntscCss(colors[v - 1]!) : (x + y) % 2 ? "#23262e" : "#1a1d23";
+      ctx.fillStyle = v && colors[v - 1] ? ntscCss(colors[v - 1]!) : (x + y) % 2 ? tokenColour("checker-b") : tokenColour("checker-a");
       ctx.fillRect(x * scaleX, y * scaleY, scaleX, scaleY);
     }),
   );
@@ -184,7 +185,7 @@ export function ImportPicture(props: ImportPictureProps) {
     const ctx = cropCanvas.current?.getContext("2d");
     if (!ctx || !view || !result || !sourceCanvas) return;
     const { x0, y0, scale, w, h } = view;
-    ctx.fillStyle = "#0f1115";
+    ctx.fillStyle = tokenColour("mat");
     ctx.fillRect(0, 0, w, h);
     ctx.drawImage(sourceCanvas, -x0 * scale, -y0 * scale, sourceCanvas.width * scale, sourceCanvas.height * scale);
     const r = result.crop;
@@ -198,7 +199,7 @@ export function ImportPicture(props: ImportPictureProps) {
     ctx.fillRect(0, fy + fh, w, h - fy - fh);
     ctx.fillRect(0, fy, fx, fh);
     ctx.fillRect(fx + fw, fy, w - fx - fw, fh);
-    ctx.strokeStyle = "#f0a23a";
+    ctx.strokeStyle = tokenColour("accent");
     ctx.lineWidth = 2;
     ctx.strokeRect(fx + 1, fy + 1, fw - 2, fh - 2);
   }, [view, result, sourceCanvas]);

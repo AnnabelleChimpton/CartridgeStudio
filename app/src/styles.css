@@ -1,6 +1,9 @@
-/* Cartridge Studio, "the toy workbench". The why is in design/DIRECTION.md.
+/* Cartridge Studio: a workbench for making 7800 cartridges. Everything here
+ * is made of what goes on the cart: NTSC palette entries (tokens.css,
+ * generated from ui/tokens.ts), the kit's 3x5 font for game titles, flat 4 px
+ * panels. The why is in design/DIRECTION.md.
  *
- *   1. Fonts and tokens (dark, then light)
+ *   1. Fonts and tokens
  *   2. Base: page, type, focus
  *   3. Components: buttons, fields, panels, tabs, segmented, menu, badges,
  *      dialogs, toasts, empty states
@@ -11,6 +14,8 @@
  *
  * Class names from before the redesign are kept with their old meanings:
  * other branches add markup with them. Restyle; don't rename. */
+
+@import "./tokens.css";
 
 /* 1. Fonts and tokens ---------------------------------------------------- */
 
@@ -26,71 +31,11 @@
   font-weight: 700;
   font-display: swap;
 }
-@font-face {
-  font-family: "Press Start 2P";
-  src: url("/fonts/press-start-2p.ttf") format("truetype");
-  font-weight: 400;
-  font-display: swap;
-}
 
 :root {
-  /* The palette: real entries from the console's 256 colours ($hue luma),
-   * as ui/ntsc.ts computes them. Change a value only to another entry. */
-  --ntsc-00: #0d0d0d;
-  --ntsc-01: #1c1c1c;
-  --ntsc-02: #2b2b2b;
-  --ntsc-03: #3b3b3b;
-  --ntsc-04: #4a4a4a;
-  --ntsc-08: #878787;
-  --ntsc-0b: #b5b5b5;
-  --ntsc-0f: #f2f2f2;
-  --ntsc-20: #330b00;
-  --ntsc-2e: #ffe188;
-  --ntsc-37: #b06641;
-  --ntsc-3b: #eda37e;
-  --ntsc-3c: #fcb38d;
-  --ntsc-4b: #f597ab;
-  --ntsc-bb: #78ced6;
-  --ntsc-cb: #76d8a7;
-
-  /* What each colour is for. Invariants: text ≥ 4.5:1 on every surface
-   * (sunken, bg, surface, raised), field edges and focus ≥ 3:1.
-   * --raised-hover only ever sits under --text. */
-  --sunken: var(--ntsc-00);
-  --bg: var(--ntsc-01);
-  --surface: var(--ntsc-02);
-  --raised: var(--ntsc-03);
-  --raised-hover: var(--ntsc-04);
-  --line: var(--ntsc-04);
-  --field-line: var(--ntsc-08);
-  --text: var(--ntsc-0f);
-  --muted: var(--ntsc-0b);
-  --accent: var(--ntsc-3b);
-  --accent-hover: var(--ntsc-3c);
-  --on-accent: var(--ntsc-20);
-  --accent-text: var(--ntsc-3c);
-  --accent-soft: color-mix(in srgb, var(--ntsc-3b) 16%, transparent);
-  --edge: var(--ntsc-37);
-  --focus: var(--ntsc-2e);
-  --ok: var(--ntsc-cb);
-  --error: var(--ntsc-4b);
-  --error-soft: color-mix(in srgb, var(--ntsc-4b) 14%, transparent);
-  --teal: var(--ntsc-bb);
-  --teal-soft: color-mix(in srgb, var(--ntsc-bb) 14%, transparent);
-  --mat: var(--ntsc-00);
-  --scrim: color-mix(in srgb, var(--ntsc-00) 78%, transparent);
-  --shadow-1: 0 1px 0 #ffffff0a inset, 0 2px 10px #00000040;
-  --shadow-2: 0 12px 32px #00000080, 0 2px 6px #00000059;
-  --brand-body: var(--ntsc-3b);
-  --brand-edge: var(--ntsc-37);
-  --brand-label: var(--ntsc-0f);
-  /* Old names, same meanings. */
-  --panel: var(--surface);
+  /* Colours, radii, motion and the two font stacks are in tokens.css. */
 
   /* Type */
-  --font-ui: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Press Start 2P", ui-monospace, monospace;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --fs-xs: 12px;
   --fs-sm: 13px;
   --fs-md: 14px;
@@ -108,20 +53,8 @@
   --s-5: 24px;
   --s-6: 32px;
   --s-7: 48px;
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
-  --r-pill: 999px;
   --topbar-h: 60px;
 
-  /* Motion */
-  --dur-fast: 120ms;
-  --dur: 200ms;
-  --dur-slow: 420ms;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  color-scheme: dark;
   font-family: var(--font-ui);
 }
 
@@ -133,6 +66,8 @@ body {
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
 }
 ::selection { background: var(--accent); color: var(--on-accent); }
+a { color: var(--accent-text); text-underline-offset: 3px; }
+a:hover { color: var(--text); }
 
 .page { max-width: 1920px; margin: 0 auto; padding: 0 var(--s-5) var(--s-5); }
 .loading { color: var(--muted); padding: var(--s-6); }
@@ -167,16 +102,22 @@ canvas:focus-visible { outline-offset: 3px; }
 
 .ico { flex: none; display: block; }
 
+/* Kit-font text (KitText in ui/BrandMark.tsx): game titles in the 3x5 font,
+ * square pixels in the text colour. A title the font can't draw is Atkinson bold. */
+.kit-text { display: inline-flex; max-width: 100%; color: inherit; vertical-align: middle; }
+.kit-text svg { display: block; fill: currentColor; max-width: 100%; height: auto; }
+.kit-fallback { font-weight: 700; }
+
 /* 3. Components ---------------------------------------------------------- */
 
 /* Buttons. A bare <button> is primary: cartridge orange with a keycap edge. */
 button {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   font: 700 var(--fs-md) / 1.2 var(--font-ui); letter-spacing: 0.01em;
-  background: var(--accent); color: var(--on-accent); border: 0; border-radius: var(--r-md);
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: var(--r-sm);
   padding: 7px 14px; min-height: 32px; cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+    box-shadow var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 button:where(:not([class]), .primary) { box-shadow: 0 2px 0 var(--edge); margin-bottom: 2px; }
 button:where(:not([class]), .primary):hover:not(:disabled) { background: var(--accent-hover); }
@@ -205,7 +146,7 @@ button.link:hover:not(:disabled) { text-decoration-color: currentColor; }
 
 button.danger, button.link.danger { color: var(--error); }
 button.secondary.danger:hover:not(:disabled), button.quiet.danger:hover:not(:disabled) { background: var(--error-soft); }
-button.primary.danger { background: var(--error); color: var(--bg); box-shadow: 0 2px 0 color-mix(in srgb, var(--error) 60%, #000); }
+button.primary.danger { background: var(--error); color: var(--on-error); box-shadow: 0 2px 0 var(--edge); }
 
 button:disabled { opacity: 0.45; cursor: default; }
 
@@ -218,51 +159,46 @@ input:not([type]), input[type="text"], input[type="number"], input[type="search"
 input:not([type]):hover, input[type="text"]:hover, input[type="number"]:hover, textarea:hover, select:hover { border-color: var(--accent-text); }
 select {
   flex: 1; appearance: none; padding-right: 28px; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1.5 1.5 6 6l4.5-4.5' fill='none' stroke='%23998fa6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 9px center;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; background-position: right 14px center, right 9px center;
 }
 select option { background: var(--surface); color: var(--text); }
 input[type="range"] { accent-color: var(--accent); min-height: 24px; }
 input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; margin: 3px; }
 
-/* Panels: soft trays. */
+/* Panels: flat trays, one level deep. Inside, rules and spacing separate things. */
 .panel {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--s-4); min-width: 0;
-  box-shadow: var(--shadow-1);
 }
 
 .toolbar { display: flex; gap: var(--s-2); flex-wrap: wrap; align-items: center; margin-top: var(--s-2); }
 
 /* Badges */
 .badge {
-  display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; min-height: 22px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; min-height: 22px; border-radius: var(--r-sm);
   font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.02em; color: var(--muted); background: var(--raised); white-space: nowrap;
 }
 .badge.accent { color: var(--accent-text); background: var(--accent-soft); }
 
 /* Segmented control (the Mode switch). */
 .segmented {
-  display: inline-flex; padding: 3px; gap: 2px; background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-pill);
+  display: inline-flex; padding: 2px; gap: 2px; background: var(--sunken); border: 1px solid var(--field-line); border-radius: var(--r-sm);
 }
 .segmented > button {
-  background: transparent; color: var(--muted); border-radius: var(--r-pill); min-height: 30px; padding: 4px 14px; font-weight: 700; box-shadow: none; margin: 0;
+  background: transparent; color: var(--muted); border-radius: var(--r-sm); min-height: 30px; padding: 4px 14px; font-weight: 700; box-shadow: none; margin: 0;
 }
 .segmented > button:hover:not([aria-checked="true"]) { color: var(--text); background: var(--raised); }
-.segmented > button[aria-checked="true"] { background: var(--surface); color: var(--text); box-shadow: 0 1px 0 var(--line), 0 1px 4px #0000002a; }
-.segmented > button[aria-checked="true"]::before {
-  content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--accent); flex: none;
-}
+.segmented > button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
 
 /* Menus */
 .menu-wrap { position: relative; }
 .menu {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; min-width: 200px; display: flex; flex-direction: column; gap: 2px;
-  padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-2);
+  padding: 4px; background: var(--surface); border: 1px solid var(--field-line); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
   animation: pop-in var(--dur) var(--ease-out);
 }
 .menu[hidden] { display: none; }
 .menu > button { justify-content: flex-start; width: 100%; min-height: 36px; padding: 6px 10px; border-radius: var(--r-sm); }
-.menu > button .ico { color: var(--muted); }
 
 /* Dialogs */
 .dialog {
@@ -271,17 +207,14 @@ input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px;
 }
 .dialog[open] { animation: dialog-in var(--dur-slow) var(--ease-out); }
 .dialog.wide { width: min(760px, calc(100vw - 32px)); }
-.dialog::backdrop { background: var(--scrim); backdrop-filter: blur(3px); }
+.dialog::backdrop { background: var(--scrim); }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-4) var(--s-4) 0 var(--s-5); }
 .dialog-head h2 { font: 700 var(--fs-xl) / 1.2 var(--font-ui); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; }
 .dialog-body { padding: var(--s-2) var(--s-5) var(--s-5); font-size: var(--fs-body); line-height: 1.55; }
 .dialog-body .toolbar { margin-top: var(--s-4); }
 .guide ol { padding-left: 0; list-style: none; counter-reset: step; }
-.guide li { position: relative; margin-bottom: var(--s-3); padding-left: 38px; counter-increment: step; }
-.guide li::before {
-  content: counter(step); position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 50%;
-  display: grid; place-items: center; font: 700 var(--fs-sm) / 1 var(--font-ui); background: var(--accent-soft); color: var(--accent-text);
-}
+.guide li { position: relative; margin-bottom: var(--s-3); padding-left: 2em; counter-increment: step; }
+.guide li::before { content: counter(step) "."; position: absolute; left: 0; font-weight: 700; color: var(--text); }
 
 /* Toasts: confirmations that leave on their own. Never in the way of a click. */
 .toaster {
@@ -289,22 +222,15 @@ input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px;
   display: flex; flex-direction: column; align-items: center; gap: var(--s-2); pointer-events: none; width: max-content; max-width: calc(100vw - 32px);
 }
 .toast {
-  display: flex; align-items: center; gap: var(--s-2); margin: 0; padding: 10px 16px 10px 10px; border-radius: var(--r-pill);
-  background: var(--text); color: var(--bg); font-weight: 700; font-size: var(--fs-md); box-shadow: var(--shadow-2);
-  animation: toast-in var(--dur-slow) var(--ease-spring) both, toast-out var(--dur) var(--ease-out) 3.75s forwards;
+  margin: 0; padding: 10px 16px; border-radius: var(--r-sm); border: 1px solid var(--field-line); border-left: 4px solid var(--ok);
+  background: var(--surface); color: var(--text); font-weight: 700; font-size: var(--fs-md); box-shadow: var(--shadow-2);
+  animation: toast-in var(--dur-slow) var(--ease-out) both, toast-out var(--dur) var(--ease-out) 3.75s forwards;
 }
-.toast-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ok); color: var(--bg); }
-.toast.error .toast-icon { background: var(--error); }
+.toast.error { border-left-color: var(--error); }
 
 /* Empty states: one sentence and the way forward. */
-.empty, .things-layout > p.muted {
-  display: grid; place-items: center; text-align: center; gap: var(--s-2); min-height: 180px; margin: 0; padding: var(--s-5);
-  border: 2px dashed var(--line); border-radius: var(--r-lg); color: var(--muted); font-size: var(--fs-body);
-}
-.rules:empty::before {
-  content: "No rules yet. Add one: a sentence like “When the player touches a coin, add points.”";
-  display: block; padding: var(--s-5); text-align: center; border: 2px dashed var(--line); border-radius: var(--r-lg); color: var(--muted);
-}
+.empty, .things-layout > p.muted { margin: var(--s-2) 0; color: var(--muted); font-size: var(--fs-body); max-width: 60ch; }
+.rules:empty::before { content: "No rules yet. Add one: a sentence like “When the player touches a coin, add points.”"; display: block; padding: var(--s-2) 0; color: var(--muted); }
 
 /* Messages */
 .hint { color: var(--muted); font-size: var(--fs-xs); margin: 6px 0; }
@@ -315,19 +241,19 @@ input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px;
 .status.invalid, .status.failed { color: var(--error); }
 .errors {
   color: var(--error); font-size: var(--fs-sm); margin: var(--s-1) 0 var(--s-2); padding: var(--s-2) var(--s-3) var(--s-2) var(--s-6);
-  background: var(--error-soft); border-radius: var(--r-md);
+  background: var(--error-soft); border-radius: var(--r-sm);
 }
 .error { color: var(--error); font-size: var(--fs-sm); }
 .banner {
   max-width: 1920px; margin: var(--s-3) auto 0; padding: var(--s-2) var(--s-4); width: calc(100% - 2 * var(--s-5));
-  background: var(--error-soft); border: 1px solid color-mix(in srgb, var(--error) 50%, transparent); border-radius: var(--r-md);
+  background: var(--error-soft); border: 1px solid var(--error); border-radius: var(--r-sm);
 }
 
 details > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); min-height: 24px; line-height: 24px; font-weight: 700; }
 details > summary:hover { color: var(--text); }
 .code summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); }
 .code pre, .log {
-  background: var(--mat); color: #e9e2d6; border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-3);
+  background: var(--mat); color: var(--code-text); border: 1px solid var(--line); border-radius: var(--r-sm); padding: var(--s-3);
   font: 12px/1.5 var(--font-mono); overflow: auto; max-height: 480px; white-space: pre;
 }
 
@@ -337,7 +263,7 @@ details > summary:hover { color: var(--text); }
 .topbar {
   position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
   margin: 0 calc(-1 * var(--s-5)) var(--s-4); padding: 10px var(--s-5); min-height: var(--topbar-h);
-  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px) saturate(1.2);
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; flex: none; }
@@ -363,18 +289,13 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
   display: flex; align-items: center; gap: var(--s-2); margin: 0; padding: 7px var(--s-5); min-height: 40px;
   font-size: var(--fs-md); border-top: 1px solid var(--line); animation: slide-in var(--dur) var(--ease-out);
 }
-.context-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; flex: none; }
+.context-icon { display: grid; place-items: center; flex: none; color: var(--error); }
 .context-message { flex: 1; min-width: 0; }
 .context-item.error { background: var(--error-soft); }
-.context-item.error .context-icon { background: var(--error); color: var(--bg); }
 .context-item.note { background: var(--teal-soft); }
-.context-item.note .context-icon { background: var(--teal); color: var(--bg); }
 .context-item.guide { background: var(--accent-soft); }
-.context-item.guide .context-icon { background: var(--accent); color: var(--on-accent); }
 .context-item.jam { background: var(--teal-soft); }
-.context-item.jam .context-icon { background: var(--teal); color: var(--bg); }
 .context-item.offline { background: var(--surface); color: var(--muted); }
-.context-item.offline .context-icon { background: var(--raised); color: var(--text); }
 .context-item button:not(.link) { min-height: 28px; padding: 4px 12px; }
 .topbar-group.history { gap: 2px; }
 .topbar button.secondary { min-height: 36px; }
@@ -401,25 +322,26 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 
 /* The editing side: a tray with a tab rail. */
 .workspace {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); min-width: 0; box-shadow: var(--shadow-1);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); min-width: 0;
 }
 .workspace-tabs {
   display: flex; gap: var(--s-1); padding: var(--s-2) var(--s-3) 0; border-bottom: 1px solid var(--line); overflow-x: auto;
 }
 .workspace-tabs button {
   position: relative; background: transparent; color: var(--muted); font: 700 var(--fs-body) / 1 var(--font-ui); letter-spacing: 0.01em;
-  padding: 10px 18px 12px; min-height: 44px; border-radius: var(--r-md) var(--r-md) 0 0; box-shadow: none; margin: 0;
+  padding: 10px 18px 12px; min-height: 44px; border-radius: var(--r-sm) var(--r-sm) 0 0; box-shadow: none; margin: 0;
 }
 .workspace-tabs button::after {
-  content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0;
-  background: var(--accent-text); transform: scaleX(0); transition: transform var(--dur) var(--ease-spring);
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 3px;
+  background: var(--accent-text); transform: scaleX(0); transition: transform var(--dur) var(--ease-out);
 }
 .workspace-tabs button:hover { color: var(--text); background: var(--raised); }
 .workspace-tabs button:active, .segmented > button:active { transform: none; }
 .workspace-tabs button.active, .workspace-tabs button[aria-selected="true"] { color: var(--text); }
 .workspace-tabs button.active::after, .workspace-tabs button[aria-selected="true"]::after { transform: scaleX(1); }
 .workspace-panel { padding: var(--s-5); font-size: var(--fs-md); container-type: inline-size; animation: slide-in var(--dur) var(--ease-out); }
-.workspace-panel > .panel { background: transparent; border: 0; padding: 0; box-shadow: none; border-radius: 0; }
+/* One container level: anything panel-shaped inside the tray is flat. */
+.workspace-panel .panel { background: transparent; border: 0; padding: 0; box-shadow: none; border-radius: 0; }
 .workspace-panel > .panel > h2 {
   position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
@@ -431,39 +353,38 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .chooser { position: relative; max-width: 1120px; margin: var(--s-6) auto; }
 .page.start .chooser { margin-top: clamp(var(--s-6), 9vh, 112px); }
 .chooser h2 {
-  font: 400 28px / 1.45 var(--font-display); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 var(--s-3);
+  font: 700 var(--fs-2xl) / 1.2 var(--font-ui); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 var(--s-3);
 }
 .chooser-lead { font-size: var(--fs-lg); max-width: 60ch; margin: 0 0 var(--s-5); }
 .chooser-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-4); margin: var(--s-4) 0; }
 .chooser-card {
   display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; text-align: left; padding: 0; overflow: hidden;
   background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-lg); font-weight: 400;
-  box-shadow: 0 3px 0 var(--line), var(--shadow-1); margin-bottom: 3px;
-  transition: transform var(--dur) var(--ease-spring), box-shadow var(--dur) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
 }
-.chooser-card:hover { border-color: var(--accent-text); transform: translateY(-3px); box-shadow: 0 6px 0 var(--edge), var(--shadow-2); }
-.chooser-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--edge); }
-.chooser-card strong { font: 400 13px / 1.5 var(--font-display); letter-spacing: 0.02em; }
+.chooser-card:hover, .chooser-card:focus-visible { border-color: var(--accent-text); }
+.chooser-card:active { background: var(--raised); }
+.chooser-card strong { font: 700 var(--fs-lg) / 1.2 var(--font-ui); color: var(--text); }
 .chooser-card.text-only { justify-content: flex-start; }
 /* My games: the games made so far, each with a picture of it running. */
 .my-games { margin: 0 0 var(--s-6); }
 .my-games h3:focus { outline: none; }
 .my-games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-4); list-style: none; margin: var(--s-3) 0 0; padding: 0; }
 .game-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.game-card:hover, .game-card:focus-within { border-color: var(--accent-text); }
 .game-open {
   display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; text-align: left; font-weight: 400;
   background: none; color: var(--text); border-radius: 0;
 }
 .game-open:hover:not(:disabled) { background: var(--raised); }
-.game-open strong { font: 400 12px / 1.5 var(--font-display); letter-spacing: 0.02em; overflow-wrap: anywhere; }
-.game-picture { display: block; aspect-ratio: 4 / 3; margin: 8px 8px 0; border-radius: 8px; overflow: hidden; background: var(--mat); }
+.game-open strong { font: 700 var(--fs-body) / 1.2 var(--font-ui); overflow-wrap: anywhere; }
+.game-picture { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--mat); border-bottom: 1px solid var(--line); }
 .game-picture img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 .game-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); padding: 0 var(--s-2) var(--s-2); margin-top: auto; }
 .game-actions button { min-height: 32px; padding: 4px 8px; font-size: var(--fs-sm); }
 /* A little TV in each card: the preset's own background and cast. */
 .card-screen {
-  position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; margin: 8px 8px 0; border-radius: 10px; overflow: hidden;
-  box-shadow: inset 0 0 0 1px #ffffff14, inset 0 -18px 30px #00000038;
+  position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; overflow: hidden; border-bottom: 1px solid var(--line);
 }
 .card-body { display: flex; flex-direction: column; gap: 6px; padding: var(--s-3) var(--s-4) var(--s-4); }
 .card-body .muted.small { font-size: var(--fs-sm); line-height: 1.45; }
@@ -473,11 +394,11 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .chooser-foot { font-size: var(--fs-sm); margin-top: var(--s-5); }
 .chooser-close { position: absolute; top: var(--s-4); right: var(--s-4); }
 .chooser-backdrop {
-  position: fixed; inset: 0; background: var(--scrim); backdrop-filter: blur(4px); z-index: 50; overflow: auto; padding: var(--s-4);
+  position: fixed; inset: 0; background: var(--scrim); z-index: 50; overflow: auto; padding: var(--s-4);
   animation: scrim-in var(--dur) var(--ease-out);
 }
 .chooser-backdrop .chooser {
-  background: var(--bg); border: 1px solid var(--line); border-radius: 20px; padding: var(--s-6); box-shadow: var(--shadow-2);
+  background: var(--bg); border: 1px solid var(--field-line); border-radius: var(--r-lg); padding: var(--s-6); box-shadow: var(--shadow-2);
   animation: dialog-in var(--dur-slow) var(--ease-out);
 }
 .chooser-backdrop .chooser h2 { font-size: 22px; }
@@ -490,7 +411,6 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .sprite-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; }
 .sprite-thumb {
   background: var(--mat); border-radius: var(--r-sm); min-height: 36px; display: grid; place-items: center; padding: 6px;
-  background-image: radial-gradient(#ffffff0d 1px, transparent 1px); background-size: 6px 6px;
 }
 .sprite-preview { image-rendering: pixelated; max-width: 96px; }
 .sprite-meta { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-md); }
@@ -518,13 +438,13 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
   background: var(--mat); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-2);
   animation: pop-in var(--dur) var(--ease-out);
 }
-.picker-grid button { width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: 4px; box-shadow: none; margin: 0; }
-.picker-grid button.selected { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px #000; }
+.picker-grid button { width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: 0; box-shadow: none; margin: 0; }
+.picker-grid button.selected { box-shadow: inset 0 0 0 2px var(--ntsc-0f), inset 0 0 0 4px var(--ntsc-00); }
 .picker-name {
   grid-column: 1 / -1; display: flex; align-items: center; gap: var(--s-2); margin: var(--s-2) 0 0; font-size: var(--fs-sm); color: var(--text);
 }
 .picker-name strong { text-transform: capitalize; }
-.picker-chip { width: 16px; height: 16px; border-radius: 4px; box-shadow: 0 0 0 1px var(--field-line); }
+.picker-chip { width: 16px; height: 16px; border-radius: 0; box-shadow: 0 0 0 1px var(--field-line); }
 
 /* Sliders and labelled fields */
 .slider { display: grid; grid-template-columns: 1fr 130px 22px; align-items: center; gap: var(--s-2); font-size: var(--fs-md); padding: 3px 0; }
@@ -577,12 +497,11 @@ details > summary::marker { color: var(--accent-text); }
 .se-color {
   width: 32px; height: 32px; padding: 0; border-radius: var(--r-sm); border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--field-line); margin: 0;
 }
-.se-color.transparent { background: repeating-conic-gradient(#3a3444 0 25%, #221e29 0 50%) 0 0 / 10px 10px; }
-.se-color.selected { box-shadow: 0 0 0 2px var(--text); transform: translateY(-1px); }
+.se-color.transparent { background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 10px 10px; }
+.se-color.selected { box-shadow: 0 0 0 2px var(--text); }
 .se-palette { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .se-canvas-wrap {
-  display: grid; place-items: center; background: var(--mat); border-radius: var(--r-md); padding: var(--s-3);
-  background-image: radial-gradient(#ffffff0f 1px, transparent 1px); background-size: 8px 8px;
+  display: grid; place-items: center; background: var(--mat); border-radius: var(--r-sm); padding: var(--s-3);
 }
 .se-canvas { max-width: 100%; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
 
@@ -595,12 +514,11 @@ button.brush.active, .brush.active { background: var(--accent); color: var(--on-
 .room-canvas { width: 100%; max-width: 960px; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
 
 /* Rules: sentences you can change word by word. */
-.rules { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; gap: var(--s-2); counter-reset: rule; }
+.rules { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; counter-reset: rule; border-top: 1px solid var(--line); }
 .rule {
-  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; gap: 6px;
-  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  border-bottom: 1px solid var(--line); padding: var(--s-2) 0; display: flex; flex-direction: column; gap: 6px;
+  transition: background-color var(--dur-fast) var(--ease-out);
 }
-.rule:hover { border-color: color-mix(in srgb, var(--field-line) 60%, var(--line)); }
 .rule-when, .rule-then { display: flex; align-items: center; gap: var(--s-2); }
 .rule-then { padding-left: 14px; }
 .kw { font-size: var(--fs-sm); color: var(--accent-text); width: 34px; flex: none; font-weight: 700; }
@@ -609,13 +527,13 @@ button.brush.active, .brush.active { background: var(--accent); color: var(--on-
 .rule-action { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 /* "Fit" selects: words in the sentence, not boxes. */
 select.fit, input.fit {
-  flex: none; max-width: 100%; background-color: transparent; background-image: none; border: 0; border-radius: 4px 4px 0 0;
+  flex: none; max-width: 100%; background-color: transparent; background-image: none; border: 0; border-radius: 0;
   border-bottom: 2px dotted var(--accent-text); color: var(--accent-text);
   font: 700 var(--fs-body) / 1.3 var(--font-ui); padding: 2px 20px 2px 4px; min-height: 30px;
 }
 select.fit {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23998fa6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 5px center;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; background-position: right 9px center, right 5px center;
 }
 input.fit { padding-right: 4px; }
 select.fit:hover, input.fit:hover, select.fit:focus, input.fit:focus { border-bottom-style: solid; background-color: var(--accent-soft); }
@@ -631,13 +549,13 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 }
 .rule-handle:hover { color: var(--text); background: var(--raised); }
 .rule.dragging { opacity: 0.5; }
-.rule.drop-target { border-color: var(--accent-text); box-shadow: 0 0 0 1px var(--accent-text); }
+.rule.drop-target { box-shadow: inset 0 2px 0 var(--accent-text); }
 .rule-tools { display: flex; align-items: center; gap: var(--s-2); font-size: var(--fs-sm); }
 .rule .rule-tools button.link { font-size: var(--fs-sm); }
 
 /* Counters */
-.counters { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--fs-md); }
-.counter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: var(--s-2) var(--s-3); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); }
+.counters { list-style: none; margin: 0 0 var(--s-3); padding: 0; display: flex; flex-direction: column; font-size: var(--fs-md); border-top: 1px solid var(--line); }
+.counter-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
 .counter-row > input:not([type]) { width: 12em; }
 .counter-row label { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -656,27 +574,24 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 
 .play-column > .panel { padding: var(--s-4); }
 .preview > h2, .show-it > h2 { display: flex; align-items: center; gap: var(--s-2); }
-.preview > h2::before {
-  content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 25%, transparent);
-}
 
-/* A restrained TV bezel: dark plastic, a slightly rounded screen, a power
- * light that turns on when the game is built. No logos, no curvature. */
+/* A plain TV bezel: flat dark plastic and a power light, the one status
+ * light in the app. Off before the first build, lit while the game runs, dim
+ * while paused. The Play panel says the same thing in words. No logos. */
 .tv-stage {
-  position: relative; padding: 12px 12px 22px; border-radius: 18px;
-  background: linear-gradient(180deg, var(--ntsc-03), var(--ntsc-01) 60%, var(--ntsc-00));
-  box-shadow: inset 0 1px 0 #ffffff14, inset 0 -2px 0 #00000080, 0 10px 24px #00000059;
+  position: relative; padding: 12px 12px 22px; border-radius: var(--r-lg);
+  background: var(--raised); border: 1px solid var(--line);
   margin-bottom: var(--s-3);
 }
 .tv-stage::after {
-  content: ""; position: absolute; right: 18px; bottom: 8px; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--ntsc-04); transition: background-color var(--dur) var(--ease-out), box-shadow var(--dur) var(--ease-out);
+  content: ""; position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px;
+  background: var(--power-off); transition: background-color var(--dur) var(--ease-out);
 }
-.preview:has(.status.built) .tv-stage::after { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.preview:has(.status.built) .tv-stage::after { background: var(--power-on); }
+.preview:has(.status.built) .tv-stage.tv-paused::after { background: var(--power-paused); }
 .emu {
-  position: relative; background: #000; border-radius: 8px; overflow: hidden;
-  box-shadow: 0 0 0 1px #000, inset 0 0 0 1px #ffffff0d;
-  animation: cartridge-insert var(--dur-slow) var(--ease-spring) both;
+  position: relative; background: var(--ntsc-00); overflow: hidden;
+  animation: cartridge-insert var(--dur-slow) var(--ease-out) both;
 }
 .emu .screen { cursor: pointer; }
 .emu .screen:focus { outline: none; }
@@ -684,29 +599,28 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 /* A nudge to click in; it goes away while the game has the keyboard. */
 .emu:not(:focus-within)::after {
   content: "Click to play"; position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
-  background: #000000c4; color: #fff; padding: 5px 12px; border-radius: var(--r-pill); font: 700 13px / 1.2 var(--font-ui); pointer-events: none;
-  box-shadow: 0 0 0 1px #ffffff26;
+  background: var(--accent); color: var(--on-accent); padding: 5px 12px; border-radius: var(--r-sm); box-shadow: 0 2px 0 var(--edge);
+  font: 700 13px / 1.2 var(--font-ui); pointer-events: none;
 }
 .emu .screen { display: block; width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; }
-.emu .screen:fullscreen { object-fit: contain; background: #000; }
+.emu .screen:fullscreen { object-fit: contain; background: var(--ntsc-00); }
 .emu-controls { display: flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; margin-top: var(--s-2); }
 .emu-controls button { min-height: 32px; padding: 5px 8px; gap: 5px; font-size: var(--fs-sm); }
-.emu-controls button .ico { width: 16px; height: 16px; }
 .emu-controls .hint { margin: 0 0 0 auto; flex-basis: 100%; }
-/* The build tick: a pixel check that pops in when the game is up to date. */
+/* The build tick: a pixel check that steps in when the game is up to date. */
 .status.built::before {
-  content: ""; width: 16px; height: 16px; flex: none; background: currentColor; animation: tick-pop var(--dur-slow) var(--ease-spring) both;
+  content: ""; width: 16px; height: 16px; flex: none; background: currentColor; animation: tick-pop var(--dur-slow) steps(3, end) both;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 details.dev { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--line); }
 
 /* Console time */
-.cpu-meter { font-size: var(--fs-sm); padding: var(--s-3); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); }
+.cpu-meter { font-size: var(--fs-sm); padding: var(--s-3) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .cpu-meter .muted.small { margin-bottom: 0; }
 .cpu-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 700; }
-.cpu-bar { height: 10px; background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
-.cpu-bar span { display: block; height: 100%; border-radius: var(--r-pill); transition: width var(--dur-slow) var(--ease-out); }
+.cpu-bar { height: 10px; background: var(--sunken); border: 1px solid var(--field-line); overflow: hidden; }
+.cpu-bar span { display: block; height: 100%; transition: width var(--dur-slow) var(--ease-out); }
 .cpu-bar .ok, strong.ok { background-color: var(--ok); color: var(--ok); }
 .cpu-bar .near, strong.near { background-color: var(--accent); color: var(--accent-text); }
 .cpu-bar .over, strong.over { background-color: var(--error); color: var(--error); }
@@ -718,101 +632,98 @@ strong.ok, strong.near, strong.over { background: none; font-variant-numeric: ta
 .show-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--s-2); }
 /* Make it real: the main event, with primary weight. */
 .show-grid.real .show-button {
-  min-height: 76px; padding: 12px 14px; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  box-shadow: 0 2px 0 var(--edge); margin-bottom: 2px;
+  min-height: 76px; padding: 12px 14px; background: var(--accent-soft); border-color: var(--accent);
 }
 .show-grid.real .show-button strong { font-size: 16px; }
 .show-grid.real .show-button span { color: var(--text); }
-.show-grid.real .show-button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 26%, transparent); border-color: var(--accent); }
+.show-grid.real .show-button:hover:not(:disabled) { border-color: var(--accent-text); }
 .show-button {
   display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 3px; text-align: left; min-height: 64px;
-  background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; font-weight: 400;
+  background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-weight: 400;
 }
 .show-button strong { font: 700 var(--fs-body) / 1.2 var(--font-ui); display: inline-flex; align-items: center; gap: 7px; }
-.show-button strong .ico { color: var(--accent-text); }
+.show-button .ico { display: none; }
 .show-button span { font-size: var(--fs-xs); color: var(--muted); line-height: 1.35; }
-.show-button:hover:not(:disabled) { border-color: var(--accent-text); background: var(--raised); transform: translateY(-1px); }
+.show-button:hover:not(:disabled), .show-button:focus-visible { border-color: var(--accent-text); background: var(--raised); }
 .show-button.recording { border-color: var(--error); background: var(--error-soft); }
-.rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--error); animation: rec 1s infinite; }
+.rec-dot { display: inline-block; width: 10px; height: 10px; background: var(--error); animation: rec 1s steps(1, end) infinite; }
 
 /* TV mode: the game as big as the screen allows, with its title and a prompt. */
 .tv-title, .tv-hint { display: none; }
 .tv-stage:fullscreen {
   padding: 0; border-radius: 0; box-shadow: none; margin: 0;
-  background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: none;
+  background: var(--ntsc-00); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: none;
 }
 /* The pointer hides only while the game plays: it's back when paused or when the mouse moves. */
 .tv-stage:fullscreen.tv-paused, .tv-stage:fullscreen.pointer-awake { cursor: auto; }
-.tv-stage:fullscreen .tv-title { display: block; margin: 0; color: #fff; font: 400 3.4vh / 1.3 var(--font-display); }
-.tv-stage:fullscreen .tv-hint { display: block; margin: 0; color: #b9afc4; font-size: 2.2vh; }
+.tv-stage:fullscreen .tv-title { display: block; margin: 0; color: var(--text); font: 700 4vh / 1.2 var(--font-ui); text-transform: uppercase; }
+.tv-stage:fullscreen .tv-title .kit-text svg { height: 5vh; width: auto; }
+.tv-stage:fullscreen .tv-hint { display: block; margin: 0; color: var(--muted); font-size: 2.2vh; }
 .tv-stage:fullscreen .emu { width: min(100vw, calc(84vh * 4 / 3)); border-radius: 0; box-shadow: none; margin: 0; animation: none; }
 .tv-stage:fullscreen .emu:focus-within { box-shadow: none; }
 .tv-stage:fullscreen::after { display: none; }
 .tv-stage:fullscreen .emu::after { font-size: 2.4vh; }
 
 /* Getting started (kit editor): three steps, then ideas for the starter. */
-.kit-guide { margin: 8px 8px 0; padding: 12px 14px; border: 1px solid var(--accent); border-radius: 8px; background: #241f17; }
+.kit-guide { margin: 0; padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--line); }
 .kit-guide:focus { outline: none; }
-.kit-guide:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.kit-guide:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .kit-guide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .kit-guide-head h2 { font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; }
-.guide-steps { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.guide-steps { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); }
 .guide-steps li {
-  display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: 1fr auto; gap: 6px 10px; align-items: start;
-  padding: 8px; border-radius: 6px; border: 1px solid var(--line);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 6px; align-items: baseline; flex: 1 1 200px;
+  padding: 0 0 0 var(--s-2); border-left: 3px solid transparent;
 }
 .guide-steps li > button { grid-column: 2; justify-self: start; }
-.guide-steps li.current { background: #2e2719; border-color: var(--accent); }
-.guide-num {
-  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700;
-  border: 2px solid var(--field-line); color: var(--text);
-}
-.guide-steps li.current .guide-num { border-color: var(--accent); color: var(--accent); }
-.guide-steps li.done .guide-num { background: var(--ok); border-color: var(--ok); color: #0d1f10; }
+.guide-steps li.current { border-left-color: var(--accent-text); }
+.guide-num { font-weight: 700; color: var(--text); }
+.guide-num::after { content: "."; }
+.guide-steps li.current .guide-num { color: var(--accent-text); }
+.guide-steps li.done .guide-num { color: var(--ok); }
 .guide-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .guide-ideas h3 { font-size: 14px; margin: 12px 0 4px; }
 .guide-ideas ul { margin: 0; padding-left: 18px; }
 .guide-ideas li { margin-bottom: 4px; }
-.workspace-tabs button.guide-target { color: var(--text); box-shadow: inset 0 0 0 2px var(--accent); border-radius: 6px 6px 0 0; }
-.guide-play .tv-stage { box-shadow: 0 0 0 3px var(--accent); border-radius: 4px; }
+.workspace-tabs button.guide-target { color: var(--accent-text); }
+.guide-play .tv-stage { border-color: var(--accent-text); box-shadow: 0 0 0 2px var(--accent-text); }
 
 /* Empty and broken states: what's missing, and what to do about it. */
-.empty-state { border: 1px dashed var(--field-line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; color: var(--text); }
-.broken { border: 1px solid var(--error); border-radius: 8px; padding: 8px 12px; margin: 6px 0; }
+.empty-state { margin: 8px 0; color: var(--text); }
+.broken { border-left: 4px solid var(--error); padding: 4px 12px; margin: 6px 0; }
 .broken p { margin: 0 0 4px; }
 .broken ul { margin: 0; padding-left: 18px; }
 .error-help { color: var(--text); }
 .cpu-word.ok { color: var(--ok); }
-.cpu-word.near { color: var(--accent); }
+.cpu-word.near { color: var(--accent-text); }
 .cpu-word.over { color: var(--error); }
 .cpu-word { font-weight: 700; }
 .busy-fixes p { margin: 6px 0 4px; }
 .busy-fixes ul { margin: 0; padding-left: 18px; }
 .busy-fixes li { margin-bottom: 4px; }
-.chooser-kind { color: var(--accent); font-weight: 600; }
+.chooser-kind { color: var(--accent-text); font-weight: 700; }
 .thing-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .saved:empty { display: none; }
 .saved { color: var(--ok); }
-.boot-report { display: block; width: 100%; margin: 6px 0; font: 12px ui-monospace, monospace; background: #0f1115; color: var(--text); border: 1px solid var(--field-line); border-radius: 6px; padding: 6px; }
-button.danger-solid { background: var(--error); color: #2a0806; }
+.boot-report { display: block; width: 100%; margin: 6px 0; font: 12px var(--font-mono); background: var(--sunken); color: var(--text); border: 1px solid var(--field-line); border-radius: var(--r-sm); padding: 6px; }
+button.danger-solid { background: var(--error); color: var(--on-error); }
 
 /* 7. Motion -------------------------------------------------------------- */
 
-@keyframes pop-in { from { transform: translateY(-4px) scale(0.98); } }
-/* Entrances move rather than fade, so text is never shown at reduced contrast. */
-@keyframes dialog-in { from { transform: translateY(12px) scale(0.98); } }
+/* Entrances move rather than fade, so text is never shown at reduced contrast. Ease-out, no overshoot. */
+@keyframes pop-in { from { transform: translate(0, -4px); } }
+@keyframes dialog-in { from { transform: translateY(8px); } }
 @keyframes slide-in { from { transform: translateY(4px); } }
-@keyframes scrim-in { from { background-color: transparent; backdrop-filter: none; } }
-@keyframes toast-in { from { opacity: 0; transform: translateY(16px) scale(0.96); } }
-@keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
-@keyframes tick-pop { 0% { transform: scale(0); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
-@keyframes cartridge-insert { from { transform: translateY(-14px); opacity: 0.2; } }
-@keyframes rec { 50% { opacity: 0.3; } }
+@keyframes scrim-in { from { background-color: transparent; } }
+@keyframes toast-in { from { transform: translateY(16px); } }
+@keyframes toast-out { to { opacity: 0; } }
+@keyframes tick-pop { from { transform: scale(0.34); } }
+@keyframes cartridge-insert { from { transform: translate(0, -12px); } }
+@keyframes rec { 50% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --dur-fast: 1ms; --dur: 1ms; --dur-slow: 1ms; }
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-  .chooser-card:hover, .show-button:hover:not(:disabled) { transform: none; }
   .rec-dot { animation: none; }
 }
 

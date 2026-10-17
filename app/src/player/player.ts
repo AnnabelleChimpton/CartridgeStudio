@@ -4,6 +4,7 @@
 
 import runtime from "./runtime.js?raw";
 import { fontRows } from "../kit/font.ts";
+import { tokensCss } from "../ui/tokens.ts";
 import { controlsText, playerInfo, UNKNOWN_CONTROLS, type PlayerInfo } from "./game-info.ts";
 
 /** A one-file page: the core, runtime and licence are inline. */
@@ -122,43 +123,41 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${t}</title>
 <style>
-  /* The app's palette (NTSC entries, as in styles.css): page $01, panel $02, raised $03, line $04, text $0F, muted $0B, accent $3B over edge $37. */
-  :root { --bg: #1c1c1c; --surface: #2b2b2b; --raised: #3b3b3b; --line: #4a4a4a; --text: #f2f2f2; --muted: #b5b5b5;
-    --accent: #eda37e; --accent-hover: #fcb38d; --edge: #b06641; --on-accent: #330b00; --focus: #ffe188; --ok: #76d8a7; --black: #0d0d0d;
-    --font-ui: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  /* The app's tokens (ui/tokens.ts): NTSC palette entries, radii and motion. */
+${tokensCss()}  :root { --black: var(--mat); }
   html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font: 16px/1.45 var(--font-ui); }
   body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; box-sizing: border-box;
     min-height: 100vh; min-height: 100dvh; touch-action: manipulation; }
   h1 { margin: 0; text-align: center; font-size: clamp(18px, 4vw, 30px); line-height: 1.2; }
   h1 svg, #box svg { display: block; margin: 0 auto; max-width: 100%; height: auto; fill: var(--text); }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  #noplay { max-width: 34em; margin: 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--accent); border-radius: 4px; }
+  #noplay { max-width: 34em; margin: 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--accent); border-radius: var(--r-lg); }
   .js #noplay { display: none; }
   .nojs #start, .nojs .bar button, .nojs #pad, .nojs #skip { display: none; }
   main { display: contents; }
   #game { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
   /* The same plain TV bezel as the app, with its power light: on while the game runs, dim while paused. */
   .bezel { position: relative; box-sizing: border-box; width: min(100%, calc((100vh - 250px) * 4 / 3 + 24px)); padding: 12px 12px 22px;
-    border-radius: 4px; background: var(--raised); border: 1px solid var(--line); }
-  #power { position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px; background: var(--line); }
-  .playing #power { background: var(--ok); }
-  .playing.paused #power { background: #4f9070; }
-  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: #000; touch-action: none; }
+    border-radius: var(--r-lg); background: var(--raised); border: 1px solid var(--line); }
+  #power { position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px; background: var(--power-off); }
+  .playing #power { background: var(--power-on); }
+  .playing.paused #power { background: var(--power-paused); }
+  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--mat); touch-action: none; }
   #stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; display: grid; place-items: center; }
   #screen { width: 100%; height: 100%; image-rendering: pixelated; display: block; outline: none; }
-  #screen:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  #screen:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   #stage:fullscreen #screen { width: min(100vw, calc(100vh * 4 / 3)); height: auto; aspect-ratio: 4 / 3; }
-  #box { position: absolute; inset: 0; overflow: hidden; background: var(--box-bg, #000); transition: opacity 160ms ease-out; }
+  #box { position: absolute; inset: 0; overflow: hidden; background: var(--box-bg, var(--mat)); transition: opacity var(--dur) var(--ease-out); }
   #box::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 6px var(--c1, var(--line)); }
   #box > canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
   #box .box-title { position: absolute; left: 6%; right: 6%; top: 9%; margin: 0; text-align: center; color: var(--text);
     font: 700 clamp(20px, 6vw, 48px) / 1.05 var(--font-ui); text-transform: uppercase; }
-  #box svg { width: 88%; filter: drop-shadow(2px 2px 0 #000); }
+  #box svg { width: 88%; filter: drop-shadow(2px 2px 0 var(--mat)); }
   #box.gone { opacity: 0; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { #box { transition: none; } }
-  button { font: 700 15px / 1.2 var(--font-ui); border: 0; border-radius: 4px; cursor: pointer; min-height: 44px; padding: 8px 14px; margin-bottom: 2px; }
+  button { font: 700 15px / 1.2 var(--font-ui); border: 0; border-radius: var(--r-sm); cursor: pointer; min-height: 44px; padding: 8px 14px; margin-bottom: 2px; }
   button:active { transform: translateY(2px); box-shadow: none; }
-  button:focus-visible, a:focus-visible, summary:focus-visible, pre:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  button:focus-visible, a:focus-visible, summary:focus-visible, pre:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   /* Keycaps: the accent with its 2px edge, or the raised grey with its line. */
   #start { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); z-index: 2; white-space: nowrap;
     font-size: clamp(15px, min(2.6vw, 4vh), 22px); padding: 10px 18px; background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
@@ -168,7 +167,7 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
   button.plain:hover { background: var(--line); }
   #skip { position: absolute; right: 8px; bottom: 8px; z-index: 2; }
   .playing #start, .playing #skip, #skip.gone { display: none; }
-  #paused { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); margin: 0; padding: 6px 14px; border-radius: 4px;
+  #paused { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); margin: 0; padding: 6px 14px; border-radius: var(--r-sm);
     background: var(--black); color: var(--text); font-weight: 700; }
   .bar { display: flex; gap: 10px 14px; align-items: center; flex-wrap: wrap; justify-content: center; color: var(--muted); font-size: 15px; }
   .bar p { margin: 0; text-align: center; }
@@ -177,13 +176,13 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
   details { max-width: 640px; font-size: 13px; }
   summary { cursor: pointer; padding: 6px 0; }
   pre { white-space: pre-wrap; max-height: 240px; overflow: auto; text-align: left; font-size: 12px; }
-  a { color: var(--accent-hover); }
+  a { color: var(--accent-text); }
   .back { align-self: flex-start; font-size: 15px; }
   /* Touch: a pad and a button under the screen, or beside it when the phone is sideways. */
   #pad { display: none; }
   .touch #pad { display: flex; justify-content: space-between; align-items: center; gap: 24px; width: min(100%, 520px);
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-  .dpad { position: relative; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; touch-action: none; }
+  .dpad { position: relative; box-sizing: border-box; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); touch-action: none; }
   .dpad.free { width: 168px; height: 168px; }
   .dpad.lr { width: 208px; height: 92px; }
   .arrow { position: absolute; width: 0; height: 0; border: 14px solid transparent; }
@@ -193,7 +192,7 @@ export function playerHtml(page: PlayerPage | LinkedPlayerPage): string {
   .free .right, .lr .right { top: calc(50% - 14px); right: 14px; border-left: 20px solid var(--muted); border-right: 0; }
   .dpad .on.up { border-bottom-color: var(--accent); } .dpad .on.down { border-top-color: var(--accent); }
   .dpad .on.left { border-right-color: var(--accent); } .dpad .on.right { border-left-color: var(--accent); }
-  #fire { display: grid; place-items: center; width: 104px; height: 104px; border-radius: 4px; margin-left: auto; background: var(--accent); color: var(--on-accent);
+  #fire { display: grid; place-items: center; width: 104px; height: 104px; border-radius: var(--r-sm); margin-left: auto; background: var(--accent); color: var(--on-accent);
     font-weight: 700; font-size: 18px; box-shadow: 0 4px 0 var(--edge); touch-action: none; }
   #fire.on { transform: translateY(4px); box-shadow: none; }
   @media (orientation: landscape) and (max-height: 560px) {

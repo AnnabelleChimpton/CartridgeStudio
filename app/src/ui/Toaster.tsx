@@ -4,7 +4,6 @@
 
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Icon } from "./Icon.tsx";
 
 interface Toast {
   id: number;
@@ -42,9 +41,6 @@ export function Toaster() {
     <div className="toaster" role="status" aria-live="polite">
       {list.map((t) => (
         <p key={t.id} className={`toast ${t.kind}`}>
-          <span className="toast-icon">
-            <Icon name={t.kind === "ok" ? "check" : "close"} size={16} />
-          </span>
           {t.message}
         </p>
       ))}

@@ -5,6 +5,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { arrowKeys, drawCursor, radioProps, tabProps, useGridKeyboard } from "../ui/a11y.ts";
 import { colorName as paletteName, ntscCss } from "../ui/ntsc.ts";
+import { paint } from "../ui/tokens.ts";
 import { ImportPicture } from "./ImportPicture.tsx";
 import {
   clearFrame,
@@ -98,7 +99,7 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
       for (let x = 0; x < width; x++) {
         const v = (frame[y]?.charCodeAt(x) ?? 48) - 48;
         // Checkerboard for transparent pixels.
-        ctx.fillStyle = v <= 0 || !colors[v - 1] ? ((x + y) % 2 ? "#23262e" : "#1a1d23") : ntscCss(colors[v - 1]!);
+        ctx.fillStyle = v <= 0 || !colors[v - 1] ? ((x + y) % 2 ? paint("checker-b") : paint("checker-a")) : ntscCss(colors[v - 1]!);
         ctx.fillRect(x * cellW, y * cellH, cellW, cellH);
       }
     }

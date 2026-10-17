@@ -11,6 +11,7 @@ import { MyGames, type LibraryActions } from "./MyGames.tsx";
 import { ntscCss } from "./ntsc.ts";
 import { TIERS, useTier } from "./prefs.ts";
 import { SpritePreview } from "./SpritePreview.tsx";
+import { KitText } from "./BrandMark.tsx";
 import { Brand } from "./TopBar.tsx";
 
 export type StartChoice = { kind: "kit"; preset: string } | { kind: "code" };
@@ -81,7 +82,9 @@ function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?
         <button key={p.id} type="button" className="chooser-card" {...liveProps(p.id)} onClick={() => onChoose({ kind: "kit", preset: p.id })}>
           <Screen background={p.game.background} cast={kitCast(p.game)} playing={live === p.id} />
           <span className="card-body">
-            <strong>{p.name}</strong>
+            <strong>
+              <KitText text={p.name} />
+            </strong>
             <span className="chooser-kind small">{p.kind}</span>
             <span className="muted small">{p.description}</span>
           </span>

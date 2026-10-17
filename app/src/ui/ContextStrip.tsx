@@ -10,7 +10,7 @@
 // The strip itself is part of the top bar.
 
 import { useId, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
-import { Icon, type IconName } from "./Icon.tsx";
+import { Icon } from "./Icon.tsx";
 
 export type ContextKind = "error" | "note" | "guide" | "jam" | "offline";
 
@@ -24,7 +24,6 @@ export interface ContextItemProps {
 }
 
 const PRIORITY: ContextKind[] = ["error", "note", "guide", "jam", "offline"];
-const ICONS: Record<ContextKind, IconName> = { error: "close", note: "code", guide: "star", jam: "clip", offline: "system" };
 
 let items = new Map<string, ContextItemProps>();
 let top: ContextItemProps | null = null;
@@ -84,9 +83,11 @@ export function ContextStrip() {
 function Line({ item }: { item: ContextItemProps }) {
   return (
     <p className={`context-item ${item.kind}`}>
-      <span className="context-icon">
-        <Icon name={ICONS[item.kind]} size={16} />
-      </span>
+      {item.kind === "error" && (
+        <span className="context-icon">
+          <Icon name="error" />
+        </span>
+      )}
       <span className="context-message">{item.message}</span>
       {item.action}
       {item.onDismiss && (

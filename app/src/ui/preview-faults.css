@@ -3,6 +3,6 @@
 .raw-log summary { cursor: pointer; }
 .raw-log pre {
   max-height: 12em; overflow: auto; margin: 6px 0;
-  padding: 8px; border-radius: 6px; border: 1px solid var(--field-line);
+  padding: 8px; border-radius: var(--r-sm); border: 1px solid var(--field-line); background: var(--sunken);
   font-size: var(--fs-xs); white-space: pre-wrap; overflow-wrap: anywhere;
 }

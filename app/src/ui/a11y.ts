@@ -3,6 +3,7 @@
 // for the pixel and room grids.
 
 import { useRef, useState } from "react";
+import { paint } from "./tokens.ts";
 
 /** Props for one item in a roving-tabindex group: only the chosen one is a Tab stop. */
 export const radioProps = (checked: boolean) =>
@@ -139,9 +140,9 @@ export function useGridKeyboard({ cols, rows, paint, describe, onOtherKey }: Gri
 export function drawCursor(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
   ctx.lineWidth = 2;
   if (w > 8 && h > 8) {
-    ctx.strokeStyle = "#000";
+    ctx.strokeStyle = paint("mat");
     ctx.strokeRect(x + 3, y + 3, w - 6, h - 6);
   }
-  ctx.strokeStyle = "#fff";
+  ctx.strokeStyle = paint("text");
   ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
 }

@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { arrowKeys } from "./a11y.ts";
 import { BrandMark, Wordmark } from "./BrandMark.tsx";
-import { Icon, type IconName } from "./Icon.tsx";
+import { Icon } from "./Icon.tsx";
 import { ContextStrip } from "./ContextStrip.tsx";
 import { AboutDialog } from "./About.tsx";
 import { TIERS, setTier, useTier } from "./prefs.ts";
@@ -84,14 +84,13 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
       />
       <div className="topbar-group">
         <button type="button" className="secondary" onClick={onSave} title="Download this game as one file you can open again or share">
-          <Icon name="save" />
           Save game file
         </button>
         <GameMenu
           items={[
-            { label: "New game", icon: "plus", onClick: onNew },
-            { label: "Open…", icon: "open", onClick: () => fileInput.current?.click() },
-            { label: "About and licences", icon: "cartridge", onClick: () => setAbout(true) },
+            { label: "New game", onClick: onNew },
+            { label: "Open…", onClick: () => fileInput.current?.click() },
+            { label: "About and licences", onClick: () => setAbout(true) },
           ]}
         />
         {about && (
@@ -136,7 +135,7 @@ export function ModeSwitch() {
 }
 
 /** A disclosure menu of plain buttons: Escape or clicking away closes it. */
-function GameMenu({ items }: { items: { label: string; icon: IconName; onClick: () => void }[] }) {
+function GameMenu({ items }: { items: { label: string; onClick: () => void }[] }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const wrap = useRef<HTMLDivElement>(null);
@@ -173,7 +172,7 @@ function GameMenu({ items }: { items: { label: string; icon: IconName; onClick: 
         onClick={() => setOpen(!open)}
       >
         Game
-        <Icon name="chevron" size={16} />
+        <Icon name="chevron" />
       </button>
       <div className="menu" id={id} hidden={!open}>
         {items.map((item) => (
@@ -186,7 +185,6 @@ function GameMenu({ items }: { items: { label: string; icon: IconName; onClick: 
               item.onClick();
             }}
           >
-            <Icon name={item.icon} />
             {item.label}
           </button>
         ))}

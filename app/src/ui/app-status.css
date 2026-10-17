@@ -5,8 +5,8 @@
 }
 .app-status:empty { display: none; }
 .offline-indicator { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-.offline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
-.offline-dot.off { background: var(--accent); }
+/* Offline is said in words; the bezel's power light is the app's only status light. */
+.offline-dot { display: none; }
 
 /* Bottom corner, clear of the editor's controls, and dismissible. */
 .update-prompt {
@@ -14,5 +14,5 @@
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   max-width: calc(100vw - 32px); padding: 10px 14px;
   background: var(--panel); color: var(--text);
-  border: 1px solid var(--field-line); border-radius: 8px; box-shadow: 0 6px 24px #0008;
+  border: 1px solid var(--field-line); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
 }

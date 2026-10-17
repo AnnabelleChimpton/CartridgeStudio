@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { linePoints } from "../sprite/pixels.ts";
 import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
 import { ntscRgb } from "../ui/ntsc.ts";
+import { paint } from "../ui/tokens.ts";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import { TILE_GLYPHS } from "./font.ts";
 import { cellAt, isPlayer, paintCell, placements, type Brush } from "./edit.ts";
@@ -55,7 +56,7 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, 
       for (let x = 0; x < rowPixels.length; x++) {
         const v = rowPixels.charCodeAt(x) - 48;
         if (v <= 0) continue;
-        ctx.fillStyle = colors[v - 1] ?? "#fff";
+        ctx.fillStyle = colors[v - 1] ?? paint("text");
         ctx.fillRect(p.col * CELL + x * unit * 2, p.row * CELL + y * unit, unit * 2, unit);
       }
     });
@@ -74,7 +75,7 @@ function draw(ctx: CanvasRenderingContext2D, g: KitGame, busyRows: Set<number>, 
   }
   ctx.stroke();
   for (const r of busyRows) {
-    ctx.strokeStyle = "#ff7b72";
+    ctx.strokeStyle = paint("error");
     ctx.lineWidth = 2;
     ctx.strokeRect(1, r * CELL + 1, ROOM_COLS * CELL - 2, CELL - 2);
   }
