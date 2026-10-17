@@ -1,0 +1,52 @@
+name: Compatibility report
+description: A Cartridge Studio game on a console and flash cartridge, and what happened. Reports go into the compatibility table.
+title: "Boot report: <console>, <cartridge>"
+labels: ["boot report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One report per console and cartridge. If you used "Copy boot report" in the studio, paste it in Notes and fill in what it doesn't know.
+  - type: input
+    id: console
+    attributes:
+      label: Console
+      description: For example an original 7800 (NTSC or PAL), a 7800+ or a 2600+.
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Console firmware or flash cartridge menu version
+      description: The 7800+ and 2600+ show their firmware version in their settings. A flash cartridge shows its menu version on its start screen.
+    validations:
+      required: true
+  - type: input
+    id: cartridge
+    attributes:
+      label: Flash cartridge
+      description: Make and model, and its firmware version if you know it.
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game file and Cartridge Studio version
+      description: The file name (.a78 or .bin) and the version shown in the studio's Made with panel or the boot report.
+    validations:
+      required: true
+  - type: checkboxes
+    id: result
+    attributes:
+      label: What happened
+      description: Tick everything that worked.
+      options:
+        - label: It boots to the title screen
+        - label: It plays
+        - label: Sound works
+        - label: The controls work
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything else, such as a black screen, a crash after a while, wrong colours, or the pasted boot report.
