@@ -4,7 +4,8 @@
 
 import { useState } from "react";
 import { slugify } from "../files/exports.ts";
-import type { Paper, PrintFonts, PrintSubject, Screenshot } from "../print/pdf.ts";
+import type { Layout, Paper, PrintSubject, Screenshot } from "../print/pdf.ts";
+import { loadPrintFonts } from "../print/fonts.ts";
 
 const PAPER_KEY = "cartridge-studio:paper";
 
@@ -18,20 +19,14 @@ function defaultPaper(): Paper {
   return /^(en-(US|CA)|es-(MX|US)|fr-CA)$/i.test(navigator.language) ? "letter" : "a4";
 }
 
-let fontsPromise: Promise<PrintFonts> | null = null;
-function loadFonts(): Promise<PrintFonts> {
-  const get = async (name: string) => {
-    const res = await fetch(`${import.meta.env.BASE_URL}fonts/${name}`);
-    if (!res.ok) throw new Error(`Couldn't load the font ${name}`);
-    return new Uint8Array(await res.arrayBuffer());
-  };
-  fontsPromise ??= Promise.all([
-    get("press-start-2p.ttf"),
-    get("atkinson-hyperlegible-regular.ttf"),
-    get("atkinson-hyperlegible-bold.ttf"),
-  ]).then(([title, body, bold]) => ({ title, body, bold }));
-  fontsPromise.catch(() => (fontsPromise = null));
-  return fontsPromise;
+const LAYOUT_KEY = "cartridge-studio:print-layout";
+
+function savedLayout(): Layout {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === "booklet" ? "booklet" : "plain";
+  } catch {
+    return "plain";
+  }
 }
 
 interface ControlsProps {
@@ -41,7 +36,7 @@ interface ControlsProps {
   edited: boolean;
   onText: (text: string) => void;
   onReset: () => void;
-  makePdf: (paper: Paper) => Promise<Uint8Array>;
+  makePdf: (paper: Paper, layout: Layout) => Promise<Uint8Array>;
   makePackage: (pdf: Uint8Array) => Promise<Uint8Array>;
   onDownload: (bytes: Uint8Array, name: string) => void;
 }
@@ -49,6 +44,7 @@ interface ControlsProps {
 /** The manual editor, paper choice and the PDF and package downloads, for any kind of game. */
 export function PrintControls({ title, text, edited, onText, onReset, makePdf, makePackage, onDownload }: ControlsProps) {
   const [paper, setPaper] = useState<Paper>(defaultPaper);
+  const [layout, setLayout] = useState<Layout>(savedLayout);
   const [busy, setBusy] = useState<null | "pdf" | "package">(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,12 +57,21 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
     }
   };
 
+  const chooseLayout = (l: Layout) => {
+    setLayout(l);
+    try {
+      localStorage.setItem(LAYOUT_KEY, l);
+    } catch {
+      // Not remembered; that's fine.
+    }
+  };
+
   const run = async (what: "pdf" | "package") => {
     setBusy(what);
     setError(null);
     const slug = slugify(title);
     try {
-      const pdf = await makePdf(paper);
+      const pdf = await makePdf(paper, layout);
       if (what === "pdf") onDownload(pdf, `${slug}-print.pdf`);
       else onDownload(await makePackage(pdf), `${slug}-submission.zip`);
     } catch (e) {
@@ -107,10 +112,22 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
             <option value="a4">A4</option>
           </select>
         </label>
+        <label className="print-paper">
+          <span className="muted small">Manual</span>
+          <select value={layout} onChange={(e) => chooseLayout(e.target.value as Layout)} aria-describedby="print-layout-hint">
+            <option value="plain">Plain pages</option>
+            <option value="booklet">Booklet</option>
+          </select>
+        </label>
         <button type="button" onClick={() => void run("pdf")} disabled={busy !== null}>
           {busy === "pdf" ? "Making PDF…" : "Download print PDF"}
         </button>
       </div>
+      <p className="muted small" id="print-layout-hint">
+        {layout === "booklet"
+          ? `Booklet: ${paper === "a4" ? "A5" : "half-letter"} pages, two to a sheet. Print double-sided, flipping on the short edge, then fold and staple down the middle.`
+          : "Plain pages: the manual on full sheets, printed one side or both."}
+      </p>
       <div className="toolbar">
         <button type="button" className="secondary" onClick={() => void run("package")} disabled={busy !== null}>
           {busy === "package" ? "Packing…" : "Download everything"}
@@ -123,7 +140,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, m
 }
 
 /** Builds the PDF for a subject, loading pdf-lib and the fonts on first use. */
-export async function printPdf(subject: PrintSubject, paper: Paper, screenshot: () => Promise<Screenshot | undefined>) {
-  const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadFonts(), screenshot()]);
-  return buildPrintPdf({ subject, paper, fonts, screenshot: shot });
+export async function printPdf(subject: PrintSubject, paper: Paper, layout: Layout, screenshot: () => Promise<Screenshot | undefined>) {
+  const [{ buildPrintPdf }, fonts, shot] = await Promise.all([import("../print/pdf.ts"), loadPrintFonts(), screenshot()]);
+  return buildPrintPdf({ subject, paper, layout, fonts, screenshot: shot });
 }

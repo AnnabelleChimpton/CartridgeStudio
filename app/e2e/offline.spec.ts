@@ -28,8 +28,8 @@ test("the first visit caches the toolchain, emulator and audio; print extras wai
   }
   expect(cached.filter((p) => /^\/fonts\/|^\/assets\/pdf-/.test(p))).toEqual([]);
 
-  await page.evaluate(() => fetch("/fonts/press-start-2p.ttf").then((r) => r.arrayBuffer()));
-  expect(await cachedPaths(page)).toContain("/fonts/press-start-2p.ttf");
+  await page.evaluate(() => fetch("/fonts/atkinson-hyperlegible-bold.ttf").then((r) => r.arrayBuffer()));
+  expect(await cachedPaths(page)).toContain("/fonts/atkinson-hyperlegible-bold.ttf");
 });
 
 test("after one visit the app builds and saves a ROM offline", async ({ page, context, browserName }) => {

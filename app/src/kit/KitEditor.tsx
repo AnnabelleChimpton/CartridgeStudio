@@ -118,7 +118,6 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     }
   }, [tab, game]);
 
-  // The getting-started guide.
   const guideId = useGuide((s) => s.current);
   const guide = useCurrentGuide();
   const preset = KIT_PRESETS.find((p) => p.id === guide?.preset) ?? KIT_PRESETS.find((p) => p.game.title === game.title);
@@ -184,7 +183,6 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     window.__cs!.kitStore = useKitStore;
   }, []);
 
-  // Autosave, into My games.
   useAutosave(gameId, { kind: "kit", game }, preview);
   const tests = useCreatorTests(gameId, preview);
 
@@ -326,11 +324,12 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
           <ShowItPanel
             preview={preview}
             title={game.title}
-            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} />}
+            print={<KitPrint screenshot={preview.screenshot} buildSigned={preview.buildSigned} cartridgeFile={cartridgeFile} onDownload={download} built={preview.lastGood} />}
           />
           <JamEntryPanel
             preview={preview}
             gameTitle={game.title}
+            madeBy={game.madeBy}
             cartridgeFile={cartridgeFile}
             tests={() => testsBytes(tests.file)}
             facts={kitFacts(game)}
