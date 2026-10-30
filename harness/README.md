@@ -1,6 +1,8 @@
 # Emulator test harness
 
-Tests that run games in emulators other than the app's own js7800 core. SPEC.md treats js7800 as a preview, so every template behaviour test also runs in MAME's `a7800` driver.
+js7800 is the app's preview emulator. These tests run the same behaviour scripts in MAME's a7800 driver as a second opinion.
+
+Every starter has scripted behaviour tests that run in js7800 on every commit, and in MAME when MAME is installed.
 
 ## MAME behaviour tests
 
@@ -47,11 +49,13 @@ The real BIOS checks the cartridge signature, which is why the harness always bu
 
 Frame 0 is the end of the first frame in which the cartridge runs. js7800 starts the cartridge at reset, with no BIOS, so the two runners' frame numbers line up to within a frame.
 
-## Accuracy findings
+## Accuracy findings (retired fixed-shooter template)
+
+The kit starters haven't been compared yet.
 
 How the template tests compare between js7800 and MAME 0.289 (stub BIOS), with fixed-shooter at 0.2.0.
 
-**Every test passes in both.** No test passes in js7800 and fails in MAME.
+Every test passes in both. No test passes in js7800 and fails in MAME.
 
 Frames each test ran before it finished:
 
@@ -66,6 +70,6 @@ Frames each test ran before it finished:
 | start.json | 124 | 124 | Same |
 | wave.json | 2025 | 2025 | Same |
 
-- **Bomb timing differs.** In `hit.json` and `game-over.json`, the first bomb hit comes 310 frames earlier in MAME. Bomb drops use `rnd = rand`, so the random sequence (or the frame it's drawn on) differs between the emulators. Likely causes are the power-on RAM contents or CPU timing within a frame. Tests that wait with `until` absorb this. A test that expects a hit on an exact frame would pass in one emulator and fail in the other. Don't write tests that depend on random timing.
-- **Enemy animation is one frame out of phase.** The `until` step in `animation.json` finishes one frame sooner in MAME. That's within the sub-frame difference in where frame 0 starts, but it could also be a real timing difference. Keep animation expectations to "it alternates", not exact frame numbers.
+- Bomb timing differs. In `hit.json` and `game-over.json`, the first bomb hit comes 310 frames earlier in MAME. Bomb drops use `rnd = rand`, so the random sequence (or the frame it's drawn on) differs between the emulators. Likely causes are the power-on RAM contents or CPU timing within a frame. Tests that wait with `until` absorb this. A test that expects a hit on an exact frame would pass in one emulator and fail in the other. Don't write tests that depend on random timing.
+- Enemy animation is one frame out of phase. The `until` step in `animation.json` finishes one frame sooner in MAME. That's within the sub-frame difference in where frame 0 starts, but it could also be a real timing difference. Keep animation expectations to "it alternates", not exact frame numbers.
 - Not yet compared: the real BIOS. It runs before the cartridge and may leave RAM and timing different again. Run with `MAME_ROMPATH` set to check.
