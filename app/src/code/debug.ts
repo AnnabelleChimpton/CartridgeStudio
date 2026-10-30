@@ -1,8 +1,3 @@
-// The debugger drawer's arithmetic (DebuggerDrawer.tsx): dasm's symbol table
-// as a pickable list, watch values in hex and decimal, the measured frame
-// rate from the main-loop counter, and the kit's 24-slot object table. No
-// React and no emulator here, so all of it is unit tested.
-
 import { decodeValue, type WatchMap } from "../harness/behaviour.ts";
 
 /** Where on the 7800 an address is: RAM, the cartridge, or something else (registers, or a plain number). */

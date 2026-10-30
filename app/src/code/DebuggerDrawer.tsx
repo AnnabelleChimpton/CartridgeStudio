@@ -1,9 +1,3 @@
-// The debugger drawer (Coder tier): pause the game and step it 1 or 10 frames,
-// watch variables by name (the kit's known ones, or any dasm symbol), see the
-// kit's 24 object slots, the measured frame rate, and dasm's listing. It reads
-// the running preview through the emulator worker's peek and step messages,
-// and keeps to that: no disassembler and no memory editor.
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { WatchMap } from "../harness/behaviour.ts";
 import type { Preview } from "../ui/usePreview.ts";

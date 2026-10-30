@@ -1,13 +1,3 @@
-// Creator tests (Coder tier): checks a creator records by playing, kept as
-// tests.json. Each test is a behaviour test (harness/behaviour.ts): the
-// joystick from power-on, frame by frame, then an expectation on a variable.
-// The file names its variables in its own watch map, so it reads the same in
-// Cartridge Studio, in the exported source and in any emulator harness.
-//
-// tests.json is a sidecar, not a field of the game: the cartridge file and My
-// games keep it next to project.json. Kit games and code projects store it
-// the same way, and the kit's schema (owned by the kit model) is untouched.
-
 import { z } from "zod";
 import type { CoreHost } from "../emulator/core-host.ts";
 import type { Recording } from "../emulator/protocol.ts";
@@ -104,16 +94,16 @@ function watchName(watch: WatchMap, t: CheckTarget): string {
 /** Adds a test: the recording, then the check at the frame it ends on. */
 export function addRecordedTest(file: TestsFile, name: string, rec: Recording, check: Check): TestsFile {
   if (file.tests.length >= MAX_TESTS) throw new Error(`A game keeps at most ${MAX_TESTS} tests.`);
-  if (rec.frames > MAX_RECORDED_FRAMES) throw new Error("That recording is longer than ten minutes; record a shorter one.");
+  if (rec.frames > MAX_RECORDED_FRAMES) throw new Error("That recording is longer than ten minutes. Record a shorter one.");
   const key = watchName(file.watch, check.target);
   const steps: Step[] = [...stepsFromRecording(rec), { expect: { [key]: { [check.op]: check.value } } }];
-  if (steps.length > MAX_STEPS) throw new Error("That recording changes the controls too often to keep; record a shorter one.");
+  if (steps.length > MAX_STEPS) throw new Error("That recording changes the controls too often to keep. Record a shorter one.");
   const next = {
     ...file,
     watch: { ...file.watch, [key]: { ...check.target.entry } },
     tests: [...file.tests, { name: name.trim().slice(0, 80) || `Check ${file.tests.length + 1}`, steps }],
   };
-  if (testsJson(next).length > MAX_TESTS_BYTES) throw new Error("The tests are too big to keep together; remove some first.");
+  if (testsJson(next).length > MAX_TESTS_BYTES) throw new Error("The tests are too big to keep together. Remove some first.");
   return next;
 }
 

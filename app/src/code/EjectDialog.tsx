@@ -1,6 +1,3 @@
-// Confirms ejecting a game into a code project: what it means, that it's one
-// way, and that the original stays.
-
 import { Dialog } from "../ui/Dialog.tsx";
 
 interface Props {

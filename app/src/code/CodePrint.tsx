@@ -1,6 +1,3 @@
-// Printing for code projects: the shared print controls, with the box art
-// taken from the project's first graphics and a manual the creator writes.
-
 import { KIT_TOOLCHAIN, checklistText } from "../files/exports.ts";
 import { packageZip } from "../files/package.ts";
 import { useRecentClip } from "../files/recent-clip.ts";

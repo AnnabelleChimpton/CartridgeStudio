@@ -1,12 +1,6 @@
-// Things: the kinds of thing in a kit game. Each has a sprite, a way of
-// moving (a preset of movement parts), a speed and, for the player, what it
-// shoots; anything can drop something. "Customise how it moves" opens the
-// parts themselves; parts that aren't a preset show as "Moves its own way".
-
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { useId, useState } from "react";
-import { ColorPicker } from "../ui/ColorPicker.tsx";
 import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { SpritePreview } from "../ui/SpritePreview.tsx";
 import {
@@ -302,13 +296,46 @@ function ThingEditor({
             ))}
           </select>
         </label>
-        {!preset && (
-          <p className="muted small">
-            {thing.label} moves by its own parts: change them under “Customise how it moves” below. Picking a way to move above replaces them.
-          </p>
-        )}
+        {!preset && <p className="muted small">{thing.label} has custom movement. Picking a way to move replaces it.</p>}
+        <label>
+          <span>Speed</span>
+          <select value={preset?.speed ?? 2} disabled={!preset} onChange={(e) => edit((d) => setSpeed(d, thing.id, Number(e.target.value)))}>
+            {[1, 2, 3, 4].map((s) => (
+              <option key={s} value={s}>
+                {SPEED_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+        {sizeField}
         {shootsField}
-        {isPlayer(thing) && sizeField}
+        <div className="field" role="group" aria-labelledby={`${ids}-drops`}>
+          <span id={`${ids}-drops`}>Drops</span>
+          <span className="inline">
+            <select
+              aria-label="What it drops"
+              value={drops?.type ?? ""}
+              onChange={(e) => edit((d) => setDrops(d, thing.id, e.target.value ? { type: e.target.value, chance: drops?.chance ?? 4 } : null))}
+            >
+              <option value="">Nothing</option>
+              {others.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            {drops && (
+              <input
+                type="range"
+                aria-label="How often it drops"
+                min={1}
+                max={40}
+                value={drops.chance}
+                onChange={(e) => edit((d) => setDrops(d, thing.id, { type: drops.type, chance: Number(e.target.value) }), `drops:${thing.id}`)}
+              />
+            )}
+          </span>
+        </div>
       </div>
 
       <details className="parts" open={customising} onToggle={(e) => setCustomising(e.currentTarget.open)}>
@@ -322,6 +349,12 @@ function ThingEditor({
         height={thing.height}
         frames={thing.frames}
         colors={palette?.colors ?? []}
+        editColours={
+          palette && {
+            onChange: (i, colour) => edit((d) => void (d.palettes.find((p) => p.id === palette.id)!.colors[i] = colour)),
+            note: sharedWith.length > 0 && <span className="muted small">Shared with {sharedWith.join(", ")}.</span>,
+          }
+        }
         maxWidth={480}
         onFrame={(i, next, key) =>
           edit((d) => {
@@ -341,11 +374,11 @@ function ThingEditor({
         }
         setColors={
           palette && {
-            // A shared palette is split off so the picture's colors don't change other things.
+            // A shared palette is split off so the picture's colours don't change other things.
             note: sharedWith.length
               ? canSplit
-                ? `${thing.label} gets its own colors, so ${sharedWith.join(", ")} won't change.`
-                : `There's no room for more colors, so this also changes ${sharedWith.join(", ")}.`
+                ? `${thing.label} gets its own colours, so ${sharedWith.join(", ")} won't change.`
+                : `There's no room for more colours, so this also changes ${sharedWith.join(", ")}.`
               : undefined,
             affectsOthers: sharedWith.length > 0 && !canSplit,
             apply: (colors, key) => edit((d) => setOwnColors(d, thing.id, colors), key),
@@ -356,96 +389,27 @@ function ThingEditor({
           heights: HEIGHTS,
           apply: (w, h, key) => edit((d) => resizeThing(d, thing.id, w, h), key),
         }}
-        hint="Right-click erases."
       />
-
-      {palette && (
-        <div className="color-row palette-row">
-          <span>Change colors</span>
-          <span className="colors">
-            {palette.colors.map((c, i) => (
-              <ColorPicker
-                key={i}
-                value={c}
-                label={`${thing.label} color ${i + 1}`}
-                onChange={(color) =>
-                  edit((d) => {
-                    d.palettes.find((p) => p.id === palette.id)!.colors[i] = color;
-                  })
-                }
-              />
-            ))}
-          </span>
-          {sharedWith.length > 0 && <span className="muted small">Shared with {sharedWith.join(", ")}.</span>}
-        </div>
-      )}
       {palette && <ContrastNotes warnings={[thingContrast(game, thing)].filter((w) => w !== null)} id="thing-contrast" />}
 
-      <details className="more">
-        <summary>More options</summary>
-        <div className="field-grid">
-          <label>
-            <span>Speed</span>
-            <select value={preset?.speed ?? 2} disabled={!preset} onChange={(e) => edit((d) => setSpeed(d, thing.id, Number(e.target.value)))}>
-              {[1, 2, 3, 4].map((s) => (
-                <option key={s} value={s}>
-                  {SPEED_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!isPlayer(thing) && sizeField}
-          <div className="field" role="group" aria-labelledby={`${ids}-drops`}>
-            <span id={`${ids}-drops`}>Drops</span>
-            <span className="inline">
-              <select
-                aria-label="What it drops"
-                value={drops?.type ?? ""}
-                onChange={(e) => edit((d) => setDrops(d, thing.id, e.target.value ? { type: e.target.value, chance: drops?.chance ?? 4 } : null))}
-              >
-                <option value="">Nothing</option>
-                {others.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-              {drops && (
-                <input
-                  type="range"
-                  aria-label="How often it drops"
-                  min={1}
-                  max={40}
-                  value={drops.chance}
-                  onChange={(e) => edit((d) => setDrops(d, thing.id, { type: drops.type, chance: Number(e.target.value) }), `drops:${thing.id}`)}
-                />
-              )}
-            </span>
-          </div>
-        </div>
-        <div className="toolbar">
-          <button
-            type="button"
-            className="secondary danger"
-            onClick={() => setDeleting(true)}
-          >
-            Delete {thing.label}
-          </button>
-          {deleting && (
-            <ConfirmDialog
-              title={`Delete “${thing.label}”?`}
-              message="It's taken out of the room and out of any rules that mention it. Undo brings it back."
-              yes={`Delete ${thing.label}`}
-              danger
-              onClose={() => setDeleting(false)}
-              onYes={() => {
-                edit((d) => removeThing(d, thing.id));
-                onDeleted();
-              }}
-            />
-          )}
-        </div>
-      </details>
+      <p className="thing-delete">
+        <button type="button" className="link danger" onClick={() => setDeleting(true)}>
+          Delete {thing.label}
+        </button>
+      </p>
+      {deleting && (
+        <ConfirmDialog
+          title={`Delete “${thing.label}”?`}
+          message="It's taken out of the room and out of any rules that mention it. Undo brings it back."
+          yes={`Delete ${thing.label}`}
+          danger
+          onClose={() => setDeleting(false)}
+          onYes={() => {
+            edit((d) => removeThing(d, thing.id));
+            onDeleted();
+          }}
+        />
+      )}
     </div>
   );
 }

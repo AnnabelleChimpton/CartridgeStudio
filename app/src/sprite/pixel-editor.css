@@ -1,0 +1,13 @@
+/* The mat hugs the drawing, centred in the column. */
+.se-canvas-wrap { width: fit-content; max-width: 100%; margin-inline: auto; }
+
+/* "Edit colours": the colour picker's swatch, as a text button for the chip being drawn with. */
+.edit-colours .swatch {
+  width: auto; height: auto; min-height: 24px; padding: 4px 2px; border: 0; border-radius: 0; box-shadow: none;
+  background: none !important; color: var(--accent-text); font: 600 var(--fs-md) / 1.2 var(--font-ui);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.edit-colours .swatch::before { content: "Edit colours"; }
+.edit-colours .swatch:hover { box-shadow: none; text-decoration-color: currentColor; }
+.edit-colours .picker-grid { right: auto; left: 0; }

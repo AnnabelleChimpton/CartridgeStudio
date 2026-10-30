@@ -1,9 +1,3 @@
-// The getting-started guide's state: which starter the current kit game came
-// from, whether its guide is showing, and which steps are done. Kept per game
-// (by its id in My games) in localStorage, so a dismissed guide stays dismissed after a reload and a
-// new game gets a fresh one. Storage can be missing or full; the guide then
-// simply forgets.
-
 import { create } from "zustand";
 
 export const GUIDE_STEPS = ["draw", "tv", "rule"] as const;
@@ -48,7 +42,10 @@ function write(s: Saved) {
 interface GuideState extends Saved {
   /** A new game from a starter: its guide opens. */
   start: (preset: string | null, open?: boolean, id?: string) => void;
-  /** Another game is open: its guide, if it has one. `adopt` gives it the guide that was current (a save moving into My games). */
+  /**
+   * Another game is open: its guide, if it has one. `adopt` gives it the guide that was current (a save moving into My games).
+   * A different game that already has a finished step opens with its guide hidden.
+   */
   select: (id: string, adopt?: boolean) => void;
   setOpen: (open: boolean) => void;
   complete: (step: GuideStep) => void;
@@ -72,7 +69,16 @@ export const useGuide = create<GuideState>()((set, get) => {
     select(id, adopt = false) {
       const { current, games } = get();
       const was = current ? games[current] : undefined;
-      const next = { current: id, games: adopt && was && !games[id] ? { ...games, [id]: was } : games };
+      const mine = games[id];
+      const next = {
+        current: id,
+        games:
+          adopt && was && !mine
+            ? { ...games, [id]: was }
+            : id !== current && mine?.open && mine.done.length > 0
+              ? { ...games, [id]: { ...mine, open: false } }
+              : games,
+      };
       set(next);
       write(next);
     },

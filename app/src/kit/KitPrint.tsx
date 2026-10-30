@@ -1,7 +1,3 @@
-// Printing for kit games: the shared print controls over a kit game, with a
-// manual drafted from its rules, and Show it's everything ZIP, which carries
-// the same PDF.
-
 import { KIT_TOOLCHAIN, kitChecklist, kitSourceFiles } from "../files/exports.ts";
 import { packageZip } from "../files/package.ts";
 import { useRecentClip } from "../files/recent-clip.ts";

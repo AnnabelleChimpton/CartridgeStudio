@@ -1,7 +1,3 @@
-// A code project's graphics: the list, the pixel editor for the chosen one,
-// and adding new ones. Adding a graphic also adds its `incgraphic` line to
-// game.bas; removing one takes the line out.
-
 import { useId, useMemo, useState } from "react";
 import { PixelEditor } from "../sprite/PixelEditor.tsx";
 import { ConfirmDialog } from "../ui/Dialog.tsx";
@@ -55,7 +51,7 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
       d.source = r.source;
     });
     setSelected(g.name);
-    setMessage({ text: `Added ${g.name}. game.bas imports it on line ${r.line}; draw it with plotsprite ${g.name.replace(/_\d+$/, "")}.`, line: r.line });
+    setMessage({ text: `Added ${g.name}. game.bas imports it on line ${r.line}. Draw it with plotsprite ${g.name.replace(/_\d+$/, "")}.`, line: r.line });
   };
 
   const remove = (g: CodeGraphic) => {
@@ -71,8 +67,8 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
     <section className="panel" aria-labelledby={`${ids}-h`}>
       <h2 id={`${ids}-h`}>Graphics</h2>
       <p className="lead muted">
-        Each graphic is a PNG that game.bas imports with <code>incgraphic</code>. Colors here are for drawing; game.bas sets the
-        colors the console shows, with P0C1 to P7C3.
+        Each graphic is a PNG that game.bas imports with <code>incgraphic</code>. Colours here are for drawing. game.bas sets the
+        colours the console shows, with P0C1 to P7C3.
       </p>
       <div className="graphics-layout">
         <div>
@@ -147,7 +143,7 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
                     </select>
                   </label>
                 }
-                hint="Right-click erases. The PNG is made from this when the game builds."
+                hint="The PNG is made from this when the game builds."
               />
             </div>
             <div className="toolbar">
@@ -170,7 +166,7 @@ export function AssetsPanel({ onShowLine }: { onShowLine: (line: number) => void
       {removing && (
         <ConfirmDialog
           title={`Remove ${removing.name}?`}
-          message="Its incgraphic line comes out of game.bas too; code that draws it will need changing."
+          message="Its incgraphic line comes out of game.bas too. Code that draws it will need changing."
           yes={`Remove ${removing.name}`}
           danger
           onYes={() => remove(removing)}

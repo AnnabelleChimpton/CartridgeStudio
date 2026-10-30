@@ -1,6 +1,3 @@
-// "Made by": typed on the Game tab, one title-screen line with a live count,
-// kept with the game, and blank unless the creator fills it in.
-
 import { expect, test, type Page } from "@playwright/test";
 
 async function start(page: Page) {
@@ -25,6 +22,9 @@ test("Made by starts empty, counts toward one title-screen line, and is kept wit
 
   await field.fill("Sam and Robin");
   await expect(page.getByText("13 of 29 characters")).toBeVisible();
+  // The count is only on screen while typing.
+  await page.keyboard.press("Tab");
+  await expect(page.getByText("13 of 29 characters")).toHaveClass("visually-hidden");
   await page.waitForTimeout(1500);
   await page.reload();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });

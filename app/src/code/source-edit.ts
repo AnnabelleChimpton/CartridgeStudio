@@ -1,5 +1,3 @@
-// Small edits to game.bas the Assets and Reference tabs make for you.
-
 const INCGRAPHIC = /^\s+incgraphic\s+(\S+)/i;
 
 /** Inserts `line` after line `after` (1-based; 0 means at the top). */

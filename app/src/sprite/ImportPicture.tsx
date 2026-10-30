@@ -1,8 +1,3 @@
-// "Import a picture": turns a photo or a scanned drawing into the sprite's
-// current frame. The picture comes from a file, a drop or a paste; the creator
-// moves and zooms a crop the sprite's on-screen shape, and sees the result
-// live before using it. The maths is in import.ts.
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Dialog } from "../ui/Dialog.tsx";
 import { ntscCss } from "../ui/ntsc.ts";
@@ -341,7 +336,7 @@ export function ImportPicture(props: ImportPictureProps) {
                   onPointerCancel={endDrag}
                 />
                 <p className="muted small" id={`${ids}-crop-keys`}>
-                  Drag the frame or use the arrow keys to move it; + and − zoom.
+                  Drag the frame or use the arrow keys to move it. + and − zoom.
                 </p>
                 <div className="se-group" role="radiogroup" aria-label="Picture size" onKeyDown={arrowKeys("radio")}>
                   {(["fill", "fit"] as CropMode[]).map((m) => (
@@ -372,7 +367,7 @@ export function ImportPicture(props: ImportPictureProps) {
                       {result.background ? (
                         <>
                           <span className="ip-swatch" style={{ background: `rgb(${result.background.join(" ")})` }} aria-hidden="true" />
-                          The color around the edges becomes see-through.
+                          The colour around the edges becomes see-through.
                         </>
                       ) : (
                         "The picture's edges are already see-through."
@@ -392,9 +387,9 @@ export function ImportPicture(props: ImportPictureProps) {
                   </>
                 )}
 
-                <h3 className="ip-h">Colors</h3>
+                <h3 className="ip-h">Colours</h3>
                 {canPickColors ? (
-                  <div className="ip-stack" role="radiogroup" aria-label="Colors" onKeyDown={arrowKeys("radio")}>
+                  <div className="ip-stack" role="radiogroup" aria-label="Colours" onKeyDown={arrowKeys("radio")}>
                     {[false, true].map((pick) => (
                       <button
                         key={String(pick)}
@@ -403,7 +398,7 @@ export function ImportPicture(props: ImportPictureProps) {
                         className={`secondary ${newColors === pick ? "active" : ""}`}
                         onClick={() => setNewColors(pick)}
                       >
-                        {pick ? "Pick new colors from the picture" : "Use the colors it has now"}
+                        {pick ? "Pick new colours from the picture" : "Use the colours it has now"}
                       </button>
                     ))}
                   </div>
@@ -413,7 +408,7 @@ export function ImportPicture(props: ImportPictureProps) {
                 {newColors && canPickColors?.note && <p className="small ip-note">{canPickColors.note}</p>}
                 <label className="inline">
                   <input type="checkbox" checked={dither} onChange={(e) => setDither(e.target.checked)} />
-                  Mix colors with a dot pattern
+                  Mix colours with a dot pattern
                 </label>
               </div>
 
@@ -449,7 +444,7 @@ export function ImportPicture(props: ImportPictureProps) {
                 </div>
                 {newColors && (
                   <p className="small ip-bg">
-                    New colors:{" "}
+                    New colours:{" "}
                     {result.palette.map((c, i) => (
                       <span key={i} className="ip-swatch" style={{ background: ntscCss(c) }} title={c} />
                     ))}

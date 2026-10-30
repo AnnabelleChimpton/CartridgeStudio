@@ -1,14 +1,3 @@
-// CodeMirror 6 with the 7800basic mode, in the app's dark theme. Loaded lazily
-// (see LazyBasicEditor.tsx): nobody pays for it until code is on screen.
-//
-// Colors come from the --code-* design tokens (code.css), so the grammar
-// follows the app's theme. Palette values get a swatch of their NTSC color,
-// and incgraphic lines a thumbnail of the graphic in the gutter.
-//
-// Keyboard: Tab indents, so Esc then Tab (or Shift+Tab) leaves the editor,
-// CodeMirror's own escape hatch. ⌘F / Ctrl+F searches, ⇧⌘M / Ctrl+Shift+M
-// lists the build's problems, F8 jumps to the next one.
-
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import {
   HighlightStyle,

@@ -1,8 +1,3 @@
-// The source folder every game exports, kit, template or code project: a
-// game.bas that's yours to edit, its graphics, build scripts for stock
-// 7800basic, notes on the compiler's pitfalls, a map of the program's labels
-// and variables, and the .cartridge to carry on in Cartridge Studio.
-
 import { TOOLCHAIN_NAME, TOOLCHAIN_URL } from "@cartridge-studio/toolchain";
 import { strFromU8, strToU8 } from "fflate";
 

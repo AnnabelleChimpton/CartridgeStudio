@@ -1,6 +1,3 @@
-// Which generated lines the last edit changed: compares each new build's
-// game.bas with the one before it.
-
 import { useEffect, useRef, useState } from "react";
 import type { LineRange } from "./BasicEditor.tsx";
 import { changedLines } from "./line-diff.ts";

@@ -1,14 +1,8 @@
-// The kit editor: one job at a time on the left (things, the room, rules,
-// game settings or the code they become, each with room to work), and the
-// running game on the right with every way to show it off. A starter game
-// opens with a short guide.
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { GraphicThumbs } from "../code/BasicEditor.tsx";
 import { CodeTier, type CodeJump } from "../code/CodeTier.tsx";
 import { testsBytes } from "../code/creator-tests.ts";
 import { DebuggerDrawer } from "../code/DebuggerDrawer.tsx";
-import { TestsPanel } from "../code/TestsPanel.tsx";
 import { useCreatorTests } from "../code/useCreatorTests.ts";
 import { ejectKit } from "../code/eject.ts";
 import { useGeneratedDiff } from "../code/useGeneratedDiff.ts";
@@ -28,20 +22,20 @@ import { TopBar } from "../ui/TopBar.tsx";
 import { download, usePreview } from "../ui/usePreview.ts";
 import { CpuMeter } from "./CpuMeter.tsx";
 import { isPlayer, placements, type Brush } from "./edit.ts";
-import { GUIDE_STEPS, useCurrentGuide, useGuide, type GuideStep } from "./guide.ts";
+import { useCurrentGuide, useGuide, type GuideStep } from "./guide.ts";
 import { explainError } from "./help.ts";
-import { GUIDE_TAB, KitGuide, guideAnnouncement } from "./KitGuide.tsx";
+import { KitGuide, guideAnnouncement } from "./KitGuide.tsx";
 import { CPU_BUDGET, KIT_RUNTIME_VERSION, cpuCost } from "./generate.ts";
 import { KitPrint, kitEverything } from "./KitPrint.tsx";
 import { KitRulesPanel } from "./KitRulesPanel.tsx";
 import { KitSettingsPanel } from "./KitSettingsPanel.tsx";
 import { KIT_PRESETS, type KitIdea, type KitTab } from "./presets.ts";
 import { RoomPainter } from "./RoomPainter.tsx";
-import { ruleSentence } from "./sentence.ts";
 import { ThingsPanel } from "./ThingsPanel.tsx";
 import type { KitGame } from "./schema.ts";
 import { useKitStore } from "./store.ts";
 import { KIT_WATCH } from "./tests.ts";
+import "./kit-editor.css";
 
 /** The editor's tabs: the ones a guide step or idea can open, plus the code they become. */
 type Tab = KitTab | "code";
@@ -99,7 +93,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
   const jumps = useMemo(
     () => [
       { heading: "Things", items: game.types.map((t): CodeJump => ({ key: `thing:${t.id}`, name: t.label, ref: { thing: t.label, palette: t.palette } })) },
-      { heading: "Rules", items: game.rules.map((r, i): CodeJump => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, detail: ruleSentence(r, game), ref: { rule: i + 1 } })) },
+      { heading: "Rules", items: game.rules.map((_, i): CodeJump => ({ key: `rule:${i + 1}`, name: `Rule ${i + 1}`, ref: { rule: i + 1 } })) },
     ],
     [game],
   );
@@ -127,10 +121,9 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
   const hero = game.types.find(isPlayer) ?? game.types[0];
   const [announce, setAnnounce] = useState("");
   const guideRef = useRef<HTMLElement>(null);
-  const guideButton = useRef<HTMLButtonElement>(null);
   const focusGuide = useRef(false);
-  const guideOpen = !!guide?.open;
-  const current = guide && GUIDE_STEPS.find((s) => !guide.done.includes(s));
+  const guideOpen = !!guide?.open && tier !== "7800basic";
+  const selectedRule = codeKey?.startsWith("rule:") ? Number(codeKey.slice(5)) - 1 : null;
 
   const tick = (step: GuideStep) => {
     const g = useGuide.getState();
@@ -148,7 +141,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
     if (!guide.done.includes("rule") && JSON.stringify(game.rules) !== JSON.stringify(baseline.rules)) tick("rule");
   });
 
-  // Going full screen (the guide's Play button, the TV button or the browser's own) ticks "Play it on the TV".
+  // Going full screen (the guide's button, the TV button or the browser's own) ticks the second step.
   useEffect(() => {
     if (preview.tvStarts > 0) tickRef.current("tv");
   }, [preview.tvStarts]);
@@ -207,7 +200,6 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
             d.title = t;
           }, "title")
         }
-        kind="Game kit"
         canUndo={canUndo}
         canRedo={canRedo}
         undo={undo}
@@ -215,44 +207,33 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
         onOpen={onOpen}
         onSave={() => void save()}
         onNew={onNew}
-        extra={
-          <button
-            ref={guideButton}
-            type="button"
-            className="secondary"
-            aria-expanded={guideOpen}
-            onClick={() => {
-              focusGuide.current = !guideOpen;
-              useGuide.getState().setOpen(!guideOpen);
-            }}
-          >
-            <span aria-hidden="true">?</span> Guide
-          </button>
-        }
+        menuItems={[
+          {
+            label: "Show the guide",
+            onClick: () => {
+              focusGuide.current = true;
+              useGuide.getState().setOpen(true);
+            },
+          },
+        ]}
       />
       <p role="status" className="visually-hidden">
         {announce}
       </p>
       <main className="workspace-layout">
         <div className="workspace">
-          {guide?.open && hero && (
+          {guideOpen && guide && hero && (
             <KitGuide
               ref={guideRef}
               title={game.title}
               hero={hero.label}
               done={guide.done}
-              onRom={() =>
-                void preview
-                  .buildSigned()
-                  .then((rom) => download(rom.a78, `${slugify(game.title)}.a78`, { toast: true }))
-                  .catch((e: unknown) => preview.setError(e instanceof Error ? e.message : String(e)))
-              }
               ideas={preset?.ideas ?? []}
               onStep={onStep}
               onIdea={onIdea}
               onClose={() => {
                 useGuide.getState().setOpen(false);
-                guideButton.current?.focus();
+                document.getElementById(`${ids}-${tabs[0]!.id}`)?.focus();
               }}
             />
           )}
@@ -265,7 +246,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
                 id={`${ids}-${t.id}`}
                 data-tab={t.id}
                 aria-controls={`${ids}-panel`}
-                className={[tab === t.id && "active", guideOpen && current && GUIDE_TAB[current] === t.id && "guide-target"].filter(Boolean).join(" ") || undefined}
+                className={tab === t.id ? "active" : undefined}
                 onClick={() => setTab(t.id)}
               >
                 {t.label}
@@ -286,7 +267,7 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
             {tab === "room" && <RoomPainter brush={brush} setBrush={setBrush} />}
             {tab === "rules" && (
               <div onFocusCapture={noticeRule} onClickCapture={noticeRule}>
-                <KitRulesPanel />
+                <KitRulesPanel selected={selectedRule} onSelect={(i) => setCodeKey(`rule:${i + 1}`)} />
               </div>
             )}
             {tab === "game" && <KitSettingsPanel />}
@@ -302,22 +283,19 @@ export function KitEditor({ gameId, onOpen, onNew, onEditAsCode }: Props) {
                 onExportSource={() => void exportSource()}
                 onEject={() => onEditAsCode?.()}
                 tools={
-                  <>
-                    <DebuggerDrawer
-                      preview={preview}
-                      title={game.title}
-                      known={KIT_WATCH}
-                      typeNames={game.types.map((t) => t.label)}
-                      estimate={`The kit's estimate: ${Math.round((cpuCost(game, placements(game)) / CPU_BUDGET) * 100)}% of a frame busy.`}
-                    />
-                    <TestsPanel preview={preview} tests={tests} known={KIT_WATCH} />
-                  </>
+                  <DebuggerDrawer
+                    preview={preview}
+                    title={game.title}
+                    known={KIT_WATCH}
+                    typeNames={game.types.map((t) => t.label)}
+                    estimate={`The kit's estimate: ${Math.round((cpuCost(game, placements(game)) / CPU_BUDGET) * 100)}% of a frame busy.`}
+                  />
                 }
               />
             )}
           </div>
         </div>
-        <div className={`play-column${guideOpen && current === "tv" ? " guide-play" : ""}`}>
+        <div className="play-column">
           <PreviewPanel
             preview={preview}
             title={game.title}

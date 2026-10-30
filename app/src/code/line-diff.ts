@@ -1,7 +1,3 @@
-// Which lines of the new generated code differ from the last build's, so
-// the code view can show what an edit changed. A plain LCS over lines, after
-// trimming the common start and end; big rewrites fall back to one range.
-
 import type { LineRange } from "./BasicEditor.tsx";
 
 const MAX_CELLS = 2_000_000;

@@ -1,7 +1,3 @@
-// Rules as plain sentences: for the print kit's manual, the generated code's
-// rem lines, and any rule the rule editor can't change yet (it shows the
-// sentence instead). Every rule the schema allows has a sentence.
-
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { SCORE, SECONDS, type KitAction, type KitCompare, type KitGame, type KitRule, type KitTarget, type KitTrigger, type KitValue } from "./schema.ts";
 import { itTypes, stateDefault, triggerThing } from "./ir.ts";
@@ -21,6 +17,9 @@ const SIDE: Record<string, string> = {
 };
 const WALL_SIDE: Record<string, string> = { left: "on its left", right: "on its right", top: "above it", bottom: "below it", any: "" };
 const PROP: Record<string, string> = { x: "x", y: "y", vx: "speed across", vy: "speed down", facing: "facing", a: "a", b: "b", timer: "timer" };
+
+/** "a Cat", "an Angry dust". */
+const article = (s: string) => `${/^[aeiou]/i.test(s) ? "an" : "a"} ${s}`;
 
 const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs.at(-1)}` : (xs[0] ?? ""));
 
@@ -71,16 +70,16 @@ export function ruleSentence(r: KitRule, g: KitGame): string {
   };
 
   const fires = r.fires ?? stateDefault(w);
-  const any = r.any ? "any " : "a ";
+  const any = (id: string) => (r.any ? `any ${name(id)}` : article(name(id)));
   let when: string;
   if ("touch" in w) when = `${r.any ? "any " : ""}${name(w.touch[0])} touches ${name(w.touch[1])}`;
-  else if ("onTile" in w) when = `${any}${name(w.onTile[0])} is on ${w.onTile[1] === "hazard" ? "spikes" : "a goal"}`;
-  else if ("edge" in w) when = `${any}${name(w.edge[0])} reaches ${SIDE[w.edge[1]]}`;
-  else if ("wall" in w) when = `${any}${name(w.wall[0])} is against a wall${WALL_SIDE[w.wall[1]] ? ` ${WALL_SIDE[w.wall[1]]}` : ""}`;
-  else if ("leaves" in w) when = `a ${name(w.leaves)} leaves the screen`;
-  else if ("timerOut" in w) when = `a ${name(w.timerOut)}'s timer runs out`;
-  else if ("created" in w) when = `a ${name(w.created)} appears`;
-  else if ("destroyed" in w) when = `a ${name(w.destroyed)} is removed`;
+  else if ("onTile" in w) when = `${any(w.onTile[0])} is on ${w.onTile[1] === "hazard" ? "spikes" : "a goal"}`;
+  else if ("edge" in w) when = `${any(w.edge[0])} reaches ${SIDE[w.edge[1]]}`;
+  else if ("wall" in w) when = `${any(w.wall[0])} is against a wall${WALL_SIDE[w.wall[1]] ? ` ${WALL_SIDE[w.wall[1]]}` : ""}`;
+  else if ("leaves" in w) when = `${article(name(w.leaves))} leaves the screen`;
+  else if ("timerOut" in w) when = `${article(name(w.timerOut))}'s timer runs out`;
+  else if ("created" in w) when = `${article(name(w.created))} appears`;
+  else if ("destroyed" in w) when = `${article(name(w.destroyed))} is removed`;
   else if ("button" in w) when = `button ${w.button.button} is ${w.button.released ? "let go" : "pressed"}${w.button.joy === 2 ? " on joystick 2" : ""}`;
   else if ("pushed" in w) when = `joystick ${w.pushed.joy} is pushed${w.pushed.dir === "any" ? "" : ` ${w.pushed.dir}`}`;
   else if ("every" in w) when = w.every === 1 ? `every ${w.frames ? "frame" : "second"}` : `every ${w.every} ${w.frames ? "frames" : "seconds"}`;
@@ -116,7 +115,7 @@ export function ruleSentence(r: KitRule, g: KitGame): string {
       return `create a ${name(c.type)} ${at}${off}${vel}`;
     }
     if ("destroy" in a) return `remove ${target(a.destroy)}`;
-    if ("turn" in a) return `turn ${target(a.turn.who)} into a ${name(a.turn.into)}${secs(a.turn.seconds)}`;
+    if ("turn" in a) return `turn ${target(a.turn.who)} into ${article(name(a.turn.into))}${secs(a.turn.seconds)}`;
     if ("toStart" in a) return `send ${target(a.toStart)} back to start`;
     if ("startHere" in a) return `make this ${target(a.startHere).replace(/^the /, "the ")}'s start`;
     if ("protect" in a) return `protect ${target(a.protect.who)} for ${a.protect.tenths / 10} seconds`;
@@ -130,8 +129,10 @@ export function ruleSentence(r: KitRule, g: KitGame): string {
     return `run your code "${a.run}"`;
   };
   const only = r.if?.length ? `, only if ${r.if.map(compare).join(" and ")}` : "";
-  const lead = "every" in w ? "" : fires === "while" && !("touch" in w || "onTile" in w) ? "While " : "When ";
-  const once = fires === "once" && ("touch" in w || "onTile" in w) ? " (once)" : "";
+  const lead = "every" in w ? "" : "When ";
+  // The trigger's usual way of firing goes unsaid.
+  const usual = stateDefault(w);
+  const mode = fires && usual && fires !== usual ? (fires === "while" ? " the whole time" : " the first time") : "";
   const whenText = "every" in w ? when.charAt(0).toUpperCase() + when.slice(1) : when;
-  return `${lead}${whenText}${once}${only}: ${list(r.then.map(action))}.`;
+  return `${lead}${whenText}${mode}${only}, ${list(r.then.map(action))}.`;
 }

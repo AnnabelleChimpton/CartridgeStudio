@@ -9,12 +9,13 @@ const preset = (id: string): KitGame => structuredClone(KIT_PRESETS.find((p) => 
 
 describe("busyFixes", () => {
   it("suggests single changes that each make a too-busy game fit", () => {
-    const g = preset("maze");
-    for (const col of [10, 11, 12, 13, 14]) paintCell(g, col, 5, "ghost");
+    const g = preset("ghost-panic");
+    const dust = g.types.find((t) => t.id === "dust" || t.id === "ghost")!;
+    for (const col of [10, 11, 12, 13, 14]) paintCell(g, col, 5, dust.id);
     expect(cpuCost(g)).toBeGreaterThan(CPU_BUDGET);
     const fixes = busyFixes(g);
     expect(fixes.length).toBeGreaterThan(0);
-    expect(fixes[0]!.text).toMatch(/^Take (one Dust ghost|\d of the 7 Dust ghosts) out of the room$/);
+    expect(fixes[0]!.text).toMatch(new RegExp(`^Take (one ${dust.label}|\\d+ of the \\d+ ${dust.label}s) out of the room$`));
     for (const f of fixes) {
       expect(f.enough).toBe(true);
       expect(f.after).toBeLessThanOrEqual(CPU_BUDGET);

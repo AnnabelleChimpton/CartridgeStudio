@@ -1,0 +1,49 @@
+/* Guide: one row above the tabs. */
+.guide-strip {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3);
+  min-height: 44px; padding: var(--s-1) var(--s-3); border-bottom: 1px solid var(--line); font-size: var(--fs-md);
+}
+.guide-strip:focus { outline: none; }
+.guide-strip:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.guide-strip .guide-count { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.guide-strip .guide-text { min-width: 0; }
+.guide-strip > button:not(.link) { min-height: 32px; padding: 4px 12px; }
+.guide-strip .guide-hide { margin-left: auto; font-size: var(--fs-sm); }
+
+/* Rules read as sentences; their tools show on the rule being worked on. */
+.rule .rule-tool { display: none; }
+.rule:hover .rule-tool, .rule:focus-within .rule-tool, .rule.is-selected .rule-tool { display: inline-flex; align-items: center; gap: 6px; }
+.rule-row { gap: var(--s-2); }
+.rule-num { flex: none; width: 2ch; margin-top: 6px; text-align: right; color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.rule-ends { flex: none; margin-top: 2px; }
+.rule-tools { padding-left: calc(2ch + var(--s-2)); }
+.rule:not(:hover, :focus-within, .is-selected) .rule-tools { display: none; }
+.rule .rule-tools button.link { color: var(--muted); font-size: var(--fs-sm); }
+.rule .rule-tools button.link:hover { color: var(--text); }
+.rule-note { margin: 0; padding-left: calc(2ch + var(--s-2)); }
+.rule-sentence .kw.punct { margin-left: -6px; }
+.rule-sentence .nowrap { display: inline-flex; align-items: center; white-space: nowrap; }
+.rule-sentence .rule-tool button.link { font-size: var(--fs-sm); font-weight: 400; color: var(--muted); }
+.rule-sentence .rule-tool button.link:hover { color: var(--text); }
+
+/* Game tab: one column of label and field rows. */
+.settings-rows { display: grid; grid-template-columns: 1fr; gap: var(--s-3); margin: var(--s-3) 0; font-size: var(--fs-md); }
+.settings-rows > .row { display: grid; grid-template-columns: 130px minmax(0, 340px); align-items: start; gap: var(--s-1) var(--s-3); }
+.settings-rows > .row > :first-child { font-weight: 700; padding-top: 8px; }
+.settings-rows > .row > :not(:first-child) { grid-column: 2; }
+.settings-rows .field-stack { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.settings-rows > .row.slider-row { align-items: center; }
+.settings-rows > .row.slider-row > :first-child { padding-top: 0; }
+.settings-rows .slider-field { display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: center; gap: var(--s-2); }
+.settings-rows .slider-field input { width: 100%; accent-color: var(--accent); }
+.settings-rows .slider-field output { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; }
+.settings-rows .colors { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.settings-rows p { margin: 0; }
+.settings-rows .kit-counters { grid-column: 1 / -1; }
+@media (max-width: 520px) {
+  .settings-rows > .row { grid-template-columns: 1fr; }
+  .settings-rows > .row > :not(:first-child) { grid-column: 1; }
+}
+
+/* Things tab: the drop controls and the delete link. */
+.thing-delete { margin-top: var(--s-4); }

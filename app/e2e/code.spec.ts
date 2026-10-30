@@ -1,7 +1,3 @@
-// Code projects: eject a kit game, edit game.bas in CodeMirror, see the
-// preview rebuild and errors land on their lines, and keep it in a
-// .cartridge file. Also "See the code" in the kit editor.
-
 import AxeBuilder from "@axe-core/playwright";
 import { unzipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
@@ -28,7 +24,7 @@ async function eject(page: Page) {
   const dialog = page.getByRole("dialog", { name: /as code\?/ });
   await expect(dialog).toContainText("one way");
   await dialog.getByRole("button", { name: "Make a code project" }).click();
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
@@ -102,16 +98,15 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
 
   // The kit game was kept; go back to it, then open the code project's file.
   await page.getByRole("button", { name: /Back to the kit game/ }).click();
-  await expect(page.getByText("Game kit", { exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Rules" })).toBeVisible();
   await page.getByLabel("Open game file").setInputFiles({ name: "ghost-panic.cartridge", mimeType: "application/zip", buffer: Buffer.concat(chunks) });
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   expect(await source(page)).toBe(saved);
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 
   // And it's still there after a reload.
   await page.reload();
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   expect(await source(page)).toBe(saved);
 });
 
@@ -228,7 +223,7 @@ test("an ejected game still boxes up: print PDF, submission package and source f
   await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
   const dialog = page.getByRole("dialog", { name: "Print the box" });
   // The kit game's manual came along.
-  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip: remove the Catnip/);
+  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip, remove the Catnip/);
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(new TextDecoder().decode(pdf.bytes.subarray(0, 5))).toBe("%PDF-");

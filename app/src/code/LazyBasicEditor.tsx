@@ -1,5 +1,4 @@
-// CodeMirror lives in its own chunk, loaded the first time code is shown.
-// Until then the code is shown as plain text.
+// CodeMirror is code-split; see BasicEditor.tsx
 
 import { Suspense, lazy } from "react";
 import type { BasicEditorProps } from "./BasicEditor.tsx";
