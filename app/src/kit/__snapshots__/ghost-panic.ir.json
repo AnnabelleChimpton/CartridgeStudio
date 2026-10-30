@@ -9,12 +9,12 @@
    "name": "cat",
    "sprite": "spr_cat",
    "width": 8,
-   "height": 12,
+   "height": 10,
    "palette": 0,
-   "frames": "1 frame(s)",
-   "anim": 1,
-   "dirSets": 1,
-   "animate": 16,
+   "frames": "4 frame(s)",
+   "anim": 2,
+   "dirSets": 2,
+   "animate": "moving",
    "control": {
     "joystick": 1,
     "axes": "4way",
@@ -46,7 +46,7 @@
     "y": true
    },
    "uses": {
-    "facing": false,
+    "facing": true,
     "contact": false,
     "leavesRule": false,
     "exits": false,
@@ -63,13 +63,13 @@
   },
   {
    "index": 1,
-   "id": "ghost",
-   "label": "Dust ghost",
-   "sym": "T_GHOST",
-   "name": "ghost",
-   "sprite": "spr_ghost",
+   "id": "dust",
+   "label": "Dust bunny",
+   "sym": "T_DUST",
+   "name": "dust",
+   "sprite": "spr_dust",
    "width": 8,
-   "height": 12,
+   "height": 8,
    "palette": 1,
    "frames": "2 frame(s)",
    "anim": 2,
@@ -122,18 +122,18 @@
    },
    "span": {
     "kind": "type",
-    "id": "ghost"
+    "id": "dust"
    }
   },
   {
    "index": 2,
    "id": "scared",
-   "label": "Scared ghost",
+   "label": "Scared dust",
    "sym": "T_SCARED",
    "name": "scared",
    "sprite": "spr_scared",
    "width": 8,
-   "height": 12,
+   "height": 8,
    "palette": 5,
    "frames": "2 frame(s)",
    "anim": 2,
@@ -191,14 +191,14 @@
   },
   {
    "index": 3,
-   "id": "fast-ghost",
-   "label": "Fast ghost",
-   "sym": "T_FAST_GHOST",
-   "name": "fast_ghost",
-   "sprite": "spr_fast_ghost",
+   "id": "fast-dust",
+   "label": "Angry dust",
+   "sym": "T_FAST_DUST",
+   "name": "fast_dust",
+   "sprite": "spr_fast_dust",
    "width": 8,
-   "height": 12,
-   "palette": 1,
+   "height": 8,
+   "palette": 7,
    "frames": "2 frame(s)",
    "anim": 2,
    "dirSets": 1,
@@ -250,7 +250,7 @@
    },
    "span": {
     "kind": "type",
-    "id": "fast-ghost"
+    "id": "fast-dust"
    }
   },
   {
@@ -1581,35 +1581,35 @@
  "messages": [],
  "palettes": [
   {
-   "id": "hero",
+   "id": "cat",
    "colors": [
-    "$1C",
+    "$3A",
     "$02",
-    "$46"
+    "$0F"
    ]
   },
   {
-   "id": "ghost",
+   "id": "dust",
    "colors": [
-    "$56",
-    "$0F",
-    "$02"
+    "$06",
+    "$0A",
+    "$0F"
    ]
   },
   {
-   "id": "coin",
+   "id": "yarn",
    "colors": [
-    "$1E",
-    "$2A",
-    "$00"
+    "$48",
+    "$44",
+    "$48"
    ]
   },
   {
    "id": "walls",
    "colors": [
-    "$84",
-    "$82",
-    "$36"
+    "$D4",
+    "$D2",
+    "$46"
    ]
   },
   {
@@ -1623,17 +1623,25 @@
   {
    "id": "scared",
    "colors": [
-    "$86",
-    "$0F",
+    "$0C",
+    "$08",
     "$02"
    ]
   },
   {
    "id": "catnip",
    "colors": [
-    "$C8",
-    "$C4",
-    "$84"
+    "$D8",
+    "$D4",
+    "$D2"
+   ]
+  },
+  {
+   "id": "angry",
+   "colors": [
+    "$44",
+    "$48",
+    "$0F"
    ]
   }
  ],
@@ -1642,8 +1650,8 @@
  "wallPalette": 3,
  "text": {
   "title": "Ghost Panic",
-  "win": "CLEARED THREE TIMES",
-  "lose": "THE GHOSTS WON"
+  "win": "HOUSE CLEAN",
+  "lose": "GAME OVER"
  },
  "madeBy": "",
  "flow": {
@@ -1704,7 +1712,7 @@
   "timers": true,
   "protect": true,
   "timedTurns": true,
-  "facing": false,
+  "facing": true,
   "contact": false,
   "latchThings": false,
   "globalLatches": 3,

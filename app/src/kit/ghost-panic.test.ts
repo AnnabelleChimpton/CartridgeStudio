@@ -1,8 +1,3 @@
-// Ghost Panic, the starter game that uses the most at once: counters, "only if", timed "turn
-// into", every N seconds, flee, the level loop and hazard tiles, together in
-// one game. Each test uses the real game with a small change to the room, so
-// the moments under test happen next to the cat.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import type { CoreHost } from "../emulator/core-host.ts";
@@ -16,14 +11,14 @@ import { KIT_WATCH, buildKitRom } from "./tests.ts";
 
 const base = KitGameSchema.parse(raw);
 const START: Step[] = [{ frames: 5 }, { hold: ["fire"], frames: 2 }, { frames: 2 }];
-/** Slots: placed things are sorted by type (cat, ghost, scared, fast ghost, yarn, catnip). */
+/** Slots: placed things are sorted by type (cat, dust, scared, fast-dust, yarn, catnip). */
 const WATCH: WatchMap = {
   ...KIT_WATCH,
   level: { symbol: "levelnum" },
   combo: { symbol: "c_combo" },
-  ghostA: { symbol: "otype", offset: 1 },
-  ghostB: { symbol: "otype", offset: 2 },
-  ghostAx: { symbol: "ox", offset: 1 },
+  dustA: { symbol: "otype", offset: 1 },
+  dustB: { symbol: "otype", offset: 2 },
+  dustAx: { symbol: "ox", offset: 1 },
 };
 
 /** The game with some room cells replaced: [row, col, char]. */
@@ -50,22 +45,22 @@ async function run(g: KitGame, steps: Step[]) {
 }
 
 describe("Ghost Panic", () => {
-  it("catnip scares every ghost for about 6 seconds, then they turn back", async () => {
+  it("catnip scares every dust bunny for about 6 seconds, then they turn back", async () => {
     // The top catnip moves right next to the cat.
     const g = withCells([1, 8, " "], [1, 2, "N"]);
     await run(g, [
       { hold: ["right"], frames: 8 },
-      { expect: { ghostA: 2, ghostB: 2 } },
+      { expect: { dustA: 2, dustB: 2 } },
       { frames: 300 },
-      { expect: { ghostA: 2 } },
-      { until: { ghostA: 1, ghostB: 1 }, maxFrames: 120, steps: [{ frames: 1 }] },
+      { expect: { dustA: 2 } },
+      { until: { dustA: 1, dustB: 1 }, maxFrames: 120, steps: [{ frames: 1 }] },
     ]);
   });
 
-  it("catching scared ghosts scores 200 each; the bonus is checked before the catch", async () => {
-    // A closed corridor on row 9: cat, catnip, then both ghosts against a wall, so fleeing can't save them.
-    // (The cat, the top catnip and both ghosts move there.) The cat eats the catnip and waits while
-    // the scared ghosts flee into the corner, on top of each other. Both are caught in the same frame,
+  it("catching scared dust scores 200 each; the bonus is checked before the catch", async () => {
+    // A closed corridor on row 9: cat, catnip, then both dust bunnies against a wall, so fleeing can't save them.
+    // (The cat, the top catnip and both dust bunnies move there.) The cat eats the catnip and waits while
+    // the scared dust bunnies flee into the corner, on top of each other. Both are caught in the same frame,
     // so neither gets the combo bonus: the bonus rule comes first and sees combo 0.
     const g = withCells([1, 1, " "], [1, 8, " "], [1, 18, " "], [9, 18, " "], [9, 1, "P"], [9, 2, "N"], [9, 5, "G"], [9, 6, "G"], [9, 7, "#"]);
     await run(g, [
@@ -77,7 +72,7 @@ describe("Ghost Panic", () => {
   });
 
   it("with a combo going, a catch pays the 300 bonus too", async () => {
-    // One ghost starts scared, next to the cat, and the combo is already 1.
+    // One dust bunny starts scared, next to the cat, and the combo is already 1.
     const g = withCells([1, 18, " "], [1, 3, "S"]);
     g.room.legend.S = "scared";
     g.counters.find((c) => c.id === "combo")!.start = 1;
@@ -92,7 +87,7 @@ describe("Ghost Panic", () => {
     await run(g, [{ hold: ["right"], frames: 20 }, { expect: { lives: 2 } }]);
   });
 
-  it("clearing the yarn goes up a level; clearing three mazes wins", async () => {
+  it("clearing the yarn goes up a level; clearing three times wins", async () => {
     // One yarn ball, next to the cat. It comes back with each new level.
     const g = withCells(
       ...g0Yarn().map(([r, c]) => [r, c, " "] as [number, number, string]),
@@ -108,12 +103,12 @@ describe("Ghost Panic", () => {
     ]);
   });
 
-  it("every 15 seconds the ghosts surge for 4 seconds", async () => {
-    // Wall the cat into its corner so the ghosts can't catch it while we wait.
+  it("every 15 seconds the dust bunnies surge for 4 seconds", async () => {
+    // Wall the cat into its corner so the dust bunnies can't catch it while we wait.
     await run(withCells([1, 2, "#"], [2, 1, "#"]), [
-      { until: { ghostA: 3 }, maxFrames: 15 * 60 + 30, steps: [{ frames: 1 }] },
+      { until: { dustA: 3 }, maxFrames: 15 * 60 + 30, steps: [{ frames: 1 }] },
       { expect: { seconds: { gte: 14, lte: 15 } } },
-      { until: { ghostA: 1 }, maxFrames: 5 * 60, steps: [{ frames: 1 }] },
+      { until: { dustA: 1 }, maxFrames: 5 * 60, steps: [{ frames: 1 }] },
     ]);
   });
 

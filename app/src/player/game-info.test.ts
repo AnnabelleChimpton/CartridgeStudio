@@ -14,7 +14,6 @@ describe("what the player learns from a game", () => {
     expect(playerInfo(preset("dodger")).controls).toEqual({ move: "lr", button: "start" });
     expect(playerInfo(preset("shooter")).controls).toEqual({ move: "lr", button: "fire" });
     expect(playerInfo(preset("ghost-panic")).controls).toEqual({ move: "free", button: "start" });
-    expect(playerInfo(preset("maze")).controls).toEqual({ move: "free", button: "start" });
   });
 
   it("says the controls in words, without promising a fire button that does nothing", () => {

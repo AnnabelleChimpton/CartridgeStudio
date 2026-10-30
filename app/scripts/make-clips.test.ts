@@ -1,14 +1,4 @@
-// Gameplay clips for the landing page (site/clips): builds each kit preset
-// in templates/kit/games, plays it in the headless core with a small autopilot
-// that reads the object tables from RAM, and keeps the best seven seconds of a
-// few tries as an animated GIF, plus a still PNG for reduced-motion viewers.
-//
-// The clips are meant for reuse (the starter chooser's cards, a jam gallery):
-// each preset gets <id>.gif and <id>.png, and clips.json lists them with the
-// game's title and size, so anything that renders a game grid can read it.
-//
-// Not part of the test suite. Run from app/:
-//   npx vitest run --config scripts/clips.config.ts
+// Run from app/: npx vitest run --config scripts/clips.config.ts
 // CLIPS=<id,id> makes only some, CLIPS_OUT=<dir> writes somewhere other than
 // site/clips, and CLIPS_TRACE=1 prints each try's score by the second.
 
@@ -20,7 +10,7 @@ import { CLIP_HEIGHT, CLIP_WIDTH, encodeClip } from "../src/files/clip.ts";
 import { encodeRgbaPng } from "../src/files/png.ts";
 import { nodeBuilder, nodeHost } from "../src/harness/node.ts";
 import { buildKitRom } from "../src/kit/tests.ts";
-import { KitGameSchema, type KitGame } from "../src/kit/schema.ts";
+import { KitGameSchema, MAX_OBJECTS, type KitGame } from "../src/kit/schema.ts";
 import { SOUND_LIBRARY } from "../src/project/templates.ts";
 
 const root = path.resolve(import.meta.dirname, "../..");
@@ -35,10 +25,6 @@ const FRAME_STEP = 2;
 const TRIES = 8;
 
 // The kit runtime's object tables (templates/kit/engine.bas.hbs).
-const OTYPE = 0x2200;
-const OX = 0x2218;
-const OY = 0x2230;
-const SLOTS = 24;
 const EMPTY = 255;
 const ROOMTOP = 16;
 
@@ -54,6 +40,8 @@ interface View {
   hero: Thing | null;
   things: Thing[];
   frame: number;
+  /** The room the game is in, from 1. */
+  room: number;
 }
 
 type Pilot = (v: View) => JoystickInput;
@@ -74,7 +62,7 @@ function rng(seed: number) {
 const cx = (t: Thing) => t.x + t.w / 2;
 const cy = (t: Thing) => t.y + t.h / 2;
 
-/** Shooter: line up under the lowest invader, fire, and step out from under bombs. */
+/** Shooter: line up under the lowest vacuum, fire, and step out from under the dust it drops. */
 function shooterPilot(seed: number): Pilot {
   const r = rng(seed);
   let lean = r() * 8 - 4;
@@ -88,10 +76,10 @@ function shooterPilot(seed: number): Pilot {
       const goLeft = cx(threat) > hx ? hero.x > 8 : hero.x > 140;
       return { ...NONE, left: goLeft, right: !goLeft };
     }
-    const invaders = things.filter((t) => t.type === "invader");
-    if (invaders.length === 0) return NONE;
-    const lowest = Math.max(...invaders.map((t) => t.y));
-    const row = invaders.filter((t) => t.y >= lowest - 2);
+    const vacuums = things.filter((t) => t.type === "vacuum");
+    if (vacuums.length === 0) return NONE;
+    const lowest = Math.max(...vacuums.map((t) => t.y));
+    const row = vacuums.filter((t) => t.y >= lowest - 2);
     const target = row.reduce((a, b) => (Math.abs(cx(a) - hx) < Math.abs(cx(b) - hx) ? a : b));
     const dx = cx(target) + lean - hx;
     const aligned = Math.abs(dx) < 4;
@@ -129,27 +117,34 @@ function dodgerPilot(seed: number): Pilot {
   };
 }
 
-/** Maze games: a pixel-level search through the room to the next target, keeping clear of chasers. */
-function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food: string[]; power?: string; prey?: string }): Pilot {
+type Way = "left" | "right" | "up" | "down";
+
+/** Maze games: a pixel-level search through the room to the next target, keeping clear of chasers. With nothing left to get, it heads for the room's exit. */
+function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food: string[]; power?: string; prey?: string; exits?: Record<number, Way> }): Pilot {
   const r = rng(seed);
-  const rows = game.room.rows;
-  const wall = (px: number, py: number) => {
-    const c = Math.floor(px / 8);
-    const rr = Math.floor((py - ROOMTOP) / 16);
-    const ch = rows[rr]?.[c];
-    // Hazards cost a life in these games, so the autopilot treats them as walls.
-    return ch === undefined || game.room.legend[ch] === "wall" || game.room.legend[ch] === "hazard";
-  };
   const W = 160;
-  const H = ROOMTOP + rows.length * 16;
-  const hero = game.types.find((t) => t.behaviour === "player-4way")!;
-  const free = new Uint8Array(W * H);
-  for (let y = ROOMTOP; y + hero.height <= H; y++)
-    for (let x = 0; x + hero.width <= W; x++) {
-      let ok = true;
-      for (let yy = y; ok && yy < y + hero.height; yy++) for (let xx = x; ok && xx < x + hero.width; xx++) if (wall(xx, yy)) ok = false;
-      free[y * W + x] = ok ? 1 : 0;
-    }
+  const H = ROOMTOP + game.room.rows.length * 16;
+  const hero = game.types.find((t) => t.control?.axes === "4way")!;
+  const freeMaps = new Map<number, Uint8Array>();
+  const freeIn = (room: number) => {
+    let free = freeMaps.get(room);
+    if (free) return free;
+    const rows = room > 1 ? game.rooms[room - 2]!.rows : game.room.rows;
+    const wall = (px: number, py: number) => {
+      const ch = rows[Math.floor((py - ROOMTOP) / 16)]?.[Math.floor(px / 8)];
+      // Hazards cost a life in these games, so the autopilot treats them as walls.
+      return ch === undefined || game.room.legend[ch] === "wall" || game.room.legend[ch] === "hazard";
+    };
+    free = new Uint8Array(W * H);
+    for (let y = ROOMTOP; y + hero.height <= H; y++)
+      for (let x = 0; x + hero.width <= W; x++) {
+        let ok = true;
+        for (let yy = y; ok && yy < y + hero.height; yy++) for (let xx = x; ok && xx < x + hero.width; xx++) if (wall(xx, yy)) ok = false;
+        free[y * W + x] = ok ? 1 : 0;
+      }
+    freeMaps.set(room, free);
+    return free;
+  };
   const dirs = [
     [1, 0, "right"],
     [-1, 0, "left"],
@@ -163,7 +158,7 @@ function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food:
   let wander: JoystickInput | null = null;
   let wanderFor = 0;
 
-  const search = (start: number, goals: Set<number>, blocked: (i: number) => boolean): number => {
+  const search = (free: Uint8Array, start: number, goals: Set<number>, blocked: (i: number) => boolean): number => {
     prev.fill(-1);
     prev[start] = start;
     const queue = [start];
@@ -189,8 +184,9 @@ function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food:
     return -1;
   };
 
-  return ({ hero: h, things }) => {
+  return ({ hero: h, things, room }) => {
     if (!h) return NONE;
+    const free = freeIn(room);
     const start = h.y * W + h.x;
     if (start === lastPos) stuck++;
     else stuck = 0;
@@ -217,8 +213,19 @@ function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food:
       targets = power.length && danger ? power : things.filter((t) => opts.food.includes(t.type));
       if (!targets.length) targets = power;
     }
-    // Goals: any free hero position overlapping a target.
     const goals = new Set<number>();
+    const exit = opts.exits?.[room];
+    if (!targets.length && exit) {
+      // Already at the exit's edge: keep walking through it.
+      const atEdge = { left: h.x === 0, right: h.x + h.w >= W, up: h.y === ROOMTOP, down: h.y + h.h >= H }[exit];
+      if (atEdge) return { ...NONE, [exit]: true };
+      for (let y = ROOMTOP; y + h.h <= H; y++)
+        for (let x = 0; x + h.w <= W; x++) {
+          const edge = { left: x === 0, right: x + h.w === W, up: y === ROOMTOP, down: y + h.h === H }[exit];
+          if (edge && free[y * W + x]) goals.add(y * W + x);
+        }
+    }
+    // Goals: any free hero position overlapping a target.
     for (const t of targets)
       for (let y = t.y - h.h + 2; y < t.y + t.h - 1; y++)
         for (let x = t.x - h.w + 2; x < t.x + t.w - 1; x++) if (x >= 0 && y >= 0 && x < W && y < H && free[y * W + x]) goals.add(y * W + x);
@@ -227,9 +234,9 @@ function mazePilot(game: KitGame, seed: number, opts: { chasers: string[]; food:
       const y = (i / W) | 0;
       return chasers.some((c) => Math.abs(cx(c) - (x + h.w / 2)) < rad && Math.abs(cy(c) - (y + h.h / 2)) < rad);
     };
-    let step = search(start, goals, blocked(radius));
-    if (step < 0) step = search(start, goals, blocked(10));
-    if (step < 0) step = search(start, goals, () => false);
+    let step = search(free, start, goals, blocked(radius));
+    if (step < 0) step = search(free, start, goals, blocked(10));
+    if (step < 0) step = search(free, start, goals, () => false);
     if (step < 0) return NONE;
     const dx = (step % W) - h.x;
     const dy = ((step / W) | 0) - h.y;
@@ -243,10 +250,11 @@ function pilotFor(name: string, game: KitGame, seed: number): Pilot {
       return shooterPilot(seed);
     case "dodger":
       return dodgerPilot(seed);
-    case "maze":
-      return mazePilot(game, seed, { chasers: ["ghost", "bat"], food: ["yarn"] });
     case "ghost-panic":
-      return mazePilot(game, seed, { chasers: ["ghost", "fast-ghost"], food: ["yarn"], power: "catnip", prey: "scared" });
+      return mazePilot(game, seed, { chasers: ["dust", "fast-dust"], food: ["yarn"], power: "catnip", prey: "scared" });
+    case "key-quest":
+      // Kitchen, then the hall for the key, then down to the pantry door and the sardines behind it.
+      return mazePilot(game, seed, { chasers: ["robot"], food: ["key", "door", "sardines"], exits: { 1: "right", 2: "down", 3: "right" } });
     default:
       throw new Error(`No autopilot for ${name}`);
   }
@@ -266,7 +274,7 @@ async function play(host: CoreHost, a78: Uint8Array, symbolTable: string, name: 
     if (a === undefined) throw new Error(`No symbol ${s}`);
     return a;
   };
-  const [scoreAt, livesAt, stateAt, heroAt] = ["score0", "lives", "gamestate", "heroi"].map(addr) as [number, number, number, number];
+  const [scoreAt, livesAt, stateAt, roomAt, typeAt, xAt, yAt] = ["score0", "lives", "gamestate", "roomnum", "otype", "ox", "oy"].map(addr) as number[] as [number, number, number, number, number, number, number];
   const bcd = (b: Uint8Array) => Number([...b].map((v) => v.toString(16).padStart(2, "0")).join(""));
   await host.load(a78);
   host.step(30);
@@ -278,21 +286,20 @@ async function play(host: CoreHost, a78: Uint8Array, symbolTable: string, name: 
   const pilot = pilotFor(name, game, seed);
   const take: Take = { frames: [], score: [], lives: [], state: [] };
   for (let f = 0; f < PLAY_FRAMES; f++) {
-    const types = host.readMemory(OTYPE, SLOTS);
-    const xs = host.readMemory(OX, SLOTS);
-    const ys = host.readMemory(OY, SLOTS);
-    const heroi = host.readMemory(heroAt)[0]!;
+    const types = host.readMemory(typeAt, MAX_OBJECTS);
+    const xs = host.readMemory(xAt, MAX_OBJECTS);
+    const ys = host.readMemory(yAt, MAX_OBJECTS);
     const things: Thing[] = [];
     let hero: Thing | null = null;
-    for (let i = 0; i < SLOTS; i++) {
+    for (let i = 0; i < MAX_OBJECTS; i++) {
       const t = types[i]!;
       if (t === EMPTY || !game.types[t]) continue;
       const k = game.types[t]!;
       const thing = { type: k.id, x: xs[i]!, y: ys[i]!, w: k.width, h: k.height };
-      if (i === heroi) hero = thing;
+      if (!hero && k.control) hero = thing;
       else things.push(thing);
     }
-    host.setInput(pilot({ hero, things, frame: f }));
+    host.setInput(pilot({ hero, things, frame: f, room: host.readMemory(roomAt)[0]! }));
     host.step(1);
     take.frames.push(host.indices());
     take.score.push(bcd(host.readMemory(scoreAt, 3)));

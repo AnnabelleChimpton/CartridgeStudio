@@ -1,5 +1,5 @@
-// Kit code generation, step 2 of 3: validate a kit game and lower it to a typed IR
-// (intermediate representation). The IR is plain data: kinds of thing with
+// Validates a kit game and lowers it to a typed IR (intermediate
+// representation). The IR is plain data: kinds of thing with
 // their movement parts and slot ranges, rooms with their placements, and
 // rules lowered to triggers, comparisons and actions with every name
 // resolved. Every node carries a source span (the id of the type, rule,
@@ -62,7 +62,7 @@ export interface IRType {
   label: string;
   /** The const the generated code compares otype with (T_CAT). */
   sym: string;
-  /** The id as it appears in labels (upd_fast_ghost). */
+  /** The id as it appears in labels (upd_fast_dust). */
   name: string;
   /** Graphic name of the first frame (spr_cat). */
   sprite: string;
@@ -381,7 +381,7 @@ export function roomPlacements(g: Pick<KitGame, "room" | "rooms">): { room: numb
 }
 
 export const typeSym = (id: string) => `T_${id.toUpperCase().replace(/-/g, "_")}`;
-/** A kind's id for labels (upd_fast_ghost); with its number when another kind's name starts the same, so labels can't clash. */
+/** A kind's id for labels (upd_fast_dust); with its number when another kind's name starts the same, so labels can't clash. */
 function labelName(id: string, k: number, all: string[]): string {
   const base = id.replace(/-/g, "_");
   const clash = all.some((other, j) => j !== k && other.replace(/-/g, "_").startsWith(`${base}_`));

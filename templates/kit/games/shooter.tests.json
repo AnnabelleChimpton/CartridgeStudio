@@ -107,7 +107,7 @@
           "when": {
             "touch": [
               "shot",
-              "invader"
+              "vacuum"
             ]
           },
           "then": [
@@ -124,7 +124,7 @@
         },
         {
           "when": {
-            "allGone": "invader"
+            "allGone": "vacuum"
           },
           "then": [
             {

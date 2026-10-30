@@ -1,8 +1,3 @@
-// Game kit: one runtime (engine.bas.hbs) driven by data. A kit game is kinds of thing
-// built from movement parts, rooms, counters and rules made of general
-// events, targets and values. The generator compiles it to 7800basic
-// through a typed IR (ir.ts); nothing in the runtime knows about genres.
-//
 // Units: positions are pixels (x 0-159, y 16-191 below the HUD). Velocities
 // are sixteenths of a pixel per frame (16 = one pixel), held as 8.8 fixed
 // point at run time. Timers and protection count tenths of a second.

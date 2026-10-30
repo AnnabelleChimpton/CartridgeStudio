@@ -1,11 +1,4 @@
-// What the music player costs in the kit's CPU model (not part of the normal run):
-//   KIT_MEASURE=1 npx vitest run src/kit/audio-measure.test.ts
-// Same method as kit-measure.test.ts: a busy kit game (walled room, 8
-// bouncers) gets "still" fillers until it drops below 60 fps; one filler is
-// about 4.5 points. The player is spliced into the generated program the way
-// the integration note describes, playing the busiest title loop the whole
-// time. To see past the measurement's resolution, the interrupt also calls
-// the player 8 and 16 times a frame, and the cost is divided out.
+// Run with: KIT_MEASURE=1 npx vitest run src/kit/audio-measure.test.ts
 
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";

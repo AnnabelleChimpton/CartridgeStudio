@@ -1,13 +1,3 @@
-// Kit fuzz: random games that pass validation (including the CPU budget)
-// must build, never hang, and hold 60 fps for 600 frames of random input,
-// with things on the screen and in the slots the cost model priced. This is
-// what lets the kit promise "anything the editor accepts works".
-//
-// The games use kit format 2's whole vocabulary (randomKitGameV2): parts,
-// every trigger, targets, values, rooms, flow. Random format 1 games (as
-// saved before format 2) check the migration: they must migrate, validate and build.
-// Replay one with KIT_FUZZ_SEED=<seed> KIT_FUZZ_COUNT=1.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import { parseSymbols, type CoreHost } from "../emulator/core-host.ts";

@@ -1,6 +1,4 @@
-// M1 core loop, on the kit's shooter starter (Cat vs. Vacuums): the game
-// builds into a ROM that plays in the preview, every edit rebuilds and reloads
-// it, and it leaves the editor as ROMs, a print PDF, source and game files.
+// Core loop on the shooter starter
 
 import { expect, test, type Page } from "@playwright/test";
 import { autosaved } from "./wait.ts";
@@ -60,6 +58,21 @@ const playAndFire = (page: Page) =>
     }
   });
 
+/** Leaves the title screen, which shows only the title, so the room and its things are drawn. */
+const inPlay = async (page: Page) => {
+  const state = await symbol(page, "gamestate");
+  await page.evaluate(async (state) => {
+    const e = window.__cs!.emulator!;
+    const idle = { up: false, down: false, left: false, right: false, fire: false };
+    e.pause(true);
+    if ((await e.readMemory(state, 1))[0] === 0) {
+      e.setInput({ ...idle, fire: true });
+      await e.stepFrames(1);
+      e.setInput(idle);
+    }
+    await e.stepFrames(2);
+  }, state);
+};
 
 const buildCount = (page: Page) => page.evaluate(() => window.__cs!.builds.length);
 
@@ -99,6 +112,7 @@ test("the starter game builds and plays", async ({ page }) => {
   expect(rom).toEqual({ a78: 128 + 32768, bin: 32768 });
 
   // The vacuums alternate frames every 16 frames: sample across 48.
+  await inPlay(page);
   const pictures = await page.evaluate(async () => {
     const e = window.__cs!.emulator!;
     const seen = new Set<string>();
@@ -122,19 +136,23 @@ test("changing a color rebuilds the preview, and undo is a cache hit", async ({ 
   await open(page);
   const n = await buildCount(page);
   const green = "g>r+40 && g>b+40";
-  expect(await litPixels(page, 0, 40, 320, 80, green)).toBe(0);
+  const vacuumsGreen = async () => {
+    await inPlay(page);
+    return litPixels(page, 0, 40, 320, 80, green);
+  };
+  expect(await vacuumsGreen()).toBe(0);
 
   await page.getByRole("button", { name: /^Vacuum / }).click();
-  await page.getByRole("button", { name: /^Vacuum color 1: \$96/ }).click();
+  await page.getByRole("button", { name: /^Vacuum color 1: \$42/ }).click();
   await page.getByRole("option", { name: /^\$C8,/ }).click();
   const edited = await waitForBuild(page, n + 1);
   expect(edited.kind).toBe("built");
-  await expect.poll(() => litPixels(page, 0, 40, 320, 80, green)).toBeGreaterThan(50);
+  await expect.poll(vacuumsGreen).toBeGreaterThan(50);
 
   await page.getByRole("button", { name: "Undo" }).click();
   const undone = await waitForBuild(page, n + 2);
   expect(undone.cached).toBe(true);
-  await expect.poll(() => litPixels(page, 0, 40, 320, 80, green)).toBe(0);
+  await expect.poll(vacuumsGreen).toBe(0);
 });
 
 test("the game survives a reload", async ({ page }) => {
@@ -208,14 +226,17 @@ for (const rate of [1, 4, 6]) {
   });
 }
 
-test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => {
+test("drawing a sprite changes the running game", async ({ page }) => {
   await open(page);
   const enemyFrames = () =>
-    page.evaluate(() => window.__cs!.kitStore!.getState().project.types.find((t) => t.id === "invader")!.frames);
+    page.evaluate(() => window.__cs!.kitStore!.getState().project.types.find((t) => t.id === "vacuum")!.frames);
   const enemy = async () => (await enemyFrames())[0]!;
   const pastLength = () => page.evaluate(() => window.__cs!.kitStore!.getState().past.length);
-  // The formation's area of the preview canvas, above the title screen's words (which stay put).
-  const formation = () => litPixels(page, 0, 50, 320, 40);
+  // The formation's area of the preview canvas, once the game is playing.
+  const formation = async () => {
+    await inPlay(page);
+    return litPixels(page, 0, 50, 320, 40);
+  };
 
   await page.getByRole("button", { name: /^Vacuum / }).click();
   const canvas = page.getByLabel("Vacuum frame 1 pixels");
@@ -223,7 +244,7 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   const cell = async (x: number, y: number) => {
     await canvas.scrollIntoViewIfNeeded();
     const box = (await canvas.boundingBox())!;
-    return { x: box.x + ((x + 0.5) * box.width) / 12, y: box.y + ((y + 0.5) * box.height) / 8 };
+    return { x: box.x + ((x + 0.5) * box.width) / 8, y: box.y + ((y + 0.5) * box.height) / 12 };
   };
 
   // Clear both animation frames: the enemies disappear from the game.
@@ -241,37 +262,37 @@ test("drawing a sprite changes the running game (M1 gate)", async ({ page }) => 
   await page.getByRole("radio", { name: "Fill" }).click();
   await page.getByRole("radio", { name: "Color 1" }).click();
   await canvas.click(); // the middle
-  expect(await enemy()).toEqual(Array(8).fill("111111111111"));
+  expect(await enemy()).toEqual(Array(12).fill("11111111"));
   // "Copy frame 1" makes frame 2 match, so the animation keeps the solid block.
   await page.getByRole("tab", { name: "Frame 2" }).click();
   await page.getByRole("button", { name: "Copy frame 1" }).click();
-  expect((await enemyFrames())[1]).toEqual(Array(8).fill("111111111111"));
+  expect((await enemyFrames())[1]).toEqual(Array(12).fill("11111111"));
   await waitForBuild(page, n + 1);
   await page.getByRole("tab", { name: "Frame 1" }).click();
-  await expect.poll(formation).toBeGreaterThan(1500); // ten solid 12×8 vacuums
+  await expect.poll(formation).toBeGreaterThan(1000); // ten solid 8×12 vacuums
 
   // A pencil stroke across the top row is one undo step.
   await page.getByRole("radio", { name: "Pencil" }).click();
   await page.getByRole("radio", { name: "Color 2" }).click();
   const before = await pastLength();
   const a = await cell(0, 0);
-  const b = await cell(11, 0);
+  const b = await cell(7, 0);
   await page.mouse.move(a.x, a.y);
   await page.mouse.down();
   await page.mouse.move(b.x, b.y, { steps: 3 });
   await page.mouse.up();
-  expect((await enemy())[0]).toBe("222222222222");
+  expect((await enemy())[0]).toBe("22222222");
   expect(await pastLength()).toBe(before + 1);
 
   // Right-click erases.
   const c = await cell(5, 4);
   await page.mouse.click(c.x, c.y, { button: "right" });
-  expect((await enemy())[4]).toBe("111110111111");
+  expect((await enemy())[4]).toBe("11111011");
 
   // Undo twice restores the filled sprite.
   await page.getByRole("button", { name: "Undo" }).click();
   await page.getByRole("button", { name: "Undo" }).click();
-  expect(await enemy()).toEqual(Array(8).fill("111111111111"));
+  expect(await enemy()).toEqual(Array(12).fill("11111111"));
 });
 
 test("sounds: the shooting sound and each rule's sound reach the game", async ({ page }) => {

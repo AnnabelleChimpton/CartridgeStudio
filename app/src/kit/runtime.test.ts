@@ -1,11 +1,3 @@
-// Kit runtime tests: one tiny game per behaviour or mechanism, run frame by
-// frame in the headless core. Each kind of thing has its own slots, in kind
-// order (kind 0 first): what's placed, then room for what rules create.
-//
-// The first groups write kit format 1 games (as saved before format 2) and run
-// them through the 1 → 2 migration, so they check the migration keeps each v1
-// behaviour. Later groups write v2 games and cover the new vocabulary.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import type { CoreHost } from "../emulator/core-host.ts";
@@ -104,7 +96,7 @@ describe("kit runtime behaviours", () => {
   });
 
   it("march steps the whole formation down at the edge", async () => {
-    const g = game(["", " A  A", "", "", "", "", "", "", "", "P"], [hero(), type("invader", "march")]);
+    const g = game(["", " A  A", "", "", "", "", "", "", "", "P"], [hero(), type("vacuum", "march")]);
     await run(g, [
       { until: { y1: 40 }, maxFrames: 600, steps: [{ frames: 1 }] },
       { expect: { y2: 40 } },
@@ -112,7 +104,7 @@ describe("kit runtime behaviours", () => {
   });
 
   it("chase closes in on the player", async () => {
-    const g = game(["", "", "", "", "P              A"], [hero(), type("ghost", "chase", { speed: 2 })]);
+    const g = game(["", "", "", "", "P              A"], [hero(), type("dust", "chase", { speed: 2 })]);
     await run(g, [{ until: { x1: { lte: 24 } }, maxFrames: 1200, steps: [{ frames: 10 }] }]);
   });
 
@@ -206,9 +198,9 @@ describe("kit runtime: counters, tiles and state", () => {
   });
 
   it("'turn every' changes every thing of a type, and fleeing things run away", async () => {
-    const rules: KitRule[] = [{ when: { touch: ["hero", "pill"] }, then: [{ remove: "second" }, { turnAll: { type: "ghost", into: "scared", seconds: 3 } }] }];
-    const types = [hero(), type("ghost", "chase", { speed: 1 }), type("pill", "still"), type("scared", "flee", { speed: 2 })];
-    // Ghosts in slots 1 and 2, the pill in 3.
+    const rules: KitRule[] = [{ when: { touch: ["hero", "pill"] }, then: [{ remove: "second" }, { turnAll: { type: "dust", into: "scared", seconds: 3 } }] }];
+    const types = [hero(), type("dust", "chase", { speed: 1 }), type("pill", "still"), type("scared", "flee", { speed: 2 })];
+    // Chasers in slots 1 and 2, the pill in 3.
     const g = game(["", "", "", "", "PB       A    A"], types, rules);
     await run(g, [
       { hold: ["right"], frames: 6 },
@@ -357,8 +349,8 @@ describe("kit format 2: movement parts", () => {
   });
 
   it("steers toward the nearest of several, and away", async () => {
-    const chaser = thing("ghost", { steer: { toward: "coin", speed: { step: 3 } }, move: { wall: "slide", edge: "stop" } });
-    // Coins at x = 24 and x = 96; the ghost at x = 72 heads for the nearer one, on the right.
+    const chaser = thing("dust", { steer: { toward: "coin", speed: { step: 3 } }, move: { wall: "slide", edge: "stop" } });
+    // Coins at x = 24 and x = 96; the chaser at x = 72 heads for the nearer one, on the right.
     const g = v2(["", "", "", "", "P  B     A  B"], [player(), chaser, thing("coin")]);
     await runV2(g, [{ frames: 40 }, { expect: { x1: 96 } }]);
     const fleer = thing("mouse", { steer: { toward: "hero", away: true, speed: { step: 3 } }, move: { wall: "slide", edge: "stop" } });

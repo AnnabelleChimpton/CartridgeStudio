@@ -1,6 +1,3 @@
-// Game kit: the starter games (templates/kit/games/*.json) are only data
-// for one runtime. Each must build, pass its behaviour tests and hold 60 fps.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import type { CoreHost } from "../emulator/core-host.ts";
@@ -28,7 +25,7 @@ beforeAll(async () => {
 });
 
 describe("kit games", () => {
-  it("has the five starter games", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "key-quest", "maze", "shooter"]));
+  it("has the four starter games", () => expect(Object.keys(kitGames).sort()).toEqual(["dodger", "ghost-panic", "key-quest", "shooter"]));
 
   for (const [name, raw] of Object.entries(kitGames)) {
     describe(name, () => {

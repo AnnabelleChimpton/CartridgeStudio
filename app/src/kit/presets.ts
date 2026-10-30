@@ -1,9 +1,5 @@
-// Kit starter games (templates/kit/games/*.json). Each is a complete game a
-// creator can change in any way; together they show what the kit can do.
-
 import { loadKit } from "./migrations.ts";
 import type { KitGame } from "./schema.ts";
-import { NumberWord, numberWord } from "../ui/words.ts";
 
 const files = import.meta.glob<unknown>("../../../templates/kit/games/*.json", { import: "default", eager: true });
 
@@ -77,58 +73,49 @@ function speedsUp(g: KitGame): boolean {
   return g.rules.some((r) => r.then.some((a) => "set" in a && "counter" in a.set.what && pace.has(a.set.what.counter) && typeof a.set.to === "number" && a.set.to > 0));
 }
 
-const seconds = (n: number | undefined, fallback: string) => (n === undefined ? fallback : `${numberWord(n)} second${n === 1 ? "" : "s"}`);
+const seconds = (n: number | undefined, fallback: string) => (n === undefined ? fallback : `${n} second${n === 1 ? "" : "s"}`);
 
 /** Each starter's kind and description, worked out from the game so the numbers stay true when the file changes. */
 const DESCRIPTIONS: Record<string, (g: KitGame) => [string, string]> = {
-  shooter: () => ["A shooter", "A line of vacuums marches down. Throw socks at them before they reach the floor."],
-  maze: () => ["A maze game", "Collect all the yarn while dust ghosts chase you round the maze."],
+  shooter: () => ["A shooter", "Vacuums march down the living room. Throw socks at them before they reach the floor."],
   "ghost-panic": (g) => {
-    const mazes = levels(g);
+    const clears = levels(g);
     return [
       "A chase game",
-      `Catnip scares the ghosts for ${seconds(turnSeconds(g, "scared"), "a while")}; catch them while it lasts. Mind the spikes.${mazes ? ` Clear the maze ${numberWord(mazes)} times${speedsUp(g) ? "; it gets faster" : ""}.` : ""}`,
+      `Catnip sends the dust bunnies running for ${seconds(turnSeconds(g, "scared"), "a while")}.${clears ? ` Clear the hallway ${clears} time${clears === 1 ? "" : "s"}.` : ""}${speedsUp(g) ? " It speeds up." : ""}`,
     ];
   },
-  dodger: (g) => ["A dodging game", `Teacups fall for ${seconds(afterSeconds(g), "a while")}. Weave between them and catch the fish.`],
-  "key-quest": (g) => [
-    "An adventure",
-    `${NumberWord(1 + g.rooms.length)} rooms, a key, a locked door and a crown. Shadows follow you from room to room.`,
-  ],
+  dodger: (g) => ["A dodging game", `Teacups fall off the shelf for ${seconds(afterSeconds(g), "a while")}. Dodge them and catch the fish.`],
+  "key-quest": (g) => ["An adventure", `${1 + g.rooms.length} rooms, a key and a locked pantry. Robot vacuums patrol every room.`],
 };
 
 /** Ideas follow what each starter has to change, so some have more than others. */
 const IDEAS: Record<string, (g: KitGame) => KitIdea[]> = {
   shooter: () => [
-    { text: "Make the vacuums drop more dust", how: "Pick the Vacuum, open More options and move the Drops slider.", tab: "things", thing: "invader" },
-    { text: "Throw socks faster", how: "Pick the Sock, open More options and set Speed to Very fast.", tab: "things", thing: "shot" },
+    { text: "Make the vacuums drop more dust", how: "Pick the Vacuum and change Drops.", tab: "things", thing: "vacuum" },
+    { text: "Throw socks faster", how: "Pick the Sock and set Speed to Very fast.", tab: "things", thing: "shot" },
     { text: "Win when every vacuum is gone", how: "In the rule for when the vacuums are all gone, change “start the room again” to “win the game”.", tab: "rules" },
-  ],
-  maze: () => [
-    { text: "Make the ghost faster", how: "Pick the Dust ghost, open More options and change its Speed.", tab: "things", thing: "ghost" },
-    { text: "Hide more yarn in the corners", how: "Pick the Yarn ball brush and click empty squares.", tab: "room" },
-    { text: "Race the clock", how: "Add a rule, choose “seconds have passed” and make it “lose the game”.", tab: "rules" },
   ],
   "ghost-panic": (g) => {
     const catnip = turnSeconds(g, "scared");
-    const speedUp = everySeconds(g, "fast-ghost");
+    const speedUp = everySeconds(g, "fast-dust");
     return [
       catnip && { text: "Make the catnip last longer", how: `In the rule for touching Catnip, change both “${catnip} seconds” to a bigger number.`, tab: "rules" },
       { text: "Add spikes to the maze", how: "Pick the Spikes brush and click empty squares. Touching spikes costs a life.", tab: "room" },
       { text: "Start with more lives", how: "Change Lives to 5.", tab: "game" },
-      speedUp && { text: "Let the ghosts speed up less often", how: `In the rule “Every ${speedUp} seconds”, change ${speedUp} to a bigger number.`, tab: "rules" },
+      speedUp && { text: "Let the dust bunnies speed up less often", how: `In the rule “Every ${speedUp} seconds”, change ${speedUp} to a bigger number.`, tab: "rules" },
     ].filter((i): i is KitIdea => !!i);
   },
   "key-quest": () => [
-    { text: "Make the shadows faster", how: "Pick the Shadow and change its Speed under More options.", tab: "things", thing: "shadow" },
-    { text: "Hide another gem", how: "Pick the Gem brush and click a square in the first room.", tab: "room" },
+    { text: "Make the robot vacuums faster", how: "Pick the Robot vacuum and change its Speed.", tab: "things", thing: "robot" },
+    { text: "Hide another treat", how: "Pick the Cat treat brush and click a square in the kitchen.", tab: "room" },
     { text: "Start with more lives", how: "Change Lives to 5.", tab: "game" },
   ],
   dodger: (g) => {
     const s = afterSeconds(g);
     return [
       s && { text: "Last for a whole minute", how: `In the rule “When ${s} seconds have passed”, change ${s} to 60.`, tab: "rules" },
-      { text: "Make the teacups fall faster", how: "Pick the Teacup, open More options and change its Speed.", tab: "things", thing: "teacup" },
+      { text: "Make the teacups fall faster", how: "Pick the Teacup and change its Speed.", tab: "things", thing: "teacup" },
     ].filter((i): i is KitIdea => !!i);
   },
 };

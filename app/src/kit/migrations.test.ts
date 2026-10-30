@@ -1,6 +1,3 @@
-// Kit migrations: every frozen old game still loads and builds, and saves this
-// version can't read are set aside rather than lost.
-
 import { strToU8, unzipSync, zipSync, strFromU8 } from "fflate";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";

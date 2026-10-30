@@ -1,6 +1,3 @@
-// Accessibility: no automated WCAG failures, and everything you can do with
-// a mouse in the grids and pickers also works from the keyboard.
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { colorName } from "../src/ui/ntsc.ts";
@@ -72,7 +69,7 @@ test("controls inside a <label> are named by it, not an aria-label (WCAG 2.5.3)"
     );
   await start(page, /^Ghost Panic/);
   await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
-  await page.getByRole("button", { name: /^Dust ghost/ }).click();
+  await page.getByRole("button", { name: /^Dust bunny/ }).click();
   await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
   expect(await overridden(), "Things").toEqual([]);
   await expect(page.getByLabel("How it moves")).toHaveValue("chase");
