@@ -1,9 +1,12 @@
-// What the About and licences dialog credits. Versions come from the files
-// that pin them (toolchain.lock.json, the vendored js7800 README), never from
-// strings written here, so the dialog can't drift from what actually ships.
-
 import { TOOLCHAIN_LICENSE_FILES, TOOLCHAIN_URL, TOOLCHAIN_VERSION } from "@cartridge-studio/toolchain";
 import js7800Readme from "../../public/vendor/js7800-core/README.md?raw";
+import { APP_VERSION } from "../version.ts";
+
+/** "0.1.0+2b04899" as "v0.1.0 (2b04899)". */
+export function versionLabel(version: string = APP_VERSION): string {
+  const [release, commit] = version.split("+");
+  return commit ? `v${release} (${commit})` : `v${release}`;
+}
 
 /** The pinned js7800 commit, from the vendored core's README. */
 export function js7800Commit(readme: string): string {
@@ -32,7 +35,7 @@ export const CREDITS: Credit[] = [
     name: "7800basic",
     version: TOOLCHAIN_VERSION,
     by: "Mike Saarna (RevEng), derived from batari Basic by Fred Quimby",
-    licence: "GNU GPL v2. Its 6502 runtime is CC0, and the games you build with it are yours.",
+    licence: "GNU GPL v2. Its 6502 runtime is CC0",
     note: "Runs as the release's own WebAssembly build, unmodified.",
     source: `https://github.com/7800-devtools/7800basic/tree/v${TOOLCHAIN_VERSION}`,
     files: [

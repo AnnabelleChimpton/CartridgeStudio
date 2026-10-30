@@ -1,9 +1,3 @@
-// The "First boot" card: a postcard-sized print for the day a game first
-// boots on a console, offered when the creator answers "Did it boot?" with
-// Yes. It is drawn with the cartridge label's renderer (pdf.ts drawLabel)
-// under a "FIRST BOOT" strip, with the date and, when given, the console and
-// cartridge it booted on. One page, with crop marks.
-
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
 import { loadPrintFonts } from "./fonts.ts";
@@ -72,7 +66,7 @@ export async function buildFirstBootCard(input: FirstBootInput & { fonts: PrintF
   page.drawText(date, { x: x + CARD.w - 14 - dw, y: y + CARD.h - STRIP / 2 - 3.5, size: 10, font: fonts.bold, color: rgb(1, 1, 1) });
   cutMarks(page, x, y, CARD.w, CARD.h);
 
-  const note = wrap("Print at actual size (100%). The card is 6 × 4 inches, a postcard; glue it to card stock if you want it to stand up.", fonts.body, 8.5, CARD.w);
+  const note = wrap("Print at 100%. 6 × 4 in.", fonts.body, 8.5, CARD.w);
   note.forEach((l, i) => page.drawText(l, { x, y: y - 40 - i * 12, size: 8.5, font: fonts.body, color: rgb(0.4, 0.42, 0.46) }));
   return doc.save();
 }

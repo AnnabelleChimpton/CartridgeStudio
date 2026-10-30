@@ -1,6 +1,3 @@
-// About and licences: reachable from every screen, and every licence it links
-// to is actually served.
-
 import { expect, test } from "@playwright/test";
 
 test("the About dialog credits the tools and serves their licences", async ({ page, request }) => {
@@ -16,7 +13,7 @@ test("the About dialog credits the tools and serves their licences", async ({ pa
   for (const name of ["7800basic", "dasm", "js7800"]) await expect(dialog.getByRole("heading", { name: new RegExp(`^${name}`) })).toBeVisible();
   await expect(dialog).toContainText("RevEng");
   await expect(dialog).toContainText("raz0red");
-  await expect(dialog).toContainText("not affiliated with or endorsed by Atari");
+  await expect(dialog).toContainText("Cartridge Studio is not affiliated with Atari");
 
   const links = await dialog.getByRole("link").evaluateAll((as) => as.map((a) => (a as HTMLAnchorElement).href));
   const local = links.filter((h) => new URL(h).origin === new URL(page.url()).origin);

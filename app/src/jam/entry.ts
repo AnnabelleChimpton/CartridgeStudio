@@ -1,7 +1,3 @@
-// Jam entries: the one package format (files/package.ts) with a `jam` block.
-// The creator's words, licence and compilation permission go in the
-// manifest, with the limits their game goes past and the build that made it.
-
 import { packageZip, type LicenceId, type Manifest, type ReadPackage } from "../files/package.ts";
 import type { JamBrief } from "./brief.ts";
 import { cartridgeFacts, checkLimits, type GameFacts, type Limits } from "./limits.ts";

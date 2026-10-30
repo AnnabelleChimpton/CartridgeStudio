@@ -1,12 +1,3 @@
-// The jam gallery: entry packages in, one static site out. index.html is a
-// grid of every entry (screenshot, clip on request, title, credits, play
-// button). Every player page is made fresh here from the entry's ROM, sharing
-// one copy of the emulator: nothing a creator wrote runs as code. Nothing is
-// fetched, so the folder works from a disk, itch.io or GitHub Pages.
-//
-// Judging: judges.csv lists every entry with a column per criterion; filled-in
-// copies come back and become results.html.
-
 import { strToU8, zipSync } from "fflate";
 import { slugify } from "../files/exports.ts";
 import { licenceName, type ReadPackage } from "../files/package.ts";

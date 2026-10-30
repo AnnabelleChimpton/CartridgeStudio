@@ -1,10 +1,8 @@
-// "How to run a jam" (organize.html): make the brief, share the link, collect
-// entries, build the gallery, judge. No server and no accounts at any step.
-
 import { useId, useState, type ReactNode } from "react";
 import { slugify } from "../files/exports.ts";
 import { KIT_PRESETS } from "../kit/presets.ts";
 import { download } from "../ui/usePreview.ts";
+import { versionLabel } from "../ui/about.ts";
 import { APP_VERSION } from "../version.ts";
 import { JAM_EXTENSION, LONG_LINK, MAX_STARTERS, MAX_STARTER_BYTES, briefFileText, briefLink, newBrief, tooLong, type JamBrief } from "./brief.ts";
 import { LIMIT_LABELS, cartridgeFacts, type Limits } from "./limits.ts";
@@ -29,7 +27,7 @@ export function JamPageShell({ title, current, children }: { title: string; curr
         <h1>{title}</h1>
         {children}
       </main>
-      <footer className="muted small jam-footer">Made with Cartridge Studio {APP_VERSION}. Not affiliated with or endorsed by Atari.</footer>
+      <footer className="muted small jam-footer">Made with Cartridge Studio {versionLabel()}. Not affiliated with Atari.</footer>
     </div>
   );
 }
@@ -238,7 +236,7 @@ function BriefMaker() {
               setPin(e.target.checked);
             }}
           />{" "}
-          Pin the jam to this version of Cartridge Studio ({APP_VERSION}). Entries made with another version are flagged, so every game is
+          Pin the jam to this version of Cartridge Studio ({versionLabel()}). Entries made with another version are flagged, so every game is
           judged on the same footing.
         </label>
       </div>
@@ -293,7 +291,7 @@ export function JamGuide() {
   return (
     <JamPageShell title="How to run a jam" current="guide">
       <p className="jam-lede">
-        A jam on Cartridge Studio needs no server and no sign-ups. You make a brief, share one link, collect ZIP files, and build a
+        A jam on Cartridge Studio needs no server and no sign-ups. You make a brief, share a link, collect ZIP files, and build a
         gallery you can post anywhere. Every game is a 7800 ROM that also plays in any web browser.
       </p>
 
@@ -301,7 +299,7 @@ export function JamGuide() {
         <h2 id={`${id}-1`}>1. Make the brief</h2>
         <p>
           The brief is the jam's name, theme, dates and any extra rules, what judges will score, and limits the app can check. You can
-          narrow the built-in starting games or add your own. Everything stays in the link: nothing is uploaded.
+          narrow the built-in starting games or add your own. Everything stays in the link. Nothing is uploaded.
         </p>
         <BriefMaker />
       </section>
@@ -311,11 +309,11 @@ export function JamGuide() {
         <p>
           Post the jam link on your jam page (itch.io jams work well), a forum thread or a chat. Opening it shows a jam banner with the
           theme and rules, and the entry form. If a link is too long for where you post, share the <code>{JAM_EXTENSION}</code> file
-          instead: creators open it from the start screen or with Open.
+          instead. Creators open it with Open in the Game menu.
         </p>
         <p className="muted small">
-          A pinned jam names the version of Cartridge Studio it was made with ({APP_VERSION} here). Creators on another version can still
-          enter; their entry says which version they used.
+          A pinned jam names the version of Cartridge Studio it was made with ({versionLabel()} here). Creators on another version can still
+          enter, and their entry says which version they used.
         </p>
       </section>
 
@@ -323,12 +321,12 @@ export function JamGuide() {
         <h2 id={`${id}-3`}>3. Collect entries</h2>
         <p>
           In the editor, creators fill in a title, credits, a short description and the controls, choose a licence, say whether you may
-          put their game on a compilation, and press <em>Make my jam entry</em>. That saves one ZIP holding the signed ROMs, the game file,
+          put their game on a compilation, and press <em>Make my jam entry</em>. That saves a ZIP with the signed ROMs, the game file,
           a clip if they made one, and a <code>manifest.json</code> with the build, the licence and the ROM's fingerprint (SHA-256).
         </p>
         <p>
-          Ask for that ZIP, unchanged, through your jam page's submission form, by email, or in a forum post. The ROM is what gets judged:
-          if it's changed after the entry was made, the gallery builder notices.
+          Ask for that ZIP, unchanged, through your jam page's submission form, by email, or in a forum post. The ROM is what gets judged.
+          If the ROM changes after the entry is made, the gallery builder flags it.
         </p>
       </section>
 
@@ -337,7 +335,7 @@ export function JamGuide() {
         <p>
           Open the <a href="#gallery">gallery builder</a>, drop in every entry ZIP and press <em>Build the gallery</em>. It checks each
           entry against the brief and makes every game's player page afresh from its ROM, so nothing an entrant sent runs as code on your
-          site. You get one ZIP with an <code>index.html</code> showing every game.
+          site. You get a ZIP with an <code>index.html</code> showing every game.
         </p>
         <ul>
           <li>On itch.io, make an HTML project, upload the gallery ZIP and tick “This file will be played in the browser”.</li>
@@ -365,16 +363,12 @@ export function JamGuide() {
 
       <section aria-labelledby={`${id}-6`}>
         <h2 id={`${id}-6`}>Suggested themes</h2>
-        <p>Short themes that suit one-screen kit games. Some name a place, some set a limit:</p>
         <ul className="jam-themes">
           {SUGGESTED_THEMES.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
-        <p className="muted small">
-          A weekend suits newcomers; a week suits people who want to draw every frame. Announce the theme when the jam starts, not
-          before.
-        </p>
+        <p className="muted small">Announce the theme when the jam starts.</p>
       </section>
     </JamPageShell>
   );

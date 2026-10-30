@@ -1,15 +1,3 @@
-// Print PDF (SPEC.md, "Print PDF"): box front and back, cartridge labels and a
-// manual, all generated from a game (a template project, a kit game or a code
-// project, through print/subject.ts). Pixel art and titles are vector
-// rectangles: sprites at 160A's 2:1 pixels, titles in the kit's 3×5 font
-// (print/kit-font.ts). Body text is Atkinson Hyperlegible, embedded as a
-// subset. Pure: fonts and the optional screenshot are passed in, so it runs in
-// tests.
-//
-// The manual comes in two layouts: plain pages on the chosen paper, or a
-// booklet of half-size pages imposed two to a sheet for double-sided printing,
-// folded and stapled down the middle.
-
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
 import { ntscRgb } from "../ui/ntsc.ts";
@@ -110,7 +98,7 @@ const LABEL = { w: 3.25 * INCH, h: 2 * INCH };
  * trademark and non-affiliation line.
  */
 export const PRINT_COMPAT = "Runs on 7800-compatible consoles via flash cart.";
-export const PRINT_TRADEMARK = "Atari is a trademark of its owner; not affiliated with or endorsed by Atari.";
+export const PRINT_TRADEMARK = "Atari is a trademark of Atari Interactive, Inc. Not affiliated with Atari.";
 export const PRINT_UNTESTED = "Nobody has tested Cartridge Studio games on console hardware yet.";
 
 const INK = rgb(0.06, 0.07, 0.1);
@@ -350,10 +338,9 @@ function boxFront(doc: PDFDocument, size: [number, number], paper: Paper, fonts:
   if (shot) drawSprite(page, shot.frames[0]!, look.colorsOf(shot), x + BOX.w / 2 - shot.width * 4, heroTop + 14 + shot.height * 4, 4);
   if (player) drawSprite(page, player.frames[0]!, look.colorsOf(player), x + BOX.w / 2 - player.width * heroUnit, heroTop, heroUnit);
 
-  // Bottom strip: players and controller, and the trademark line.
+  // Bottom strip: players and controller.
   page.drawRectangle({ x, y, width: BOX.w, height: 34, color: rgb(0, 0, 0) });
   drawKitLines(page, ["1 PLAYER  JOYSTICK"], { x: x + 14, top: y + 25, unit: 1.4, color: PAPER_WHITE, font: fonts.bold, align: "left" });
-  page.drawText(PRINT_TRADEMARK, { x: x + 14, y: y + 7, size: 6, font: fonts.body, color: rgb(0.75, 0.76, 0.78) });
   cutMarks(page, x, y, BOX.w, BOX.h);
   registrationMarks(page, x, y, BOX.w, BOX.h, 24);
 
@@ -451,7 +438,7 @@ export function drawLabel(page: PDFPage, fonts: Fonts, x: number, y: number, w: 
   }
   const textW = w - art - 5 - 16;
   const cx = x + art + 5 + (w - art - 5) / 2;
-  const legal = wrap(footer, fonts.body, 5, textW);
+  const legal = footer ? wrap(footer, fonts.body, 5, textW) : [];
   legal.forEach((line, j) => {
     const lw = fonts.body.widthOfTextAtSize(line, 5);
     page.drawText(line, { x: cx - lw / 2, y: y + 6 + (legal.length - 1 - j) * 6.5, size: 5, font: fonts.body, color: softOn(look.background) });
@@ -479,7 +466,7 @@ function labels(doc: PDFDocument, size: [number, number], fonts: Fonts, s: Print
   for (let i = 0; i < 2; i++) {
     const x = (pw - LABEL.w) / 2;
     const y = ph - 130 - LABEL.h - i * (LABEL.h + 80);
-    drawLabel(page, fonts, x, y, LABEL.w, LABEL.h, look, s.hero, PRINT_TRADEMARK);
+    drawLabel(page, fonts, x, y, LABEL.w, LABEL.h, look, s.hero, "");
     cutMarks(page, x, y, LABEL.w, LABEL.h);
     registrationMarks(page, x, y, LABEL.w, LABEL.h, 26);
   }
@@ -496,8 +483,12 @@ function manualBlocks(s: PrintSubject): Block[] {
   if (keyed.length) out.push({ kind: "heading", text: "Controls and scoring" }, { kind: "table", head: ["Control", "What it does"], rows: keyed });
   else if (s.controls.length) out.push({ kind: "heading", text: "Controls" }, ...s.controls.map(([, v]): Block => ({ kind: "bullet", text: v })));
   if (s.scoring.length) out.push(...(keyed.length ? [] : [{ kind: "heading", text: "Scoring" } as Block]), { kind: "table", head: ["Scores", "Points"], rows: s.scoring });
-  out.push(...parseManual(s.manual), { kind: "credits" });
-  return out;
+  const text = parseManual(s.manual);
+  // The tables follow Getting started when the text has it, so the cartridge goes in before the controls.
+  const start = text.findIndex((b) => b.kind === "heading" && b.text === "Getting started");
+  const next = start < 0 ? -1 : text.findIndex((b, i) => i > start && b.kind === "heading");
+  const at = start < 0 ? 0 : next < 0 ? text.length : next;
+  return [...text.slice(0, at), ...out, ...text.slice(at), { kind: "credits" }];
 }
 
 /** The credits page's lines: [text, bold]. */

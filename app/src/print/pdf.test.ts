@@ -38,7 +38,7 @@ describe("print wording", () => {
   it("names no particular console, and carries the trademark line", () => {
     expect(PRINT_COMPAT).toBe("Runs on 7800-compatible consoles via flash cart.");
     expect(PRINT_COMPAT).not.toMatch(/Atari|2600|\+/);
-    expect(PRINT_TRADEMARK).toBe("Atari is a trademark of its owner; not affiliated with or endorsed by Atari.");
+    expect(PRINT_TRADEMARK).toBe("Atari is a trademark of Atari Interactive, Inc. Not affiliated with Atari.");
   });
 });
 
@@ -82,7 +82,9 @@ describe("buildPrintPdf", () => {
     const game = KIT_PRESETS.find((p) => p.id === "ghost-panic")!.game;
     const subject = kitPrintSubject(game);
     expect(subject.hero?.width).toBe(8);
-    expect(subject.manual).toContain("- When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.");
+    expect(subject.manual).toContain("# Getting started\n1. With the power off, push the cartridge into the slot.\n2. Turn the power on.\n3. Press Reset, then the fire button, to start.\n");
+    expect(subject.manual).not.toContain("# Rules");
+    expect(subject.controls).toContainEqual(["Pause", "Press again to carry on"]);
     expect(subject.manual).toContain("You are the Cat. Clear every Yarn ball three times to win.");
     expect(subject.controls[0]![1]).toBe("Moves the Cat");
     const bytes = await buildPrintPdf({ subject, paper: "letter", fonts, screenshot });

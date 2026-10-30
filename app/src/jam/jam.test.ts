@@ -26,7 +26,7 @@ const brief = newBrief({
   theme: "It's behind you",
   dates: "Fri 31 Oct to Sun 2 Nov",
   constraints: ["One room", "Two colours"],
-  presets: ["maze", "ghost-panic"],
+  presets: ["shooter", "ghost-panic"],
   criteria: ["Fun", "Theme"],
   limits: { maxRules: 4, maxRomKB: 1024 },
   app: "1.0.0+abc",
@@ -79,7 +79,7 @@ describe("jam briefs", () => {
   it("offers the brief's built-in starting games that exist, else all of them", () => {
     const all = KIT_PRESETS.map((p) => p.id);
     expect(offeredPresets(null, all)).toEqual(all);
-    expect(offeredPresets(brief, all)).toEqual(all.filter((id) => id === "maze" || id === "ghost-panic"));
+    expect(offeredPresets(brief, all)).toEqual(all.filter((id) => id === "shooter" || id === "ghost-panic"));
     // Old briefs could name the Classic shooter; it's retired, so they get the kit's starters.
     expect(all).not.toContain("fixed-shooter");
     expect(offeredPresets(newBrief({ name: "x", presets: ["fixed-shooter"] }), all)).toEqual(all);

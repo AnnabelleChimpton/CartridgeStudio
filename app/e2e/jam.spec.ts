@@ -1,6 +1,3 @@
-// Game jams with no server: a brief arrives in a link, creators make entry
-// ZIPs, and the organizer builds a static gallery that plays offline.
-
 import AxeBuilder from "@axe-core/playwright";
 import { unzipSync } from "fflate";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -15,7 +12,7 @@ const brief = newBrief({
   theme: "It's behind you",
   dates: "Fri 31 Oct to Sun 2 Nov",
   constraints: ["One room", "Two colours"],
-  presets: ["maze", "ghost-panic"],
+  presets: ["shooter", "ghost-panic"],
   criteria: ["Fun", "Theme"],
   limits: { maxRules: 4 },
   link: "https://example.org/spooky-jam",
@@ -43,8 +40,8 @@ async function joinAndStart(page: Page) {
   await expect(banner(page).getByRole("listitem")).toHaveText(["One room", "Two colours"]);
   await expect(page).not.toHaveURL(/jam=/);
   // Only the jam's starting games.
-  await expect(page.locator(".chooser-card")).toHaveCount(2);
-  await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
+  await expect(page.locator(".cart-pick")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /^Cat vs\. Vacuums/ })).toBeVisible();
   expect(await axe(page)).toEqual([]);
   await page.getByRole("button", { name: /^Ghost Panic/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
@@ -102,7 +99,7 @@ test("the organizer guide makes a working jam link and passes axe", async ({ pag
   }
   await page.getByLabel("Jam name").fill("Guide Jam");
   await page.getByRole("textbox", { name: "Theme" }).fill("Small world");
-  await page.getByRole("checkbox", { name: "Yarn Hunt" }).check();
+  await page.getByRole("checkbox", { name: "Cat vs. Vacuums" }).check();
   await page.getByRole("spinbutton", { name: "Rules", exact: true }).fill("6");
   const link = await page.getByLabel("The jam link").inputValue();
   expect(await axe(page)).toEqual([]);
@@ -111,7 +108,7 @@ test("the organizer guide makes a working jam link and passes axe", async ({ pag
   expect(JSON.parse(file.bytes.toString("utf8"))).toMatchObject({
     format: "cartridge-studio-jam",
     name: "Guide Jam",
-    presets: ["maze"],
+    presets: ["shooter"],
     criteria: ["Fun", "Theme", "Look and sound"],
     limits: { maxRules: 6 },
     app: expect.any(String),
@@ -119,7 +116,7 @@ test("the organizer guide makes a working jam link and passes axe", async ({ pag
 
   await page.goto(link);
   await expect(banner(page)).toContainText("Small world");
-  await expect(page.locator(".chooser-card")).toHaveCount(1);
+  await expect(page.locator(".cart-pick")).toHaveCount(1);
 });
 
 test("two entries become a gallery that plays with the network off", async ({ page, context, browserName }, info) => {

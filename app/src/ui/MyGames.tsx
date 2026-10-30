@@ -1,10 +1,8 @@
-// "My games" on the start screen: every game made in this browser, newest
-// first, with its picture. Open, rename, duplicate or delete (after asking).
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { duplicateGame, listGames, type GameEntry } from "../project/persist.ts";
 import { KitText } from "./BrandMark.tsx";
 import { ConfirmDialog, Dialog } from "./Dialog.tsx";
+import { Cart } from "./StartChooser.tsx";
 
 export interface LibraryActions {
   /** The game being edited now, if any. */
@@ -78,27 +76,25 @@ export function MyGames({ current, onOpen, onRename, onDelete }: LibraryActions)
 
   return (
     <section className="my-games" aria-labelledby={heading}>
-      <h3 id={heading} ref={headingRef} tabIndex={-1} className="section-h">
+      <h2 id={heading} ref={headingRef} tabIndex={-1} className="start-h">
         My games
-      </h3>
+      </h2>
       <p className="muted small">Kept in this browser. Save a game file from the Game menu to keep a copy anywhere else.</p>
-      <ul className="my-games-grid">
+      <ul className="my-games-shelf">
         {games.map((g) => (
-          <li key={g.id} className="game-card">
-            <button type="button" className="game-open" onClick={() => onOpen(g.id)}>
-              <span className="game-picture" aria-hidden="true">
+          <li key={g.id} className="my-game">
+            <button type="button" className="cart-pick" onClick={() => onOpen(g.id)}>
+              <Cart small background="var(--ntsc-00)">
                 {pictures.has(g.id) && <img src={pictures.get(g.id)} alt="" width={320} height={240} />}
+              </Cart>
+              <span className="my-game-name">
+                <KitText text={name(g)} maxChars={14} />
               </span>
-              <span className="card-body">
-                <strong>
-                  <KitText text={name(g)} />
-                </strong>
-                <span className="muted small">
-                  {KIND[g.kind]} · {g.id === current ? "open now" : `changed ${when(g.updated)}`}
-                </span>
+              <span className="cart-note">
+                {KIND[g.kind]} · {g.id === current ? "open now" : `changed ${when(g.updated)}`}
               </span>
             </button>
-            <div className="game-actions">
+            <div className="my-game-actions">
               <button type="button" className="quiet" aria-label={`Rename ${name(g)}`} onClick={() => setRenaming(g)}>
                 Rename
               </button>

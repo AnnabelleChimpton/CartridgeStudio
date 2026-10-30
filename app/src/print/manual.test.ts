@@ -63,4 +63,13 @@ describe("parseManual", () => {
       { kind: "paragraph", text: "End" },
     ]);
   });
+
+  it("keeps numbered steps on their own lines", () => {
+    expect(parseManual("# Getting started\n1. Power off.\n2. Power on.\nThen play.")).toEqual([
+      { kind: "heading", text: "Getting started" },
+      { kind: "paragraph", text: "1. Power off." },
+      { kind: "paragraph", text: "2. Power on." },
+      { kind: "paragraph", text: "Then play." },
+    ]);
+  });
 });
