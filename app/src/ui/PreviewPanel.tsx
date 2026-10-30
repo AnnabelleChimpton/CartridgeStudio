@@ -1,24 +1,25 @@
-// The Play panel: the emulator, its controls and the build's own numbers
-// (time, and how full the cartridge is). ROM files are in Show it; the code
-// is in the Code tab.
-
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { parseBuildLog } from "../code/build-log.ts";
-import { CartridgeStats } from "../code/CartridgeSpace.tsx";
-import { kb, type CartFill } from "./build-status.ts";
+import type { ConsoleButton, Difficulty, Switches } from "../emulator/emulator.ts";
+import { KitText } from "./BrandMark.tsx";
 import { Icon } from "./Icon.tsx";
-import { useTier } from "./prefs.ts";
 import { toast } from "./Toaster.tsx";
 import "./preview-faults.css";
 import type { Preview } from "./usePreview.ts";
 
-/** How to play, in the editor and on the TV alike. */
-const PLAY_HINT = "Arrow keys or a gamepad to move, Space or the fire button to fire. Esc to stop playing.";
 /** On the TV, for the gamepad in someone's hands. */
-const TV_HINT = "Stick or d-pad to move, any face button to fire. Start pauses. Select plays again. Hold Select, or press Esc, to leave.";
-const TV_PAUSED = "Paused. Press Start to carry on. Hold Select, or press Esc, to leave.";
-/** Beside the full-screen button, before anyone presses it. */
-export const TV_BUTTON_HINT = "Plug the laptop into the TV with HDMI first; a USB gamepad works.";
+const TV_HINT = "Stick or d-pad to move, a face button to fire. Start is Pause. Hold Select, or press Esc, to leave.";
+const TV_PAUSED = "Paused. Press Start to carry on.";
+const CLICK_HINT = "Click the screen, then press fire.";
+const PLAY_HINT = "Arrows or gamepad to move. Space fires. Esc stops.";
+/** The console picture, in console pixels. */
+const SCREEN_WIDTH = 320;
+
+const BUTTONS: { id: ConsoleButton; label: string }[] = [
+  { id: "pause", label: "Pause" },
+  { id: "select", label: "Select" },
+  { id: "reset", label: "Reset" },
+];
 
 interface Props {
   preview: Preview;
@@ -32,63 +33,83 @@ interface Props {
 }
 
 export function PreviewPanel({ preview, title, meter, explainError, failure }: Props) {
-  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, fill, error, emuFault, restartPreview, paused, setPaused, restart } = preview;
+  const { emuContainer, stage, enterTv, emulator, result, lastGood, status, fill, error, emuFault, restartPreview, paused, setPaused } = preview;
   const [muted, setMuted] = useState(false);
-  const tvHint = useId();
+  const [playing, setPlaying] = useState(false);
+  const scale = useIntegerScale(stage);
+  const running = !!lastGood && !emuFault;
+  const full = result?.kind === "built" && fill && fill.level !== "ok";
 
   return (
     <section className="panel preview" aria-labelledby="preview-h">
-      <h2 id="preview-h">Play</h2>
-      <div ref={stage} className={`tv-stage${paused ? " tv-paused" : ""}`}>
+      <h2 id="preview-h" className="visually-hidden">
+        Play
+      </h2>
+      <div
+        ref={stage}
+        className={`tv-stage${paused ? " tv-paused" : ""}`}
+        style={scale ? ({ "--screen-w": `${SCREEN_WIDTH * scale}px` } as React.CSSProperties) : undefined}
+      >
         <p className="tv-title" aria-hidden="true">
           {title}
         </p>
-        <div ref={emuContainer} className="emu" />
+        <div
+          ref={emuContainer}
+          className="emu"
+          onFocus={() => setPlaying(true)}
+          onBlur={() => setPlaying(false)}
+        />
         <p className="tv-hint" aria-hidden="true">
           {paused ? TV_PAUSED : TV_HINT}
         </p>
+        <div className="tv-chin">
+          <span className="tv-chin-title" aria-hidden="true">
+            <KitText text={title} scale={2} maxChars={Infinity} />
+          </span>
+          <button
+            type="button"
+            className="icon"
+            aria-label="Sound"
+            aria-pressed={!muted}
+            onClick={() => {
+              emulator.current?.setMuted(!muted);
+              setMuted(!muted);
+            }}
+          >
+            <Icon name={muted ? "mute" : "sound"} />
+          </button>
+          <span className={`power-light${running ? (paused ? " paused" : " on") : ""}`} aria-hidden="true" />
+          <span className="power-word" aria-hidden="true">
+            <KitText text="Power" scale={1} />
+          </span>
+        </div>
       </div>
-      <div className="emu-controls">
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => setPaused(!paused)}
-        >
-          <Icon name={paused ? "play" : "pause"} />
-          {paused ? "Resume" : "Pause"}
-        </button>
-        <button type="button" className="secondary" onClick={restart}>
-          <Icon name="restart" />
-          Restart
-        </button>
-        <button
-          type="button"
-          className="secondary"
-          aria-pressed={muted}
-          onClick={() => {
-            emulator.current?.setMuted(!muted);
-            setMuted(!muted);
-          }}
-        >
-          <Icon name={muted ? "mute" : "sound"} />
-          {muted ? "Sound off" : "Sound on"}
-        </button>
-        <span className="hint" id="emu-hint">
-          {PLAY_HINT}
+      <p className="hint play-hint" id="emu-hint">
+        {playing ? PLAY_HINT : CLICK_HINT}
+      </p>
+      <div className="console-row" role="group" aria-label="Console">
+        {BUTTONS.map((b) => (
+          <button key={b.id} type="button" className="keycap" disabled={!running} onClick={() => preview.pressConsole(b.id)}>
+            {b.label}
+          </button>
+        ))}
+        <span className="diff-pair">
+          <DifficultySwitch side="left" switches={preview.switches} onChange={preview.setDifficulty} />
+          <DifficultySwitch side="right" switches={preview.switches} onChange={preview.setDifficulty} />
         </span>
-      </div>
-      <div className="emu-controls tv-row">
-        <button type="button" className="secondary" onClick={enterTv} disabled={!lastGood} aria-describedby={tvHint}>
+        <button
+          type="button"
+          className="keycap tv-button"
+          onClick={enterTv}
+          disabled={!lastGood}
+          title="Plug the laptop into the TV with HDMI first. A USB gamepad works."
+        >
           Full screen (for a TV)
         </button>
-        <span className="hint" id={tvHint}>
-          {TV_BUTTON_HINT}
-        </span>
       </div>
-      <p className={`status ${result?.kind ?? ""}`} data-testid="build-status" role="status">
+      <p className={`status ${result?.kind ?? ""}${full ? " full" : ""}`} data-testid="build-status" role="status">
         {status}
       </p>
-      {fill && lastGood?.stats && <CartFillMeter fill={fill} stats={lastGood.stats} />}
       {result?.kind === "invalid" && (
         <>
           <p className="small">
@@ -147,6 +168,63 @@ export function PreviewPanel({ preview, title, meter, explainError, failure }: P
   );
 }
 
+/** A two-position slide switch, A or B, drawn the way the console's are. */
+function DifficultySwitch({
+  side,
+  switches,
+  onChange,
+}: {
+  side: keyof Switches;
+  switches: Switches | null;
+  onChange: (side: keyof Switches, position: Difficulty) => void;
+}) {
+  const at = switches?.[side];
+  const name = side === "left" ? "Left difficulty" : "Right difficulty";
+  return (
+    <button
+      type="button"
+      role="switch"
+      className="diff-switch"
+      aria-checked={at === "A"}
+      aria-label={`${name} A`}
+      title={at ? `${name}: ${at}` : name}
+      disabled={!at}
+      onClick={() => at && onChange(side, at === "A" ? "B" : "A")}
+    >
+      <span className="diff-name" aria-hidden="true">
+        {name}
+      </span>
+      <span className="diff-track" aria-hidden="true">
+        <span className="diff-knob" />
+      </span>
+      <span className="diff-at" aria-hidden="true">
+        {at ?? "B"}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * The largest whole number of screen pixels per console pixel that fits the
+ * stage, so every console pixel is the same size. Null below 2: the picture
+ * then fits the width.
+ */
+function useIntegerScale(stage: React.RefObject<HTMLDivElement | null>): number | null {
+  const [scale, setScale] = useState<number | null>(null);
+  useEffect(() => {
+    const el = stage.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => {
+      if (document.fullscreenElement === el) return;
+      const s = Math.floor((entry?.contentRect.width ?? 0) / SCREEN_WIDTH);
+      setScale(s >= 2 ? s : null);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stage]);
+  return scale;
+}
+
 /** The first sentence of a failed build: which stage stopped. */
 export function failureHeadline(stage: string): string {
   switch (stage) {
@@ -173,42 +251,6 @@ export function failureDetails(stage: string, message: string, log: string): str
   return `Details: ${p.tool}${p.line !== undefined ? `, line ${p.line}` : ""}: ${p.message}`;
 }
 
-const FILL_WORDS = { ok: "Room to spare", near: "Nearly full", over: "Too big" };
-
-/** "How full the cartridge is": the compiler's ROM report as a bar, with its figures one click away (open in the 7800basic tier). */
-function CartFillMeter({ fill, stats }: { fill: CartFill; stats: Parameters<typeof CartridgeStats>[0]["stats"] }) {
-  const id = useId();
-  const tier = useTier();
-  const pct = Math.round((fill.used / fill.total) * 100);
-  const text = `${kb(fill.used)} of ${kb(fill.total)} KB`;
-  return (
-    <div className="cpu-meter cart-fill" data-testid="cart-fill">
-      <div className="cpu-label">
-        <span id={`${id}-label`}>How full the cartridge is</span>
-        <span className={`cpu-word ${fill.level}`}>
-          {text}, {FILL_WORDS[fill.level].toLowerCase()}
-        </span>
-      </div>
-      <div
-        className="cpu-bar"
-        role="meter"
-        aria-labelledby={`${id}-label`}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.min(100, pct)}
-        aria-valuetext={`${text}, ${FILL_WORDS[fill.level].toLowerCase()}`}
-      >
-        <span className={fill.level} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
-      {/* Keyed by tier, so switching to 7800basic opens it and switching away closes it. */}
-      <details key={tier} className="small" open={tier === "7800basic"} data-testid="cartridge-stats">
-        <summary>Cartridge stats</summary>
-        <CartridgeStats stats={stats} />
-      </details>
-    </div>
-  );
-}
-
 /** The raw message or log, one click away, with a copy button. */
 function RawLog({ text, copyLabel, summary = "Details" }: { text: string; copyLabel: string; summary?: string }) {
   return (
@@ -221,7 +263,7 @@ function RawLog({ text, copyLabel, summary = "Details" }: { text: string; copyLa
         onClick={() =>
           void navigator.clipboard.writeText(text).then(
             () => toast("Copied"),
-            () => toast("Couldn't copy; select the text above instead"),
+            () => toast("Couldn't copy. Select the text above instead."),
           )
         }
       >

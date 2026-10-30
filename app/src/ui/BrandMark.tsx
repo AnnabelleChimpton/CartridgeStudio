@@ -1,7 +1,3 @@
-// The Cartridge Studio mark and the kit-font display text. Both are drawn
-// from the kit's own 3×5 font (kit/font.ts), the letters every game's title
-// screen uses. See design/DIRECTION.md, §2 and §8.
-
 import { glyphRuns, MARK_GRID, markRects } from "./brand.ts";
 
 /** The cartridge with "CS" on its label (ui/brand.ts). The icons and favicon are generated from the same rects. */
@@ -57,7 +53,7 @@ export function KitText({
   className = "",
 }: {
   text: string;
-  /** Screen pixels per font pixel: a whole number, 3 or more. */
+  /** Screen pixels per font pixel, a whole number. */
   scale?: number;
   /** Wrap at word breaks to keep each line this many characters or fewer. */
   maxChars?: number;
@@ -69,7 +65,7 @@ export function KitText({
   const width = Math.max(...rows.map((l) => l.length)) * 4 - 1;
   // Each line is 5 pixels tall with 3 between lines, as on the title screen.
   const height = rows.length * 8 - 3;
-  const s = Math.max(3, Math.round(scale));
+  const s = Math.max(1, Math.round(scale));
   return (
     <span className={cls}>
       <svg width={width * s} height={height * s} viewBox={`0 0 ${width} ${height}`} shapeRendering="crispEdges" aria-hidden="true" focusable="false">

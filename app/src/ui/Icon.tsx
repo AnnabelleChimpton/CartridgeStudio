@@ -1,9 +1,3 @@
-// Cartridge Studio's icons: filled square pixels on a 10 × 10 grid, drawn at
-// 2× (20 px) with crisp edges, in the text colour. A small set for controls
-// whose label is a word too many (the emulator's buttons, undo and redo,
-// copy, close, a menu's chevron) and one mark for errors. Always decorative:
-// the button's label or aria-label says what it does (design/DIRECTION.md §8).
-
 const GLYPHS = {
   play: ["..#.......", "..##......", "..###.....", "..####....", "..#####...", "..#####...", "..####....", "..###.....", "..##......", "..#......."],
   pause: ["..........", ".###..###.", ".###..###.", ".###..###.", ".###..###.", ".###..###.", ".###..###.", ".###..###.", ".###..###.", ".........."],
@@ -18,11 +12,7 @@ const GLYPHS = {
   error: ["##########", "####..####", "####..####", "####..####", "####..####", "####..####", "##########", "####..####", "####..####", "##########"],
 } as const;
 
-/**
- * Names that no longer draw anything: the brief removed icons from the Show
- * it buttons and the TV button, whose labels say everything. They stay
- * typed until ShowItPanel and PreviewPanel stop passing them.
- */
+// Retired icon names, kept until no caller passes them.
 type Retired = "cartridge" | "print" | "send" | "clip" | "tv";
 
 export type IconName = keyof typeof GLYPHS | Retired;

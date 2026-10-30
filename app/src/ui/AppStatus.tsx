@@ -1,21 +1,14 @@
-// Offline status in three small pieces that can each live anywhere: whether
-// Cartridge Studio works offline yet, a quiet "Install app" link where the
-// browser offers one, and a prompt to reload when a new version has arrived.
-// AppStatus puts them at the foot of every screen for now.
-
 import { useEffect, useState } from "react";
 import { applyUpdate, install, startOffline, useOfflineState } from "../pwa/offline.ts";
 import "./app-status.css";
 
-/** "Works offline" (or "Offline" while the network is down); nothing until it's true. */
+/** Said only while the network is down. */
 export function OfflineIndicator() {
   const s = useOfflineState();
-  const text = !s.online ? (s.offlineReady ? "Offline: everything still works" : "Offline") : s.offlineReady ? "Works offline" : null;
-  if (!text) return null;
+  if (s.online) return null;
   return (
     <span className="offline-indicator small" data-testid="offline-status">
-      <span aria-hidden="true" className={`offline-dot${s.online ? "" : " off"}`} />
-      {text}
+      Offline. Your game still builds and saves.
     </span>
   );
 }

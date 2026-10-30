@@ -1,8 +1,4 @@
 /// <reference lib="webworker" />
-// Emulator worker (SPEC.md, "Emulator preview"): runs the js7800 core off the
-// main thread, draws to an OffscreenCanvas and sends sound straight to an
-// AudioWorklet. It runs in real time, and `step` advances exact frames for
-// tests (lockstep).
 
 import { CoreHost, HEIGHT, WIDTH, type JoystickInput, type Js7800Core } from "./core-host.ts";
 import type { EmuRequest, EmuResponse, Peek, Recording } from "./protocol.ts";
@@ -124,6 +120,7 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
       case "load":
         stopLoop();
         await host!.load(msg.rom);
+        post({ type: "switches", switches: host!.switches });
         rom = msg.rom;
         // A recording belongs to one ROM; a new build ends it.
         recording = null;
@@ -145,6 +142,14 @@ self.onmessage = async (e: MessageEvent<EmuRequest>) => {
       case "input":
         held = { ...msg.state };
         host?.setInput(msg.state);
+        return;
+      case "console":
+        host?.pressConsole(msg.button);
+        return;
+      case "difficulty":
+        if (!host) return;
+        host.setDifficulty(msg.side, msg.position);
+        post({ type: "switches", switches: host.switches });
         return;
       case "step":
         advance(msg.frames);

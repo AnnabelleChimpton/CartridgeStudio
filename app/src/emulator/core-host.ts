@@ -1,6 +1,4 @@
-// Drives the js7800 emulation core (public/vendor/js7800-core) one frame at a
-// time, with no DOM: used by the emulator worker and by headless tests. Frames
-// only advance when step() is called, so runs are deterministic.
+import type { ConsoleButton, Difficulty, Switches } from "./emulator.ts";
 
 /** The parts of the core bundle this host uses (see app/js7800-core/entry.js). */
 export interface Js7800Core {
@@ -57,6 +55,9 @@ const SELECT = 13;
 const PAUSE = 14;
 const LEFT_DIFFICULTY = 15;
 const RIGHT_DIFFICULTY = 16;
+/** How long a console button stays down when pressed from the page: a tenth of a second. */
+const PRESS_FRAMES = 6;
+const CONSOLE_SLOTS: Record<ConsoleButton, number> = { pause: PAUSE, select: SELECT, reset: RESET };
 
 /** Runs `fn` with console.log silenced: the core logs cartridge details on every load and reset. */
 function quietly<T>(fn: () => T): T {
@@ -78,6 +79,11 @@ export class CoreHost {
   private top = NTSC_TOP;
   private frames = 0;
   private loaded = false;
+  private joystick: JoystickInput = { up: false, down: false, left: false, right: false, fire: false };
+  private readonly held: Record<ConsoleButton, number> = { pause: 0, select: 0, reset: 0 };
+  /** Where the header put the switches, and where someone has moved them since (true is B). */
+  private header = { left: false, right: false };
+  private moved: { left?: boolean; right?: boolean } = {};
 
   constructor(core: Js7800Core) {
     this.core = core;
@@ -116,29 +122,55 @@ export class CoreHost {
     const pal = Cartridge.GetRegion() === Region.REGION_PAL;
     this.palette = pal ? Region.getPalPalette() : Region.getNtscPalette();
     this.top = pal ? PAL_TOP : NTSC_TOP;
+    const header = { left: !!Cartridge.GetLeftSwitch(), right: !!Cartridge.GetRightSwitch() };
+    // A switch someone moved stays put across rebuilds, until the game itself asks for a different setting.
+    if (header.left !== this.header.left || header.right !== this.header.right) this.moved = {};
+    this.header = header;
     this.loaded = true;
     return this.reset();
   }
 
-  /** Resets the console, as a power cycle; difficulty switches follow the cartridge header. */
+  /** Resets the console, as a power cycle. The difficulty switches stay where they are. */
   reset(): Promise<void> {
     if (!this.loaded) return Promise.resolve();
     this.input.fill(false);
-    this.input[LEFT_DIFFICULTY] = !!this.core.Cartridge.GetLeftSwitch();
-    this.input[RIGHT_DIFFICULTY] = !!this.core.Cartridge.GetRightSwitch();
+    this.held.pause = this.held.select = this.held.reset = 0;
+    this.input[LEFT_DIFFICULTY] = this.moved.left ?? this.header.left;
+    this.input[RIGHT_DIFFICULTY] = this.moved.right ?? this.header.right;
     this.frames = 0;
     return new Promise((resolve) => quietly(() => this.core.ProSystem.Reset(resolve)));
   }
 
   setInput(j: JoystickInput) {
+    this.joystick = { ...j };
     this.input[UP] = j.up;
     this.input[DOWN] = j.down;
     this.input[LEFT] = j.left;
     this.input[RIGHT] = j.right;
     this.input[BUTTON1] = j.fire;
-    this.input[RESET] = !!j.reset;
-    this.input[SELECT] = !!j.select;
-    this.input[PAUSE] = !!j.pause;
+    this.applyConsole();
+  }
+
+  pressConsole(button: ConsoleButton, frames = PRESS_FRAMES) {
+    this.held[button] = frames;
+    this.applyConsole();
+  }
+
+  setDifficulty(side: keyof Switches, position: Difficulty) {
+    const b = position === "B";
+    this.moved[side] = b;
+    this.input[side === "left" ? LEFT_DIFFICULTY : RIGHT_DIFFICULTY] = b;
+  }
+
+  get switches(): Switches {
+    const at = (b: boolean): Difficulty => (b ? "B" : "A");
+    return { left: at(this.input[LEFT_DIFFICULTY]!), right: at(this.input[RIGHT_DIFFICULTY]!) };
+  }
+
+  private applyConsole() {
+    for (const b of Object.keys(CONSOLE_SLOTS) as ConsoleButton[]) {
+      this.input[CONSOLE_SLOTS[b]] = !!this.joystick[b] || this.held[b] > 0;
+    }
   }
 
   /** Runs `n` frames as fast as possible and collects their sound. */
@@ -146,6 +178,10 @@ export class CoreHost {
     if (!this.loaded) return;
     for (let i = 0; i < n; i++) {
       this.core.ProSystem.ExecuteFrame(this.input);
+      if (this.held.pause || this.held.select || this.held.reset) {
+        for (const b of Object.keys(this.held) as ConsoleButton[]) if (this.held[b] > 0) this.held[b]--;
+        this.applyConsole();
+      }
       this.core.Sound.Store();
       this.frames++;
     }

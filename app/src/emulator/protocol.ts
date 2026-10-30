@@ -1,4 +1,5 @@
 import type { JoystickInput } from "./core-host.ts";
+import type { ConsoleButton, Difficulty, Switches } from "./emulator.ts";
 
 export type EmuRequest =
   | { type: "init"; canvas: OffscreenCanvas; coreUrl: string }
@@ -7,6 +8,8 @@ export type EmuRequest =
   | { type: "reset" }
   | { type: "pause"; paused: boolean }
   | { type: "input"; state: JoystickInput }
+  | { type: "console"; button: ConsoleButton }
+  | { type: "difficulty"; side: keyof Switches; position: Difficulty }
   | { type: "step"; id: number; frames: number }
   | { type: "hash"; id: number }
   | { type: "memory"; id: number; address: number; length: number }
@@ -41,6 +44,8 @@ export type EmuResponse =
   | { type: "ready" }
   | { type: "init-error"; message: string }
   | { type: "frame"; frame: number }
+  /** Where the difficulty switches are, after a load or a change. */
+  | { type: "switches"; switches: Switches }
   /** A clip reached its maximum length. */
   | { type: "clip-full" }
   | { type: "reply"; id: number; value?: unknown; error?: string }

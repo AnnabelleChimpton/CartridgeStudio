@@ -64,4 +64,19 @@ describe("WorkerEmulator faults", () => {
     expect(FakeWorker.last.sent.at(-1)).toEqual({ type: "inject-fault" });
     emu.dispose();
   });
+
+  it("sends console buttons and switches, and hears where the switches are", () => {
+    const emu = stubPage();
+    const heard: unknown[] = [];
+    emu.onSwitches((s) => heard.push(s));
+    emu.pressConsole("select");
+    expect(FakeWorker.last.sent.at(-1)).toEqual({ type: "console", button: "select" });
+    emu.setDifficulty("right", "A");
+    expect(FakeWorker.last.sent.at(-1)).toEqual({ type: "difficulty", side: "right", position: "A" });
+    FakeWorker.last.send({ type: "switches", switches: { left: "B", right: "A" } });
+    expect(emu.switches).toEqual({ left: "B", right: "A" });
+    expect(heard).toEqual([{ left: "B", right: "A" }]);
+    emu.dispose();
+  });
 });
+

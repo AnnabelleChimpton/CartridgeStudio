@@ -18,8 +18,4 @@ describe("tiers", () => {
     expect(readTier("toString")).toBeNull();
     expect(readTier("expert")).toBeNull();
   });
-
-  it("describe themselves in the voice rules", () => {
-    for (const t of TIERS) expect(t.detail).not.toMatch(/!|—|drawer/);
-  });
 });

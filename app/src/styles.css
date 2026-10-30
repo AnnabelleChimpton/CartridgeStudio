@@ -1,20 +1,3 @@
-/* Cartridge Studio: a workbench for making 7800 cartridges. Everything here
- * is made of what goes on the cart: NTSC palette entries (tokens.css,
- * generated from ui/tokens.ts), the kit's 3x5 font for game titles, flat 4 px
- * panels. The why is in design/DIRECTION.md.
- *
- *   1. Fonts and tokens
- *   2. Base: page, type, focus
- *   3. Components: buttons, fields, panels, tabs, segmented, menu, badges,
- *      dialogs, toasts, empty states
- *   4. The app shell: top bar, workbench layout, start screen
- *   5. Editors: things, sprites, room, rules, counters, settings, print
- *   6. Play column: emulator, CPU meter, Show it, TV mode
- *   7. Motion and reduced motion
- *
- * Class names from before the redesign are kept with their old meanings:
- * other branches add markup with them. Restyle; don't rename. */
-
 @import "./tokens.css";
 
 /* 1. Fonts and tokens ---------------------------------------------------- */
@@ -74,6 +57,7 @@ a:hover { color: var(--text); }
 .muted { color: var(--muted); }
 .small { font-size: var(--fs-xs); }
 .spacer { flex: 1; }
+.nowrap { white-space: nowrap; }
 .lead { margin: 0 0 var(--s-3); font-size: var(--fs-body); }
 p { margin: var(--s-2) 0; }
 strong { font-weight: 700; }
@@ -82,13 +66,10 @@ strong { font-weight: 700; }
 }
 
 h1 { font: 700 var(--fs-lg) / 1.2 var(--font-ui); margin: 0; color: var(--text); }
-/* Panel headings: small, tracked labels. */
-h2 {
-  font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 var(--s-3);
-}
+h2 { font: 700 var(--fs-lg) / 1.2 var(--font-ui); color: var(--text); text-transform: none; letter-spacing: 0; margin: 0 0 var(--s-3); }
 h3.section-h {
-  font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
-  margin: var(--s-5) 0 var(--s-1); padding-top: var(--s-4); border-top: 1px solid var(--line);
+  font: 700 var(--fs-body) / 1.2 var(--font-ui); color: var(--text); text-transform: none; letter-spacing: 0;
+  margin: var(--s-5) 0 var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--line);
 }
 
 /* One clear focus ring everywhere a keyboard can land (WCAG 2.4.7). */
@@ -137,6 +118,13 @@ button.icon {
   color: var(--muted); padding: 4px; min-width: 32px; min-height: 32px; font-size: 16px; border-radius: var(--r-sm);
 }
 button.icon:hover:not(:disabled) { color: var(--text); }
+
+/* Keycaps: the console's own buttons, black plastic with a grey edge. */
+button.keycap {
+  background: var(--ntsc-00); color: var(--text); border: 1px solid var(--ntsc-03); box-shadow: 0 2px 0 var(--ntsc-03); margin-bottom: 2px;
+}
+button.keycap:hover:not(:disabled) { border-color: var(--field-line); }
+button.keycap:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
 
 button.link {
   background: none; color: var(--accent-text); padding: 4px 2px; min-height: 24px; font-weight: 600;
@@ -298,27 +286,38 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .context-item.offline { background: var(--surface); color: var(--muted); }
 .context-item button:not(.link) { min-height: 28px; padding: 4px 12px; }
 .topbar-group.history { gap: 2px; }
+.menu-modes { display: flex; gap: 2px; margin-top: 2px; padding-top: 6px; border-top: 1px solid var(--line); }
+.menu-modes > button {
+  flex: 1; min-height: 36px; padding: 6px 8px; background: transparent; color: var(--text); font-weight: 700; box-shadow: none; margin: 0;
+}
+.menu-modes > button:hover:not([aria-checked="true"]) { background: var(--raised); }
+.menu-modes > button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
 .topbar button.secondary { min-height: 36px; }
 .topbar .segmented > button { min-height: 30px; }
 
 .workspace-layout {
-  display: grid; grid-template-columns: minmax(0, 1fr) clamp(380px, 30vw, 560px); gap: var(--s-5); align-items: start;
+  display: grid; grid-template-columns: minmax(0, 1fr) clamp(480px, 44vw, 760px); gap: var(--s-5); align-items: start;
 }
-@media (max-width: 1000px) { .workspace-layout { grid-template-columns: minmax(0, 1fr); } .play-column { grid-row: 1; } }
-/* Sticky beside long tabs, but never taller than the window, so its bottom stays reachable. */
-.play-column {
-  position: sticky; top: calc(var(--topbar-h) + var(--s-4)); display: flex; flex-direction: column; gap: var(--s-4);
-  max-height: calc(100vh - var(--topbar-h) - var(--s-4) * 2); overflow-y: auto; overscroll-behavior: contain; padding: 3px; margin: -3px;
-  scrollbar-width: thin;
-}
+.play-column { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+/* Beside long tabs only when the whole column fits in the window. */
+@media (min-width: 1001px) and (min-height: 900px) { .play-column { position: sticky; top: var(--s-3); } }
+/* Narrow: the TV, then the editor, then the ways out. */
 @media (max-width: 1000px) {
-  .play-column { position: static; max-height: none; overflow: visible; }
-  /* Tablets: the game and Show it side by side above the editor. */
-  .play-column { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+  .workspace-layout { display: flex; flex-direction: column; }
+  .play-column { display: contents; }
+  .play-column > * { order: 2; }
+  .play-column > .preview { order: 0; }
+  .workspace-layout > .workspace { order: 1; }
+  .topbar { position: static; }
 }
-@media (max-width: 720px) { .play-column { display: flex; } .page { padding: 0 var(--s-3) var(--s-4); } .topbar { margin: 0 calc(-1 * var(--s-3)) var(--s-3); padding: 8px var(--s-3); } }
-@media (max-width: 1180px) { .brand-name { display: none; } }
-@media (max-width: 1000px) { .topbar { position: static; } }
+@media (max-width: 960px) { .brand-name { display: none; } }
+@media (max-width: 720px) {
+  .page { padding: 0 var(--s-3) var(--s-4); }
+  .topbar { margin: 0 calc(-1 * var(--s-3)) var(--s-3); padding: 8px var(--s-3); gap: var(--s-2); }
+  .title-group { flex: 1 1 0; padding-left: var(--s-2); margin-left: 0; }
+  input.title-input { min-width: 0; width: 100%; }
+  .topbar .spacer { display: none; }
+}
 
 /* The editing side: a tray with a tab rail. */
 .workspace {
@@ -350,22 +349,6 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .page.start { padding-bottom: var(--s-7); }
 .start-head { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-4) 0; }
 .start-strip .context-strip { margin: 0; }
-.chooser { position: relative; max-width: 1120px; margin: var(--s-6) auto; }
-.page.start .chooser { margin-top: clamp(var(--s-6), 9vh, 112px); }
-.chooser h2 {
-  font: 700 var(--fs-2xl) / 1.2 var(--font-ui); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 var(--s-3);
-}
-.chooser-lead { font-size: var(--fs-lg); max-width: 60ch; margin: 0 0 var(--s-5); }
-.chooser-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-4); margin: var(--s-4) 0; }
-.chooser-card {
-  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; text-align: left; padding: 0; overflow: hidden;
-  background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-lg); font-weight: 400;
-  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
-}
-.chooser-card:hover, .chooser-card:focus-visible { border-color: var(--accent-text); }
-.chooser-card:active { background: var(--raised); }
-.chooser-card strong { font: 700 var(--fs-lg) / 1.2 var(--font-ui); color: var(--text); }
-.chooser-card.text-only { justify-content: flex-start; }
 /* My games: the games made so far, each with a picture of it running. */
 .my-games { margin: 0 0 var(--s-6); }
 .my-games h3:focus { outline: none; }
@@ -386,24 +369,9 @@ input.title-input:hover, input.title-input:focus { background: var(--sunken); bo
 .card-screen {
   position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; overflow: hidden; border-bottom: 1px solid var(--line);
 }
-.card-body { display: flex; flex-direction: column; gap: 6px; padding: var(--s-3) var(--s-4) var(--s-4); }
-.card-body .muted.small { font-size: var(--fs-sm); line-height: 1.45; }
 .cast { display: flex; align-items: end; justify-content: center; gap: 8%; min-height: 52px; max-width: 88%; }
 .cast-member { display: block; min-width: 0; flex: 0 1 auto; }
 .cast-member .sprite-preview { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
-.chooser-foot { font-size: var(--fs-sm); margin-top: var(--s-5); }
-.chooser-close { position: absolute; top: var(--s-4); right: var(--s-4); }
-.chooser-backdrop {
-  position: fixed; inset: 0; background: var(--scrim); z-index: 50; overflow: auto; padding: var(--s-4);
-  animation: scrim-in var(--dur) var(--ease-out);
-}
-.chooser-backdrop .chooser {
-  background: var(--bg); border: 1px solid var(--field-line); border-radius: var(--r-lg); padding: var(--s-6); box-shadow: var(--shadow-2);
-  animation: dialog-in var(--dur-slow) var(--ease-out);
-}
-.chooser-backdrop .chooser h2 { font-size: 22px; }
-.chooser-backdrop .chooser-lead { font-size: var(--fs-body); }
-
 /* 5. Editors ------------------------------------------------------------- */
 
 /* Sprite lists */
@@ -478,9 +446,9 @@ input.num { width: 64px; font-variant-numeric: tabular-nums; }
 
 /* Kit Things tab */
 .things-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: var(--s-5); align-items: start; }
-@media (max-width: 700px) { .things-layout { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 720px) { .things-layout { grid-template-columns: minmax(0, 1fr); } }
 .things-list { padding-right: var(--s-4); border-right: 1px solid var(--line); }
-@media (max-width: 700px) { .things-list { padding-right: 0; border-right: 0; } }
+@container (max-width: 720px) { .things-list { padding-right: 0; border-right: 0; } }
 .things-list .sprite-select { grid-template-columns: 64px 1fr; width: 100%; }
 .things-list .sprite-preview { max-width: 56px; }
 .things-list .toolbar { margin-top: var(--s-3); }
@@ -539,12 +507,14 @@ select.fit, input.fit {
   border-bottom: 2px dotted var(--accent-text); color: var(--accent-text);
   font: 700 var(--fs-body) / 1.3 var(--font-ui); padding: 2px 20px 2px 4px; min-height: 30px;
 }
-select.fit {
+select.fit { color: var(--text); font-weight: 400; border-bottom: 1px dotted var(--field-line); background-image: none; }
+select.fit:hover, select.fit:focus-visible {
+  color: var(--accent-text); border-bottom-color: var(--accent-text);
   background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-size: 4px 4px, 4px 4px; background-repeat: no-repeat; background-position: right 9px center, right 5px center;
 }
 input.fit { padding-right: 4px; }
-select.fit:hover, input.fit:hover, select.fit:focus, input.fit:focus { border-bottom-style: solid; background-color: var(--accent-soft); }
+input.fit:hover, input.fit:focus { border-bottom-style: solid; background-color: var(--accent-soft); }
 input.num.fit { width: 4em; }
 /* Where the browser can size a select to its words, do: tighter sentences. */
 @supports (field-sizing: content) { select.fit { field-sizing: content; width: auto !important; } }
@@ -580,50 +550,57 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 /* 6. Play column --------------------------------------------------------- */
 
 .play-column > .panel { padding: var(--s-4); }
-.preview > h2, .show-it > h2 { display: flex; align-items: center; gap: var(--s-2); }
 
-/* A plain TV bezel: flat dark plastic and a power light, the one status
- * light in the app. Off before the first build, lit while the game runs, dim
- * while paused. The Play panel says the same thing in words. No logos. */
-.tv-stage {
-  position: relative; padding: 12px 12px 22px; border-radius: var(--r-lg);
-  background: var(--raised); border: 1px solid var(--line);
-  margin-bottom: var(--s-3);
-}
-.tv-stage::after {
-  content: ""; position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px;
-  background: var(--power-off); transition: background-color var(--dur) var(--ease-out);
-}
-.preview:has(.status.built) .tv-stage::after { background: var(--power-on); }
-.preview:has(.status.built) .tv-stage.tv-paused::after { background: var(--power-paused); }
+/* The TV: flat black plastic, a rounded screen opening and a chin with the
+ * title, the sound and the power light. The picture is a whole number of
+ * screen pixels per console pixel wherever the stage is wide enough. */
+.tv-stage { position: relative; background: var(--ntsc-00); border: 0; border-radius: 6px; padding: 20px 20px 0; }
 .emu {
-  position: relative; background: var(--ntsc-00); overflow: hidden;
+  position: relative; width: var(--screen-w, 100%); max-width: 100%; margin: 0 auto;
+  background: var(--ntsc-00); border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px var(--ntsc-02);
   animation: cartridge-insert var(--dur-slow) var(--ease-out) both;
 }
-.emu .screen { cursor: pointer; }
+.emu .screen { display: block; width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; cursor: pointer; }
 .emu .screen:focus { outline: none; }
 .emu:focus-within { box-shadow: 0 0 0 3px var(--focus); }
-/* A nudge to click in; it goes away while the game has the keyboard. */
-.emu:not(:focus-within)::after {
-  content: "Click to play"; position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
-  background: var(--accent); color: var(--on-accent); padding: 5px 12px; border-radius: var(--r-sm); box-shadow: 0 2px 0 var(--edge);
-  font: 700 13px / 1.2 var(--font-ui); pointer-events: none;
-}
-.emu .screen { display: block; width: 100%; aspect-ratio: 4 / 3; image-rendering: pixelated; }
 .emu .screen:fullscreen { object-fit: contain; background: var(--ntsc-00); }
-.emu-controls { display: flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; margin-top: var(--s-2); }
-.emu-controls button { min-height: 32px; padding: 5px 8px; gap: 5px; font-size: var(--fs-sm); }
-.emu-controls .hint { margin: 0 0 0 auto; flex-basis: 100%; }
+.tv-chin { display: flex; align-items: center; gap: var(--s-2); height: 40px; color: var(--muted); }
+.tv-chin-title { flex: 1; min-width: 0; display: flex; overflow: hidden; }
+.tv-chin button.icon { min-width: 28px; min-height: 28px; padding: 2px; }
+.power-light { width: 6px; height: 6px; flex: none; background: var(--power-off); transition: background-color var(--dur) var(--ease-out); }
+.power-light.on { background: var(--power-on); }
+.power-light.paused { background: var(--power-paused); }
+.power-word { display: flex; }
+.play-hint { margin: var(--s-2) 0 0; font-size: var(--fs-sm); }
+
+/* The console's own controls: three keycaps, two difficulty switches and the TV. */
+.console-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
+.console-row .keycap { text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--fs-sm); padding: 5px 10px; }
+.console-row .tv-button { text-transform: none; letter-spacing: 0.01em; margin-left: auto; }
+button.diff-switch {
+  gap: 6px; padding: 2px; min-height: 32px; background: transparent; color: var(--muted); box-shadow: none; margin: 0;
+  font: 700 var(--fs-xs) / 1.1 var(--font-ui); text-transform: uppercase; letter-spacing: 0.04em;
+}
+button.diff-switch:hover:not(:disabled) { color: var(--text); }
+.diff-pair { display: inline-flex; gap: var(--s-3); }
+.diff-name { max-width: 7em; text-align: right; }
+.diff-track { position: relative; flex: none; width: 28px; height: 14px; background: var(--ntsc-00); border: 1px solid var(--ntsc-03); }
+.diff-knob { position: absolute; top: 1px; left: 1px; width: 10px; height: 10px; background: var(--ntsc-0b); transition: left var(--dur-fast) var(--ease-out); }
+.diff-switch[aria-checked="true"] .diff-knob { left: 15px; }
+.diff-at { width: 1ch; color: var(--text); }
+
 /* The build tick: a pixel check that steps in when the game is up to date. */
 .status.built::before {
   content: ""; width: 16px; height: 16px; flex: none; background: currentColor; animation: tick-pop var(--dur-slow) steps(3, end) both;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Cpath d='M6 1h2v2H7v1H6v1H5v1H4v1H2V6H1V5H0V3h2v1h1v1h1V4h1V3h1z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
+.status.built.full { color: var(--accent-text); }
 
-/* Console time */
-.cpu-meter { font-size: var(--fs-sm); padding: var(--s-3) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.cpu-meter .muted.small { margin-bottom: 0; }
+/* Console time, shown only when it's close to the limit. */
+.cpu-meter { font-size: var(--fs-sm); margin-top: var(--s-2); }
+.cpu-meter .cpu-bar { height: 6px; }
+.cpu-meter p { margin: 6px 0 0; }
 .cpu-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 700; }
 .cpu-bar { height: 10px; background: var(--sunken); border: 1px solid var(--field-line); overflow: hidden; }
 .cpu-bar span { display: block; height: 100%; transition: width var(--dur-slow) var(--ease-out); }
@@ -632,41 +609,14 @@ select.fit option { color: var(--text); background: var(--surface); font-weight:
 .cpu-bar .over, strong.over { background-color: var(--error); color: var(--error); }
 strong.ok, strong.near, strong.over { background: none; font-variant-numeric: tabular-nums; }
 
-/* The cartridge meter sits right under the console meter: they share one rule. */
-.cpu-meter + .cpu-meter.cart-fill { border-top: 0; }
-.cart-fill details { margin-top: var(--s-2); }
-.cart-fill .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; margin: var(--s-2) 0 0; }
-.cart-fill .stats dt { color: var(--muted); font-size: var(--fs-xs); }
-.cart-fill .stats dd { margin: 0; font-variant-numeric: tabular-nums; }
-/* The TV row under the game's controls: the button and its line of help. */
-.emu-controls.tv-row { margin-top: var(--s-1); }
-.emu-controls.tv-row .hint { flex: 1 1 200px; flex-basis: auto; margin: 0; }
-
-/* Show it */
-.show-h { font-size: var(--fs-sm); font-weight: 700; color: var(--text); margin: var(--s-4) 0 var(--s-2); }
-.show-it > h2 + .show-h { margin-top: 0; }
-.show-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--s-2); }
-/* Make it real: the main event, with primary weight. */
-.show-grid.real .show-button {
-  min-height: 76px; padding: 12px 14px; background: var(--accent-soft); border-color: var(--accent);
-}
-.show-grid.real .show-button strong { font-size: 16px; }
-.show-grid.real .show-button span { color: var(--text); }
-.show-grid.real .show-button:hover:not(:disabled) { border-color: var(--accent-text); }
-.show-button {
-  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 3px; text-align: left; min-height: 64px;
-  background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-weight: 400;
-}
-.show-button strong { font: 700 var(--fs-body) / 1.2 var(--font-ui); display: inline-flex; align-items: center; gap: 7px; }
-.show-button .ico { display: none; }
-.show-button span { font-size: var(--fs-xs); color: var(--muted); line-height: 1.35; }
-.show-button:hover:not(:disabled), .show-button:focus-visible { border-color: var(--accent-text); background: var(--raised); }
-.show-button.recording { border-color: var(--error); background: var(--error-soft); }
-.rec-dot { display: inline-block; width: 10px; height: 10px; background: var(--error); animation: rec 1s steps(1, end) infinite; }
-
-.show-zip { display: grid; gap: var(--s-2); }
-ul.zip-contents { margin: 0; padding-left: 18px; }
-ul.zip-contents li { margin-bottom: 2px; }
+/* Show it: two keycaps, then the smaller ways out on one line. */
+.show-main { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.show-main button { min-height: 44px; }
+.show-more { margin: var(--s-3) 0 0; color: var(--muted); font-size: var(--fs-sm); line-height: 2; }
+.show-more button.link { font-size: var(--fs-sm); }
+.show-more button.recording { color: var(--error); }
+.rec-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: var(--error); animation: rec 1s steps(1, end) infinite; }
+.rec-time { margin-left: 6px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* The console dialog: the hardware table, "Did it boot?" and the boot report. */
 table.compat { width: 100%; border-collapse: collapse; margin: var(--s-3) 0 var(--s-2); }
@@ -683,7 +633,7 @@ table.compat thead th { color: var(--muted); font-weight: 700; }
 /* TV mode: the game as big as the screen allows, with its title and a prompt. */
 .tv-title, .tv-hint { display: none; }
 .tv-stage:fullscreen {
-  padding: 0; border-radius: 0; box-shadow: none; margin: 0;
+  padding: 0; border-radius: 0; margin: 0;
   background: var(--ntsc-00); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: none;
 }
 /* The pointer hides only while the game plays: it's back when paused or when the mouse moves. */
@@ -692,33 +642,10 @@ table.compat thead th { color: var(--muted); font-weight: 700; }
 .tv-stage:fullscreen .tv-title .kit-text svg { height: 5vh; width: auto; }
 .tv-stage:fullscreen .tv-hint { display: block; margin: 0; color: var(--muted); font-size: 2.2vh; }
 .tv-stage:fullscreen .emu { width: min(100vw, calc(84vh * 4 / 3)); border-radius: 0; box-shadow: none; margin: 0; animation: none; }
-.tv-stage:fullscreen .emu:focus-within { box-shadow: none; }
-.tv-stage:fullscreen::after { display: none; }
-.tv-stage:fullscreen .emu::after { font-size: 2.4vh; }
+.tv-stage:fullscreen .tv-chin { display: none; }
 
-/* Getting started (kit editor): three steps, then ideas for the starter. */
-.kit-guide { margin: 0; padding: var(--s-3) var(--s-5); border-bottom: 1px solid var(--line); }
-.kit-guide:focus { outline: none; }
-.kit-guide:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.kit-guide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.kit-guide-head h2 { font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text); margin: 0; }
-.guide-steps { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); }
-.guide-steps li {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 6px; align-items: baseline; flex: 1 1 200px;
-  padding: 0 0 0 var(--s-2); border-left: 3px solid transparent;
-}
-.guide-steps li > button { grid-column: 2; justify-self: start; }
-.guide-steps li.current { border-left-color: var(--accent-text); }
-.guide-num { font-weight: 700; color: var(--text); }
-.guide-num::after { content: "."; }
-.guide-steps li.current .guide-num { color: var(--accent-text); }
-.guide-steps li.done .guide-num { color: var(--ok); }
-.guide-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.guide-ideas h3 { font-size: 14px; margin: 12px 0 4px; }
-.guide-ideas ul { margin: 0; padding-left: 18px; }
-.guide-ideas li { margin-bottom: 4px; }
 .workspace-tabs button.guide-target { color: var(--accent-text); }
-.guide-play .tv-stage { border-color: var(--accent-text); box-shadow: 0 0 0 2px var(--accent-text); }
+.guide-play .tv-stage { box-shadow: 0 0 0 2px var(--accent-text); }
 
 /* Empty and broken states: what's missing, and what to do about it. */
 .empty-state { margin: 8px 0; color: var(--text); }
@@ -726,14 +653,9 @@ table.compat thead th { color: var(--muted); font-weight: 700; }
 .broken p { margin: 0 0 4px; }
 .broken ul { margin: 0; padding-left: 18px; }
 .error-help { color: var(--text); }
-.cpu-word.ok { color: var(--ok); }
-.cpu-word.near { color: var(--accent-text); }
-.cpu-word.over { color: var(--error); }
-.cpu-word { font-weight: 700; }
 .busy-fixes p { margin: 6px 0 4px; }
 .busy-fixes ul { margin: 0; padding-left: 18px; }
 .busy-fixes li { margin-bottom: 4px; }
-.chooser-kind { color: var(--accent-text); font-weight: 700; }
 .thing-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .saved:empty { display: none; }
 .saved { color: var(--ok); }
@@ -759,7 +681,7 @@ button.danger-solid { background: var(--error); color: var(--on-error); }
   .rec-dot { animation: none; }
 }
 
-/* Contrast notes on game colors: advice, so teal rather than error red. */
+/* Contrast notes on game colours: advice, so teal rather than error red. */
 .color-row > .contrast-notes { grid-column: 2; }
 /* Kept in the layout while empty (a live region must exist before it speaks), without adding a gap. */
 .color-row > .contrast-notes:empty { margin-top: calc(-1 * var(--s-3)); }

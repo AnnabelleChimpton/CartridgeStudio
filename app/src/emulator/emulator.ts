@@ -1,6 +1,3 @@
-// The emulator sits behind this interface (SPEC.md, "Emulator preview") so the
-// js7800 core can be swapped for a more accurate one without touching callers.
-
 export interface JoystickState {
   up: boolean;
   down: boolean;
@@ -9,11 +6,24 @@ export interface JoystickState {
   fire: boolean;
 }
 
+/** The console's three momentary buttons. */
+export type ConsoleButton = "pause" | "select" | "reset";
+/** A difficulty switch position: B is the usual one, A the harder one. */
+export type Difficulty = "A" | "B";
+export interface Switches {
+  left: Difficulty;
+  right: Difficulty;
+}
+
 export interface Emulator {
   load(rom: Uint8Array, format: "a78" | "bin"): Promise<void>;
+  /** Power cycle: back to the title screen, switches as the cartridge header sets them. */
   reset(): void;
   pause(paused: boolean): void;
   setInput(state: JoystickState): void;
+  /** Presses and lets go of a console button, as a finger would. */
+  pressConsole(button: ConsoleButton): void;
+  setDifficulty(side: keyof Switches, position: Difficulty): void;
   onFrame(cb: (frame: number) => void): () => void;
   /** Runs exactly `n` more frames right away (lockstep). Pause first for repeatable runs. */
   stepFrames(n: number): Promise<void>; // for tests

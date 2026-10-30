@@ -1,8 +1,4 @@
-// The editor's top bar: the brand, the game's title, undo/redo, the Mode
-// (tier) switch, saving, and a Game menu for starting or opening a game.
-// Under it, the context strip (ContextStrip.tsx).
-
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { CARTRIDGE_EXTENSION } from "../files/cartridge-file.ts";
 import { arrowKeys } from "./a11y.ts";
 import { BrandMark, Wordmark } from "./BrandMark.tsx";
@@ -11,6 +7,9 @@ import { ContextStrip } from "./ContextStrip.tsx";
 import { AboutDialog } from "./About.tsx";
 import { TIERS, setTier, useTier } from "./prefs.ts";
 import { Toaster } from "./Toaster.tsx";
+
+/** Below this width the Mode switch moves into the Game menu, so the bar stays one row. */
+const NARROW = "(max-width: 720px)";
 
 function isTextField(t: EventTarget | null) {
   return (
@@ -21,10 +20,28 @@ function isTextField(t: EventTarget | null) {
   );
 }
 
+function useNarrow(): boolean {
+  return useSyncExternalStore(
+    (changed) => {
+      if (typeof matchMedia !== "function") return () => {};
+      const m = matchMedia(NARROW);
+      m.addEventListener("change", changed);
+      return () => m.removeEventListener("change", changed);
+    },
+    () => typeof matchMedia === "function" && matchMedia(NARROW).matches,
+  );
+}
+
+export interface MenuItem {
+  label: string;
+  onClick: () => void;
+}
+
 interface Props {
   title: string;
   onTitle: (title: string) => void;
-  kind: string;
+  /** No longer shown. */
+  kind?: string;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -32,13 +49,16 @@ interface Props {
   onOpen: (file: File) => void;
   onSave: () => void;
   onNew: () => void;
-  /** Editor-specific buttons, before the Mode switch (e.g. the kit's guide). */
+  /** Editor-specific entries in the Game menu, after saving. */
+  menuItems?: MenuItem[];
+  /** No longer shown. */
   extra?: ReactNode;
 }
 
-export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onOpen, onSave, onNew, extra }: Props) {
+export function TopBar({ title, onTitle, canUndo, canRedo, undo, redo, onOpen, onSave, onNew, menuItems = [] }: Props) {
   const fileInput = useRef<HTMLInputElement>(null);
   const [about, setAbout] = useState(false);
+  const narrow = useNarrow();
 
   // Undo / redo shortcuts (text fields keep their own undo).
   useEffect(() => {
@@ -57,7 +77,6 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
       <Brand />
       <div className="title-group">
         <input className="title-input" aria-label="Game title" value={title} maxLength={60} onChange={(e) => onTitle(e.target.value)} />
-        <span className="badge kind">{kind}</span>
       </div>
       <div className="topbar-group history">
         <button type="button" className="icon" onClick={undo} disabled={!canUndo} aria-label="Undo" title="Undo (⌘Z)">
@@ -68,8 +87,7 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
         </button>
       </div>
       <span className="spacer" />
-      {extra}
-      <ModeSwitch />
+      {!narrow && <ModeSwitch />}
       <input
         ref={fileInput}
         type="file"
@@ -82,21 +100,17 @@ export function TopBar({ title, onTitle, kind, canUndo, canRedo, undo, redo, onO
           if (file) onOpen(file);
         }}
       />
-      <div className="topbar-group">
-        <button type="button" className="secondary" onClick={onSave} title="Download this game as one file you can open again or share">
-          Save game file
-        </button>
-        <GameMenu
-          items={[
-            { label: "New game", onClick: onNew },
-            { label: "Open…", onClick: () => fileInput.current?.click() },
-            { label: "About and licences", onClick: () => setAbout(true) },
-          ]}
-        />
-        {about && (
-          <AboutDialog onClose={() => setAbout(false)} returnTo={document.querySelector<HTMLElement>(".topbar .menu-wrap > button")} />
-        )}
-      </div>
+      <GameMenu
+        items={[
+          { label: "New game", onClick: onNew },
+          { label: "Open a game file…", onClick: () => fileInput.current?.click() },
+          { label: "Save a game file", onClick: onSave },
+          ...menuItems,
+          { label: "About and licences", onClick: () => setAbout(true) },
+        ]}
+        modes={narrow}
+      />
+      {about && <AboutDialog onClose={() => setAbout(false)} returnTo={document.querySelector<HTMLElement>(".topbar .menu-wrap > button")} />}
       <ContextStrip />
       <Toaster />
     </header>
@@ -113,10 +127,10 @@ export function Brand() {
 }
 
 /** Kit · Rules · 7800basic, named by what you touch: what the editor shows by default. */
-export function ModeSwitch() {
+export function ModeSwitch({ className = "segmented mode-switch", onPick }: { className?: string; onPick?: () => void }) {
   const tier = useTier();
   return (
-    <div className="segmented mode-switch" role="radiogroup" aria-label="Mode" onKeyDown={arrowKeys("radio")}>
+    <div className={className} role="radiogroup" aria-label="Mode" onKeyDown={arrowKeys("radio")}>
       {TIERS.map((t) => (
         <button
           key={t.id}
@@ -125,7 +139,10 @@ export function ModeSwitch() {
           aria-checked={tier === t.id}
           tabIndex={tier === t.id ? 0 : -1}
           title={t.detail}
-          onClick={() => setTier(t.id)}
+          onClick={() => {
+            setTier(t.id);
+            onPick?.();
+          }}
         >
           {t.label}
         </button>
@@ -135,7 +152,7 @@ export function ModeSwitch() {
 }
 
 /** A disclosure menu of plain buttons: Escape or clicking away closes it. */
-function GameMenu({ items }: { items: { label: string; onClick: () => void }[] }) {
+function GameMenu({ items, modes }: { items: MenuItem[]; modes: boolean }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const wrap = useRef<HTMLDivElement>(null);
@@ -163,14 +180,7 @@ function GameMenu({ items }: { items: { label: string; onClick: () => void }[] }
       // Tabbing away closes it. (Safari moves focus to nothing when a button is clicked: that isn't leaving.)
       onBlur={(e) => e.relatedTarget && !wrap.current?.contains(e.relatedTarget as Node) && setOpen(false)}
     >
-      <button
-        ref={trigger}
-        type="button"
-        className="secondary"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={() => setOpen(!open)}
-      >
+      <button ref={trigger} type="button" className="secondary" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>
         Game
         <Icon name="chevron" />
       </button>
@@ -188,6 +198,7 @@ function GameMenu({ items }: { items: { label: string; onClick: () => void }[] }
             {item.label}
           </button>
         ))}
+        {modes && <ModeSwitch className="menu-modes" onPick={() => setOpen(false)} />}
       </div>
     </div>
   );

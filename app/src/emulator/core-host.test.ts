@@ -1,7 +1,3 @@
-// Headless emulator harness: the js7800 core runs in Node, stepped frame by
-// frame, against ROMs built from projects. This is the base for template
-// behaviour tests (SPEC.md, "Test layers").
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import { generate } from "../codegen/generate.ts";
@@ -117,5 +113,29 @@ describe("CoreHost", () => {
     host.step(60);
     const samples = host.takeSamples();
     expect(samples.length).toBeGreaterThan(60 * 400);
+  });
+
+  it("keeps a moved difficulty switch across loads and power cycles", async () => {
+    const { rom } = await buildRom();
+    await host.load(rom);
+    const header = host.switches;
+    const other = header.left === "A" ? "B" : "A";
+    host.setDifficulty("left", other);
+    expect(host.switches.left).toBe(other);
+    await host.reset();
+    await host.load(rom);
+    expect(host.switches).toEqual({ ...header, left: other });
+  });
+
+  it("lets go of a pressed console button after a few frames", async () => {
+    const { rom } = await buildRom();
+    await host.load(rom);
+    const SWCHB = 0x282;
+    const reset = () => (host.readMemory(SWCHB)[0]! & 1) === 0;
+    host.pressConsole("reset");
+    host.step(1);
+    expect(reset()).toBe(true);
+    host.step(10);
+    expect(reset()).toBe(false);
   });
 });
