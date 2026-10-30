@@ -1,5 +1,3 @@
-// Reader for the toolchain archive written by scripts/fetch-7800basic.mjs.
-
 export interface ToolchainPack {
   name: string;
   version: string;

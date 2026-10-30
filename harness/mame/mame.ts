@@ -1,9 +1,3 @@
-// Runs template behaviour tests (templates/<id>/tests/*.json) in MAME's a7800
-// driver, as a second opinion on the js7800 runner in
-// app/src/harness/behaviour.ts. MAME runs behaviour.lua as an autoboot script,
-// which plays the steps frame by frame and reports raw RAM bytes; the checks
-// happen here, with the same rules as the js7800 runner.
-
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";

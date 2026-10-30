@@ -1,8 +1,3 @@
-// Exports that bundle several files (SPEC.md, "Exports"):
-// - source: game.bas and its graphics, build scripts and notes, so a coder
-//   can carry on in 7800basic ("Escape hatch"; see code/export.ts)
-// - the checklist for the submission package (files/package.ts)
-
 import { TOOLCHAIN_NAME } from "@cartridge-studio/toolchain";
 import { strToU8, zipSync } from "fflate";
 import { sourceFolder, type SourceFolderInput } from "../code/export.ts";

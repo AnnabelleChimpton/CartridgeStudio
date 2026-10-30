@@ -1,6 +1,3 @@
-// A modal dialog on the native <dialog> element: focus moves in and is kept
-// there, Escape closes it, and focus returns to what opened it.
-
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 

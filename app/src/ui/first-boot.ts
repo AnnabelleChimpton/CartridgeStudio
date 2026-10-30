@@ -1,8 +1,3 @@
-// The "First boot" card: printed when a game boots on a console for the first
-// time. A small page of its own, opened in a new tab to print. Print owns the
-// label renderer; this card goes through `firstBootCard` so it can be swapped
-// for a rendered label without touching the console dialog.
-
 export interface FirstBootInfo {
   title: string;
   /** The ROM file that booted. */

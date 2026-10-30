@@ -1,11 +1,10 @@
-// Read-only sprite thumbnail. Pixels are drawn 2:1 wide, as 160A shows them.
-
 import { useEffect, useRef } from "react";
 import type { Palette, Sprite } from "../project/schema.ts";
 import { ntscCss } from "./ntsc.ts";
 
 export function SpritePreview({ sprite, palette, scale = 4 }: { sprite: Sprite; palette?: Palette; scale?: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  // 160A pixels are twice as wide as they are tall.
   const w = sprite.width * scale * 2;
   const h = sprite.height * scale;
 

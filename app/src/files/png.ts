@@ -1,5 +1,3 @@
-// RGBA PNG encoder for thumbnails (the preview's picture in .cartridge files).
-
 import { zlibSync } from "fflate";
 import { crc32 } from "@cartridge-studio/toolchain";
 

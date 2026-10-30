@@ -1,6 +1,3 @@
-// Runs the same WasiBuilder the browser worker uses, under Node, against the
-// packed 7800basic release. Requires `npm run fetch -w toolchain` first.
-
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";

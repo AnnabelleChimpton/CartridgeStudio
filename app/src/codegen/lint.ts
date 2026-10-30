@@ -1,7 +1,3 @@
-// Checks generated 7800basic for constructs that break 7800basic 0.41
-// (templates/README.md, "pitfalls"). A hit is a template bug, so generation
-// stops instead of handing the compiler code that hangs it or misbehaves.
-
 export interface LintIssue {
   line: number;
   message: string;

@@ -1,13 +1,3 @@
-// Writes everything that carries the palette or the mark, from src/ui/tokens.ts
-// and src/ui/brand.ts:
-//   app/src/tokens.css, the tokens block in site/styles.css,
-//   the manifest's colours and every page's theme-color,
-//   app/public/icons (icon.svg, the PNGs, the maskable icon),
-//   site/icons/mark.svg, the site favicon and its header mark.
-//
-//   node app/scripts/make-identity.mjs          write them
-//   node app/scripts/make-identity.mjs --check  exit 1 if any is out of date
-
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";

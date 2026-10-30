@@ -1,6 +1,3 @@
-// My games: many games in one store, old single-slot saves moved in once
-// (Classic shooter games as code), and saves that wait for a pause or a flush.
-
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { blankCodeProject } from "../code/eject.ts";
 import { KIT_PRESETS } from "../kit/presets.ts";

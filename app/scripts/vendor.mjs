@@ -1,8 +1,3 @@
-// Copies the packed 7800basic toolchain (built by `npm run fetch -w toolchain`)
-// into public/toolchain so the build worker can fetch it, along with its
-// license files so they are served next to it, and the app's LICENSE and
-// THIRD_PARTY_NOTICES.txt into public/legal.
-
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

@@ -1,6 +1,3 @@
-// Runs every template's behaviour tests (templates/<id>/tests/*.json) in the
-// headless js7800 core. A template ships only when all of them pass.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import type { CoreHost } from "../emulator/core-host.ts";

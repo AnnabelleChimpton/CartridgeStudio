@@ -1,8 +1,3 @@
-// Main-thread side of project builds. Only the latest build matters: starting
-// a new one while another runs terminates the worker and respawns it from the
-// HTTP-cached toolchain (SPEC.md, "How it runs"). The same mechanism enforces a
-// timeout, so a compiler that hangs can't wedge the preview.
-
 import { TOOLCHAIN_PACK_FILE, WasiBuilder, readPack } from "@cartridge-studio/toolchain";
 import { buildProject, type BuildOptions, type GameSource, type ProjectBuildResult } from "./project-build.ts";
 import { buildFault, type WorkerRequest, type WorkerResponse } from "./protocol.ts";

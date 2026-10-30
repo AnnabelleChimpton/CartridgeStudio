@@ -1,8 +1,8 @@
-// The one token set: every colour is an entry from the console's NTSC palette
-// (ui/ntsc.ts), named by its $hue luma value. scripts/make-identity.mjs writes
-// it out as src/tokens.css, the block in site/styles.css, the manifest and
-// theme-color; the player page and the jam gallery inline tokensCss().
-// To change a colour, pick another entry here and rerun the script.
+// Every colour is an entry from the console's NTSC palette (ui/ntsc.ts), named
+// by its $hue luma value. scripts/make-identity.mjs writes it out as
+// src/tokens.css, the block in site/styles.css, the manifest and theme-color;
+// the player page and the jam gallery inline tokensCss(). To change a colour,
+// pick another entry here and rerun the script.
 
 import { ntscRgb } from "./ntsc.ts";
 

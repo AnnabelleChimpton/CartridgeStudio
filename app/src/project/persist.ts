@@ -1,19 +1,3 @@
-// "My games": every game made in this browser, kept in IndexedDB so work
-// survives reloads (no account). Each game has three keys: `meta:<id>` (title,
-// kind and dates, for the start screen), `game:<id>` (the kit game or code
-// project) and `thumb:<id>` (a PNG of the running game). `open` says which game
-// was being edited.
-//
-// Saves from before the library (one slot per kind: `current-kit`,
-// `current-code`, `current` for Classic shooter games) move into it on first
-// load. Classic shooter games become code projects (the Classic editor is
-// retired; see ejectTemplate).
-//
-// A save this version can't read (damaged, or from a newer version) is never
-// overwritten: it's moved to a `recovered-<time>-<key>` key and the editor
-// says so. If even the move fails, saving to that key is switched off for the
-// rest of the visit.
-
 import { createStore, del, get, keys, set } from "idb-keyval";
 import { ejectTemplate } from "../code/eject.ts";
 import { readTests, type TestsFile } from "../code/creator-tests.ts";
@@ -108,6 +92,7 @@ const unreadable = new Set<string>();
 /** When each game seen this visit was made, so saving needn't read it first. */
 const createdAt = new Map<string, number>();
 
+// A save this version cannot read is moved to a recovered- key, never overwritten.
 async function setAside(store: KeyValue, key: string, raw: unknown, kind: Recovered["kind"], errors: string[]): Promise<Recovered> {
   const to = `recovered-${new Date().toISOString().replace(/[:.]/g, "-")}-${key}`;
   try {

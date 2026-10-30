@@ -1,8 +1,3 @@
-// The kit music player in MAME's a7800 driver: the same test program as the
-// js7800 suite (app/src/kit/audio-testrom.ts), playing every tune in the
-// library. Each jingle must still be playing a few frames before its length
-// and stop within a few frames after; each title loop must keep going.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import type { Step } from "../../app/src/harness/behaviour.ts";

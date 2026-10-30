@@ -1,9 +1,3 @@
-// Downloads the pinned 7800basic WebAssembly release, verifies its hash and
-// packs the tools, include directory and license files into one archive
-// (toolchain/vendor/7800basic-<version>.pack) that the build worker fetches once.
-//
-// The upstream files are copied byte for byte; nothing is modified.
-
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -23,6 +17,7 @@ if (!fs.existsSync(tarball)) {
   console.log(`Downloading ${lock.url}`);
   const res = await fetch(lock.url);
   if (!res.ok) throw new Error(`Download failed: ${res.status} ${res.statusText}`);
+  // Upstream files are packed byte for byte; nothing is modified.
   fs.writeFileSync(tarball, Buffer.from(await res.arrayBuffer()));
 }
 

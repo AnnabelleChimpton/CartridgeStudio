@@ -1,6 +1,3 @@
-// The project JSON is the single source of truth (SPEC.md, "Project data model").
-// Everything else (game.bas, PNGs, ROM) is derived from it.
-
 import { z } from "zod";
 
 export const CURRENT_SCHEMA = 1;

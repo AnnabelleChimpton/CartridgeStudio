@@ -1,14 +1,3 @@
-// Fails on any hex colour outside the generated palette. Every colour in the
-// app, the site and the player page is an NTSC palette entry named in
-// app/src/ui/tokens.ts; this keeps a stray "#ff8a5c" from creeping back in.
-//
-//   node harness/check-hex.mjs
-//
-// Allowed: ui/ntsc.ts (it computes the palette), the files
-// app/scripts/make-identity.mjs writes (tokens.css, the tokens block in
-// site/styles.css, the icons, the manifest and the theme-color meta), tests,
-// and vendored or font files.
-
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
 import { fileURLToPath } from "node:url";

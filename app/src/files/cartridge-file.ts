@@ -1,7 +1,3 @@
-// .cartridge files (SPEC.md, "File export"): the project JSON, zipped with a
-// thumbnail of the game. Opening one goes through the same migrations,
-// template upgrades and validation as a saved project.
-
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { MAX_TESTS_BYTES, TESTS_FILE, readTests, testsBytes, type TestsFile } from "../code/creator-tests.ts";
 import { CodeProjectSchema, isCodeProject, type CodeProject } from "../code/schema.ts";

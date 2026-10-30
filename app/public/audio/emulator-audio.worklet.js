@@ -1,8 +1,3 @@
-// AudioWorklet that plays the emulator worker's samples (SPEC.md, "Emulator
-// preview"). Samples arrive on a MessagePort straight from the worker and go
-// through a ring buffer; an underrun plays silence, and if the buffer runs
-// far ahead (a hidden tab catching up) the oldest audio is dropped.
-
 const SIZE = 1 << 15;
 const MAX_LATENCY = 0.15; // seconds
 

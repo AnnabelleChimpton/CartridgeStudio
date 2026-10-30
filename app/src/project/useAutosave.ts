@@ -1,7 +1,3 @@
-// Keeps the open game in "My games": every change is saved after a short
-// pause, and a picture of the running game is kept for the start screen a
-// moment after each build.
-
 import { useEffect } from "react";
 import type { CodeProject } from "../code/schema.ts";
 import { encodeRgbaPng } from "../files/png.ts";

@@ -1,8 +1,3 @@
-// Template upgrades: when a template's version changes, a saved project made
-// with an older version is brought up to date on load, keeping the creator's
-// work (SPEC.md: "Templates are versioned separately so old projects keep
-// building"). Each step goes from one version to the next.
-
 import type { Project, Template } from "./schema.ts";
 
 interface Upgrade {

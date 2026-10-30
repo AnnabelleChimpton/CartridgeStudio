@@ -1,8 +1,3 @@
-// What the offline player needs to know about a game besides its ROM: how it's
-// played (for the controls line and the touch pad) and a few of its sprites
-// (for the box-front pre-roll). Read from the game file defensively, without
-// the kit's schema, so it keeps working while the game format grows.
-
 /** How the joystick is used: not at all, left and right only, or freely. */
 export type Movement = "none" | "lr" | "free";
 /** What the button does: fires during play, only starts the game, or unknown (hand-written code). */

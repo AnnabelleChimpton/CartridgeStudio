@@ -1,7 +1,4 @@
 /// <reference lib="webworker" />
-// Build worker: code generation, the ROM cache and the toolchain all run here,
-// so a slow build never freezes the editor. The main thread cancels a build by
-// terminating this worker and starting a new one.
 
 import { WasiBuilder, readPack } from "@cartridge-studio/toolchain";
 import { buildProject } from "./project-build.ts";

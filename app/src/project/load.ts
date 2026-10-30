@@ -1,6 +1,3 @@
-// Turns stored or imported JSON into a current project: schema migrations,
-// then the template upgrade, then validation against the template.
-
 import { migrate } from "./migrations.ts";
 import { ProjectSchema, type Project, type Template } from "./schema.ts";
 import { upgradeProject } from "./upgrades.ts";

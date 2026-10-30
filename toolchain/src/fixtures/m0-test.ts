@@ -1,5 +1,3 @@
-// Sprites for the M0 test program, in the project pixel format (SPEC.md).
-
 export const M0_SPRITES: Record<string, string[]> = {
   "ship.png": [
     "0000000110000000",

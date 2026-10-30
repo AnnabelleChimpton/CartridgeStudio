@@ -1,6 +1,3 @@
-// Game files come from anywhere: whatever the bytes, reading one returns a
-// result (never throws) and never accepts something the schemas don't.
-
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { blankCodeProject } from "../code/eject.ts";

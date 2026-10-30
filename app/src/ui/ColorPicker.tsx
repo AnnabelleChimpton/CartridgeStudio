@@ -1,5 +1,3 @@
-// A swatch that opens the 7800's 256-value palette (16 hues × 16 lumas).
-
 import { useEffect, useRef, useState } from "react";
 import { arrowKeys } from "./a11y.ts";
 import { colorName, ntscCss, toColor } from "./ntsc.ts";

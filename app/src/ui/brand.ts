@@ -1,8 +1,3 @@
-// The Cartridge Studio mark as square pixels on a 16 × 16 grid: a cartridge
-// with a keycap edge, a square grip bar and "CS" on its label in the kit's
-// own 3×5 font. BrandMark.tsx draws it in the app; scripts/make-identity.mjs
-// draws the same rects into icon.svg, the PNGs, the favicon and the site mark.
-
 import { fontRows } from "../kit/font.ts";
 import type { Role } from "./tokens.ts";
 

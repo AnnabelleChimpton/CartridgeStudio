@@ -1,4 +1,3 @@
-// gifenc (MIT) ships no types; these cover the parts the clip export uses.
 declare module "gifenc" {
   export interface GifFrameOptions {
     palette?: number[][];

@@ -1,8 +1,3 @@
-// Document stores with undo/redo history (SPEC.md, "State"). Edits are
-// recipes applied to a copy, so every history entry is an independent,
-// serializable snapshot. One store per kind of game: kit games in
-// kit/store.ts, code projects in code/store.ts.
-
 import { create } from "zustand";
 
 const HISTORY_LIMIT = 200;

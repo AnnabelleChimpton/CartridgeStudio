@@ -1,7 +1,3 @@
-// Code generation (SPEC.md, "Templates and code generation"): pure,
-// deterministic, no network. Validate, resolve params, group rules by trigger,
-// emit one PNG per sprite, render the engine template into game.bas.
-
 import Handlebars from "handlebars";
 import { encodeIndexedPng, type BuildInput } from "@cartridge-studio/toolchain";
 import type { Project, SoundEffect, Template } from "../project/schema.ts";

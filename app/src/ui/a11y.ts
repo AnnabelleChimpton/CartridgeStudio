@@ -1,7 +1,3 @@
-// Keyboard patterns shared by the editors: arrow keys inside radio groups,
-// tab lists and listboxes (one Tab stop per group), and a keyboard cursor
-// for the pixel and room grids.
-
 import { useRef, useState } from "react";
 import { paint } from "./tokens.ts";
 

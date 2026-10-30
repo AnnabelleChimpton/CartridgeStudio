@@ -1,7 +1,3 @@
-// Runs the unmodified 7800basic WebAssembly tools under an in-memory WASI shim.
-// This replaces the 7800basic.sh script: same stages, same arguments, but every
-// file lives in a Map instead of on disk. Works in a Web Worker and in Node.
-
 import {
   ConsoleStdout,
   Directory,
@@ -47,6 +43,8 @@ class StageError extends Error {
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
+// Runs the unmodified 7800basic wasm tools with the same stages and arguments
+// as 7800basic.sh, with every file in a Map instead of on disk.
 export class WasiBuilder implements Builder {
   readonly toolchainVersion: string;
   private readonly modules: Map<Tool, WebAssembly.Module>;

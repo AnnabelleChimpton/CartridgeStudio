@@ -1,9 +1,3 @@
-// Clips: a few seconds of the running game as an animated GIF, for posting.
-// Frames arrive as the console's palette indices, so there's no colour
-// quantising: the GIF's palette is just the colours the clip uses. Pixels that
-// didn't change since the last frame are left transparent, which keeps a
-// mostly still screen small.
-
 import { GIFEncoder } from "gifenc";
 
 export const CLIP_WIDTH = 320;
@@ -37,6 +31,7 @@ export function encodeClip(frames: Uint8Array[], { palette, delayMs, scale = 2 }
   const h = CLIP_HEIGHT * scale;
   const gif = GIFEncoder();
   const out = new Uint8Array(w * h);
+  // Pixels unchanged since the last frame are transparent, which keeps a still screen small.
   let prev: Uint8Array | null = null;
   for (const f of frames) {
     for (let y = 0; y < h; y++) {

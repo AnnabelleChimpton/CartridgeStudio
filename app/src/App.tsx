@@ -1,11 +1,3 @@
-// Cartridge Studio: pick what to make, then edit it while it runs. Kit games
-// (things, rooms and rules on one runtime) and code projects (game.bas by
-// hand, usually ejected from a kit game) each have their own editor, laid out
-// the same way: one job at a time in tabs on the left and the running game on
-// the right. Both rebuild the ROM 300 ms after every change and reload the
-// preview. Every game is kept in My games (project/persist.ts); starting or
-// opening one adds to it.
-
 import { useEffect, useState } from "react";
 import { CodeEditor } from "./code/CodeEditor.tsx";
 import { EjectDialog } from "./code/EjectDialog.tsx";

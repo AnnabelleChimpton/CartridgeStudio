@@ -1,14 +1,3 @@
-// Writes THIRD_PARTY_NOTICES.txt: every third-party component the app ships,
-// with its version, where its source is and its licence text in full.
-//
-//   node scripts/third-party-notices.mjs          write the file
-//   node scripts/third-party-notices.mjs --check  fail if the file is out of date
-//
-// Sources: package-lock.json for the npm packages bundled into the app (dev-only
-// and optional packages are left out), toolchain/toolchain.lock.json and the
-// fetched release for 7800basic and dasm (run `npm run setup` first), the
-// vendored js7800 core's README and licences, and the fonts' OFL files.
-
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

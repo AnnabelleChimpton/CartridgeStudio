@@ -1,14 +1,3 @@
-// Builds public/vendor/js7800-core/js7800-core.js: js7800's emulation core
-// (src/js/prosystem/*) as one ES module the emulator worker loads at runtime,
-// built from upstream source at the pinned commit with two worker-safe I/O
-// stand-ins (js7800's page-bound web/audio.js and web/mouse.js are swapped for
-// the ones in js7800-core/), then minified.
-//
-//   node scripts/build-js7800.mjs <work-dir>
-//
-// <work-dir> is either empty (js7800 is cloned there) or holds a previous
-// clone at the pinned commit.
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -22,6 +11,7 @@ const appDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const coreDir = path.join(appDir, "js7800-core");
 const outDir = path.join(appDir, "public/vendor/js7800-core");
 
+// Usage: node scripts/build-js7800.mjs <work-dir>, an empty dir or a clone at the pinned commit.
 const work = process.argv[2];
 if (!work) throw new Error("usage: node scripts/build-js7800.mjs <work-dir>");
 fs.mkdirSync(work, { recursive: true });
@@ -51,6 +41,7 @@ await build({
   resolve: { alias: { "@js7800": path.join(src, "src/js") } },
   plugins: [
     {
+      // js7800's own files stay untouched; these two page-bound modules are swapped at bundle time.
       name: "js7800-worker-stand-ins",
       enforce: "pre",
       resolveId(source, importer) {

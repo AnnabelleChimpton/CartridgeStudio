@@ -1,6 +1,3 @@
-// Runs every template's behaviour tests in MAME's a7800 driver. Skips, with a
-// message saying how to install it, when MAME isn't on this machine.
-
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";

@@ -1,7 +1,3 @@
-// The compiler sits behind this interface so the in-browser WASI build can be
-// swapped for the server-side fallback (SPEC.md, "Fallback if the spike fails")
-// without touching callers.
-
 export interface BuildInput {
   /** 7800basic source. */
   source: string;

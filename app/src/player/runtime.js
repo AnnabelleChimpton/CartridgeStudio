@@ -1,8 +1,4 @@
-// The offline player's runtime: plain JavaScript inlined into a one-file HTML
-// page with the ROM and the js7800 core (src/player/player.ts). It runs the
-// emulator on the page itself, so the file works when opened from a disk, a
-// phone or a smart TV's browser, with no server. Mirrors CoreHost
-// (src/emulator/core-host.ts) and the preview's input and audio.
+// Keep in step with src/emulator/core-host.ts.
 /* global JS7800, GAME */
 (function () {
   "use strict";

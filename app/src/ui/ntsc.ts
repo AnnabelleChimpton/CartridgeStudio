@@ -1,9 +1,6 @@
-// Approximate NTSC colors for 7800 palette values, for showing colors in the
-// editor. Computed, not copied from an emulator's palette file: high nibble is
-// hue (0 = gray, 1 = gold, 4 = red, 8 = blue, 13 = green), low nibble is luma.
-
 const cache = new Map<number, string>();
 
+// Computed rather than copied from an emulator's palette file.
 export function ntscRgb(value: number): [number, number, number] {
   const hue = (value >> 4) & 15;
   const luma = value & 15;

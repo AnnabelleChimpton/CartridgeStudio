@@ -1,6 +1,3 @@
-// Node-side setup for headless tests: the packed toolchain and the js7800
-// core, loaded once per test file.
-
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";

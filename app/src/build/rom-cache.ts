@@ -1,6 +1,3 @@
-// Build results cached in IndexedDB, keyed by a hash of everything that goes
-// into the compiler, so undo and redo reload instantly (SPEC.md, "How it runs").
-
 import { createStore, del, get, keys, set } from "idb-keyval";
 import type { BuildInput } from "@cartridge-studio/toolchain";
 

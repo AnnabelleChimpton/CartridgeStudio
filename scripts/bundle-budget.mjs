@@ -1,12 +1,3 @@
-// Checks the production build (app/dist, from `npm run build`) against size
-// budgets, so a heavy dependency or an accidental eager import shows up in the
-// nightly CI run instead of on a first visit over a slow connection.
-//
-//   node scripts/bundle-budget.mjs
-//
-// Sizes are gzip, as a server would send them. Raise a budget on purpose, in
-// the same change that needs it, and say why in the commit.
-
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

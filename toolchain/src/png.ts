@@ -1,8 +1,4 @@
-// Minimal, deterministic encoder for the 4-bit indexed PNGs that 7800basic's
-// `incgraphic` reads. Rows use the project format from SPEC.md: one string per
-// row, `0` transparent and `1`-`3` the sprite's three colors. The RGB values
-// are placeholders; console colors come from the palette registers.
-
+// Console colours come from the palette registers, so these are placeholders.
 const PLACEHOLDER_RGB = [
   [0, 0, 0],
   [255, 0, 0],

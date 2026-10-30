@@ -1,6 +1,3 @@
-// The kit starter games' behaviour tests (templates/kit/games/*.tests.json)
-// in MAME's a7800 driver, the same files the js7800 suite runs.
-
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";

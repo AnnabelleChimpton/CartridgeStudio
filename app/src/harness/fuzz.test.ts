@@ -1,8 +1,3 @@
-// Fuzz (SPEC.md, "Test layers"): random valid projects must build and run for
-// 600 frames without hanging, meaning the picture keeps changing. Seeded, so a
-// failure can be replayed: FUZZ_SEED=<seed> FUZZ_COUNT=1 npx vitest run fuzz.
-// Nightly runs set FUZZ_COUNT higher.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import { generate } from "../codegen/generate.ts";
@@ -12,6 +7,7 @@ import { NO_SOUND } from "../project/validate.ts";
 import { TEMPLATES } from "../project/templates.ts";
 import { nodeBuilder, nodeHost } from "./node.ts";
 
+// Replay a failure with FUZZ_SEED=<seed> FUZZ_COUNT=1 npx vitest run fuzz.
 const COUNT = Number(process.env.FUZZ_COUNT ?? 6);
 const SEED = Number(process.env.FUZZ_SEED ?? 20261016);
 

@@ -1,7 +1,3 @@
-// One build of a project: generate game.bas and graphics, then return the
-// cached ROM or run the toolchain. Shared by the build worker and the
-// measurement-only inline path.
-
 import type { Builder } from "@cartridge-studio/toolchain";
 import { generate } from "../codegen/generate.ts";
 import { generateKit } from "../kit/generate.ts";

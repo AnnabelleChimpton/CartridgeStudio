@@ -1,7 +1,7 @@
-// Template behaviour tests (SPEC.md, "Test layers"): scripted joystick input
-// against a ROM built from a project, with checks on game variables read from
-// RAM. Test files live in templates/<id>/tests/*.json and name variables by
-// the template's `watch` map, so the same files can drive other emulators.
+// Behaviour tests: scripted joystick input against a ROM built from a project,
+// with checks on game variables read from RAM. Test files live in
+// templates/<id>/tests/*.json and name variables by the template's `watch` map,
+// so the same files can drive other emulators.
 
 import { z } from "zod";
 import type { Builder } from "@cartridge-studio/toolchain";

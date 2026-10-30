@@ -1,6 +1,3 @@
-// Schema migrations run when a project is loaded. Each entry upgrades a
-// project from version n to n + 1. There is only schema 1 so far.
-
 import { CURRENT_SCHEMA } from "./schema.ts";
 
 type Migration = (project: Record<string, unknown>) => Record<string, unknown>;

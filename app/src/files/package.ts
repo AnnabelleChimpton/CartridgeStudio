@@ -1,9 +1,3 @@
-// The one package format (SPEC.md, "Exports"): everything a game leaves the
-// editor with, in one ZIP, described by manifest.json. A submission package
-// carries the print PDF and source too; a jam entry is the same package with
-// a `jam` block. Only the ROM is required, so code projects and games built
-// elsewhere can be packaged as well.
-
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod";
 import { slugify } from "./exports.ts";

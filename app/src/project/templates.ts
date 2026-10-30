@@ -1,6 +1,3 @@
-// Template registry. Template packages live in templates/<id>/ and are bundled
-// into the app at build time.
-
 import { z } from "zod";
 import { ManifestSchema, ProjectSchema, SoundEffectSchema, type SoundEffect, type Template } from "./schema.ts";
 import sfxLibrary from "@cartridge-studio/templates/sfx/library.json";

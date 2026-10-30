@@ -1,7 +1,3 @@
-// Validates a project against its template. Errors are written for creators:
-// they say what to fix, never how the engine works. A project that fails
-// validation is never turned into code.
-
 import type { Project, SoundEffect, Template, TemplateManifest } from "./schema.ts";
 import { ProjectSchema } from "./schema.ts";
 
