@@ -1,7 +1,3 @@
-// A quick 7800basic reference: the commands the kit runtime and the classic
-// shooter use, plus the common ones a game needs early. The summaries are
-// ours; the official guide has the full story.
-
 export const GUIDE_URL = "https://www.randomterrain.com/7800basic.html";
 export const REPO_URL = "https://github.com/7800-devtools/7800basic";
 
@@ -23,10 +19,10 @@ export const REFERENCE: RefEntry[] = [
   { topic: "Program", name: "labels", syntax: "<name>", summary: "A word at the very start of a line names that spot for goto and gosub. Statements must be indented by at least one space.", example: "mylabel" },
   { topic: "Program", name: ":", syntax: "<statement> : <statement>", summary: "Puts several statements on one line." },
   { topic: "Program", name: "set romsize", syntax: "set romsize <size>", summary: "Chooses the cartridge size, such as 32k, 48k or 128k (bank-switched sizes need bank statements).", example: " set romsize 32k" },
-  { topic: "Program", name: "set zoneheight", syntax: "set zoneheight <8|16>", summary: "How tall each display zone is. Sprites can cross zones; characters and maps line up with them.", example: " set zoneheight 16" },
+  { topic: "Program", name: "set zoneheight", syntax: "set zoneheight <8|16>", summary: "How tall each display zone is. Sprites can cross zones, but characters and maps line up with them.", example: " set zoneheight 16" },
   { topic: "Program", name: "set screenheight", syntax: "set screenheight <192|208|224>", summary: "How many visible lines the game uses.", example: " set screenheight 192" },
-  { topic: "Program", name: "displaymode", syntax: "displaymode <160A|160B|320A|…>", summary: "The graphics mode. 160A gives wide pixels with three colors plus transparent per palette, which is what Cartridge Studio draws.", example: " displaymode 160A" },
-  { topic: "Program", name: "asm … end", syntax: "asm\n <6502 assembly>\nend", summary: "Drops into assembly for speed. Indent the lines; end goes on its own line.", example: " asm\n nop\nend" },
+  { topic: "Program", name: "displaymode", syntax: "displaymode <160A|160B|320A|…>", summary: "The graphics mode. 160A gives wide pixels with three colours plus transparent per palette, which is what Cartridge Studio draws.", example: " displaymode 160A" },
+  { topic: "Program", name: "asm … end", syntax: "asm\n <6502 assembly>\nend", summary: "Drops into assembly for speed. Indent the lines, and put end on a line by itself.", example: " asm\n nop\nend" },
   { topic: "Program", name: "include", syntax: "include <file>", summary: "Pulls in an assembly helper file from 7800basic's includes." },
   { topic: "Program", name: "bank", syntax: "bank <n>", summary: "Starts the code for bank n in bank-switched ROMs." },
 
@@ -55,12 +51,12 @@ export const REFERENCE: RefEntry[] = [
   { topic: "Graphics", name: "newblock", syntax: "newblock", summary: "Starts a new graphics block when the current one is full." },
   { topic: "Graphics", name: "characterset", syntax: "characterset <graphic>", summary: "Picks the graphic used as the character set for plotchars, plotmap and plotvalue.", example: " characterset font" },
   { topic: "Graphics", name: "alphachars", syntax: "alphachars '<characters>'", summary: "Says which character each cell of the character set draws, in order." },
-  { topic: "Graphics", name: "PxCy", syntax: "P<0-7>C<1-3> = <color>", summary: "Palette registers: palette 0-7, colors 1-3. Values are console colors like $1C (hue in the high digit, brightness in the low).", example: " P0C1 = $0F : P0C2 = $86 : P0C3 = $46" },
-  { topic: "Graphics", name: "BACKGRND", syntax: "BACKGRND = <color>", summary: "The background color.", example: " BACKGRND = $00" },
+  { topic: "Graphics", name: "PxCy", syntax: "P<0-7>C<1-3> = <color>", summary: "Palette registers: palette 0-7, colours 1-3. Values are console colours like $1C (hue in the high digit, brightness in the low).", example: " P0C1 = $0F : P0C2 = $86 : P0C3 = $46" },
+  { topic: "Graphics", name: "BACKGRND", syntax: "BACKGRND = <color>", summary: "The background colour.", example: " BACKGRND = $00" },
 
   // Drawing
   { topic: "Drawing", name: "clearscreen", syntax: "clearscreen", summary: "Empties the display lists so this frame starts blank.", example: " clearscreen" },
-  { topic: "Drawing", name: "savescreen / restorescreen", syntax: "savescreen … restorescreen", summary: "Draw the background once and savescreen it; each frame, restorescreen brings it back, faster than drawing it again." },
+  { topic: "Drawing", name: "savescreen / restorescreen", syntax: "savescreen … restorescreen", summary: "Draw the background once and savescreen it. Each frame, restorescreen brings it back, faster than drawing it again." },
   { topic: "Drawing", name: "plotsprite", syntax: "plotsprite <graphic> <palette> <x> <y> [frame]", summary: "Draws a graphic at x, y in a palette. The optional frame picks the n-th graphic imported after it, for animation.", example: " plotsprite mysprite 0 x y" },
   { topic: "Drawing", name: "plotsprite4", syntax: "plotsprite4 <graphic> <palette> <x> <y> [frame]", summary: "Like plotsprite but with smaller display objects: a little quicker, and more of them fit on a line. Mixing graphics modes can upset it." },
   { topic: "Drawing", name: "plotchars", syntax: "plotchars '<text>' <palette> <x> <y>", summary: "Draws text (or a data label) with the current character set at screen position x, y.", example: " plotchars 'HELLO' 0 8 5" },

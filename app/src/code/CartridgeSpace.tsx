@@ -1,6 +1,3 @@
-// How full the cartridge is, from the compiler's own report: ROM left in each
-// area, each graphics block, and the zone, stack and reserved-RAM figures.
-
 import { romBytes } from "../ui/build-status.ts";
 import type { BuildStats } from "./build-log.ts";
 

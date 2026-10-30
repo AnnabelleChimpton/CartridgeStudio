@@ -1,6 +1,3 @@
-// The 7800basic quick reference: search, read, insert an example at the
-// cursor. The official guide is a link away for everything else.
-
 import { useId, useState } from "react";
 import { GUIDE_URL, REPO_URL, TOPICS, searchReference } from "./reference.ts";
 

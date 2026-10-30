@@ -1,11 +1,3 @@
-// Finds the lines the kit generator wrote for one rule or one thing, from the
-// markers it leaves in game.bas: `rem rule N: …` and the ruleN… labels for
-// a rule, `rem <label>` (and `rem <label> frame 2`) for a thing's graphics and
-// draw loop, `rem ---- <label>: …` for its movement, `rem P<n>: <labels>`
-// for its colors. Reading the output keeps this independent of the generator's
-// internals. (generateKit also returns exact source spans from its IR,
-// `KitResult.spans`, keyed on rule and thing ids, for a future switch.)
-
 /** What the kit editor has selected. Rules count from 1, as the markers do. */
 export type CodeRef = { rule: number } | { thing: string; palette?: string };
 

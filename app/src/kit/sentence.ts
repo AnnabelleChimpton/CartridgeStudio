@@ -1,7 +1,3 @@
-// Rules as plain sentences: for the print kit's manual, the generated code's
-// rem lines, and any rule the rule editor can't change yet (it shows the
-// sentence instead). Every rule the schema allows has a sentence.
-
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { SCORE, SECONDS, type KitAction, type KitCompare, type KitGame, type KitRule, type KitTarget, type KitTrigger, type KitValue } from "./schema.ts";
 import { itTypes, stateDefault, triggerThing } from "./ir.ts";
@@ -130,8 +126,10 @@ export function ruleSentence(r: KitRule, g: KitGame): string {
     return `run your code "${a.run}"`;
   };
   const only = r.if?.length ? `, only if ${r.if.map(compare).join(" and ")}` : "";
-  const lead = "every" in w ? "" : fires === "while" && !("touch" in w || "onTile" in w) ? "While " : "When ";
-  const once = fires === "once" && ("touch" in w || "onTile" in w) ? " (once)" : "";
+  const lead = "every" in w ? "" : "When ";
+  // The trigger's usual way of firing goes unsaid.
+  const usual = stateDefault(w);
+  const mode = fires && usual && fires !== usual ? (fires === "while" ? " the whole time" : " the first time") : "";
   const whenText = "every" in w ? when.charAt(0).toUpperCase() + when.slice(1) : when;
-  return `${lead}${whenText}${once}${only}: ${list(r.then.map(action))}.`;
+  return `${lead}${whenText}${mode}${only}, ${list(r.then.map(action))}.`;
 }

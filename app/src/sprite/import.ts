@@ -1,12 +1,3 @@
-// Turns a picture into a 160A sprite frame: crop it to the sprite's shape,
-// take away the background, shrink it and reduce it to three colors plus
-// transparent. Pure maths on RGBA pixel arrays, so it runs in Node tests; the
-// dialog (ImportPicture.tsx) does the decoding and drawing.
-//
-// 160A pixels are twice as wide as they are tall, so a sprite W pixels wide
-// shows 2W wide. Crops keep that shape (2W:H) and each sprite pixel averages a
-// 2:1 patch of the picture.
-
 import { ntscRgb, toColor } from "../ui/ntsc.ts";
 import type { Frame, PixelValue } from "./pixels.ts";
 

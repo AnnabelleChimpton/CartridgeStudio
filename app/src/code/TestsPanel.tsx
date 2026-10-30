@@ -1,9 +1,3 @@
-// Creator tests (Coder tier): "Record a check" restarts the game from
-// power-on and records the joystick while you play; then you say what should
-// be true at that moment ("score is at least 50"). Every build runs every
-// test in a worker and shows which pass, and the frame a failing one failed
-// on. The tests are saved as tests.json beside the game (creator-tests.ts).
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Recording } from "../emulator/protocol.ts";
 import type { WatchMap } from "../harness/behaviour.ts";

@@ -1,20 +1,9 @@
-// The Code tab of the kit editor: the game as 7800basic, read
-// only. On the left, the game's things and rules; picking one marks the lines
-// it becomes. Lines the last edit changed are marked too. Below: how full the
-// cartridge is, the ROM and source downloads, and the build log. "Edit as
-// code" ejects to a code project.
-//
-// Hook regions (editable islands in the generated code) will slot into the
-// same view: the editor already takes line ranges, and only those ranges
-// would be editable.
-
 import { useId, useMemo, type ReactNode } from "react";
 import { LazyBasicEditor } from "./LazyBasicEditor.tsx";
 import type { GraphicThumbs, LineRange } from "./BasicEditor.tsx";
 import { CartridgeSpace } from "./CartridgeSpace.tsx";
 import { parseBuildLog, type BuildProblem } from "./build-log.ts";
 import { markedLines, type CodeRef } from "./markers.ts";
-import { RomDownloads } from "./RomDownloads.tsx";
 import { failureHeadline } from "../ui/PreviewPanel.tsx";
 import type { Preview } from "../ui/usePreview.ts";
 import "./code.css";
@@ -22,8 +11,6 @@ import "./code.css";
 export interface CodeJump {
   key: string;
   name: string;
-  /** A longer description (a rule's sentence). */
-  detail?: string;
   ref: CodeRef;
 }
 
@@ -78,7 +65,7 @@ export function CodeTier({ preview, title, jumps, selected, onSelect, changed, g
       {failed && (
         <div className="code-ours" role="alert">
           {failureHeadline(failed.stage)} Your game is saved{lastGood ? ", and the last good build still plays." : "."} The kit wrote code the
-          toolchain refused, which is a Cartridge Studio bug. Press Undo to take back your last change; the build log below has the details.
+          toolchain refused, which is a Cartridge Studio bug. Press Undo to take back your last change. The build log below has the details.
           {problems.length > 0 && " The toolchain's complaints are marked in the code."}
         </div>
       )}
@@ -94,7 +81,6 @@ export function CodeTier({ preview, title, jumps, selected, onSelect, changed, g
                       <li key={j.key}>
                         <button type="button" className={`code-jump ${selected === j.key ? "active" : ""}`} aria-pressed={selected === j.key} onClick={() => onSelect(j.key)}>
                           <span>{j.name}</span>
-                          {j.detail && <span className="muted small">{j.detail}</span>}
                         </button>
                       </li>
                     ))}
@@ -126,7 +112,6 @@ export function CodeTier({ preview, title, jumps, selected, onSelect, changed, g
       <CartridgeSpace stats={lastGood?.stats} source={source} />
       {meter}
       <div className="toolbar">
-        <RomDownloads preview={preview} title={title} />
         <button type="button" className="secondary" title="game.bas, its graphics and build scripts, for 7800basic" disabled={!lastGood} onClick={onExportSource}>
           Export source
         </button>

@@ -1,7 +1,3 @@
-// Main-thread side of the creator-test worker. Only the latest run matters:
-// a new build or a new test terminates a run still going and starts afresh,
-// and a run that takes too long (a test that waits forever) is stopped.
-
 import type { TestsFile, TestResult } from "./creator-tests.ts";
 import type { TestsRequest, TestsResponse } from "./tests.worker.ts";
 
@@ -53,7 +49,7 @@ export class TestsRunner {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         if (this.inFlight?.id !== id) return;
-        this.finish({ kind: "error", message: `The test run passed ${this.timeoutMs / 1000} s and was stopped. Your tests are saved; one may wait on a value that never comes.` });
+        this.finish({ kind: "error", message: `The test run passed ${this.timeoutMs / 1000} s and was stopped. Your tests are saved. One may wait on a value that never comes.` });
         worker.terminate();
         if (this.worker === worker) this.worker = null;
       }, this.timeoutMs);

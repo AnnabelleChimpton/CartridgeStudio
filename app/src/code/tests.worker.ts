@@ -1,8 +1,4 @@
 /// <reference lib="webworker" />
-// Creator tests run here, on a headless js7800 core of their own, so a long
-// test never holds up the editor or the preview. The main thread cancels a run
-// by terminating this worker (tests-runner.ts).
-
 import { CoreHost, type Js7800Core } from "../emulator/core-host.ts";
 import { runCreatorTests, type TestsFile, type TestResult } from "./creator-tests.ts";
 

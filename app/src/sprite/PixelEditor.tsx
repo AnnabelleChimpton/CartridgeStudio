@@ -1,12 +1,10 @@
-// Pixel editor for one sprite, independent of where the sprite lives. It only
-// allows what 160A can show: three colors plus transparent at a fixed size,
-// drawn 2:1 wide as on screen. Each stroke is one undo step (one edit key).
-
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { arrowKeys, drawCursor, radioProps, tabProps, useGridKeyboard } from "../ui/a11y.ts";
 import { colorName as paletteName, ntscCss } from "../ui/ntsc.ts";
 import { paint } from "../ui/tokens.ts";
+import { ColorPicker } from "../ui/ColorPicker.tsx";
 import { ImportPicture } from "./ImportPicture.tsx";
+import "./pixel-editor.css";
 import {
   clearFrame,
   floodFill,
@@ -21,7 +19,8 @@ import {
 
 type Tool = "pencil" | "fill";
 
-const MAX_CELL_HEIGHT = 32;
+/** Widest a sprite pixel is drawn, in CSS pixels (it's half as tall). */
+const MAX_CELL_WIDTH = 28;
 
 let strokeCounter = 0;
 
@@ -30,11 +29,13 @@ export interface PixelEditorProps {
   width: number;
   height: number;
   frames: Frame[];
-  /** Palette values (`$3A`) for colors 1-3. */
+  /** Palette values (`$3A`) for colours 1-3. */
   colors: readonly string[];
+  /** Adds "Edit colours" after the chips, for the chip being drawn with; `note` sits beside it. */
+  editColours?: { onChange: (index: number, colour: string) => void; note?: ReactNode };
   /** Applies a change to one frame; `key` groups a stroke into one undo step. */
   onFrame: (index: number, next: (f: Frame) => Frame, key?: string) => void;
-  /** Extra controls next to the color and tool pickers (e.g. a palette choice). */
+  /** Extra controls next to the colour and tool pickers (e.g. a palette choice). */
   toolbarExtra?: ReactNode;
   /** Extra controls on the frames row (e.g. turning animation on or off). */
   framesExtra?: ReactNode;
@@ -50,7 +51,7 @@ export interface PixelEditorProps {
   resize?: { widths: readonly number[]; heights: readonly number[]; apply: (width: number, height: number, key: string) => void };
 }
 
-export function PixelEditor({ label, width, height, frames, colors, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360, setColors, resize }: PixelEditorProps) {
+export function PixelEditor({ label, width, height, frames, colors, editColours, onFrame, toolbarExtra, framesExtra, hint, maxWidth = 360, setColors, resize }: PixelEditorProps) {
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState<PixelValue>(1);
   const [frameIndex, setFrameIndex] = useState(0);
@@ -87,7 +88,7 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
   const cursor = grid.cursor;
 
   // Cell size: 160A pixels are twice as wide as they are tall.
-  const cellH = Math.max(4, Math.min(MAX_CELL_HEIGHT, Math.floor(maxWidth / (width * 2))));
+  const cellH = Math.max(4, Math.min(MAX_CELL_WIDTH / 2, Math.floor(maxWidth / (width * 2))));
   const cellW = cellH * 2;
   const canvasW = width * cellW;
   const canvasH = height * cellH;
@@ -167,13 +168,19 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
               type="button"
               {...radioProps(color === v)}
               aria-label={v === 0 || !colors[v - 1] ? colorName(v) : `Color ${v}: ${paletteName(colors[v - 1]!)}`}
-              title={v === 0 ? "Transparent (or right-click)" : colors[v - 1] ? `Color ${v}: ${paletteName(colors[v - 1]!)}` : `Color ${v}`}
+              title={v === 0 ? "Transparent (or right-click)" : colors[v - 1] ? `Colour ${v}: ${paletteName(colors[v - 1]!)}` : `Colour ${v}`}
               className={`se-color ${v === 0 ? "transparent" : ""} ${color === v ? "selected" : ""}`}
               style={{ background: swatch(v) }}
               onClick={() => setColor(v)}
             />
           ))}
         </div>
+        {editColours && color > 0 && colors[color - 1] && (
+          <span className="edit-colours">
+            <ColorPicker value={colors[color - 1]!} label={`Edit colours, colour ${color}`} onChange={(c) => editColours.onChange(color - 1, c)} />
+          </span>
+        )}
+        {editColours?.note}
         <div className="se-group" role="radiogroup" aria-label="Tool" onKeyDown={arrowKeys("radio")}>
           {(["pencil", "fill"] as Tool[]).map((t) => (
             <button
@@ -245,7 +252,7 @@ export function PixelEditor({ label, width, height, frames, colors, onFrame, too
         </span>
       </div>
       <p className="muted small keys-hint" id={`${ids}-keys`}>
-        Keyboard: arrows move, Space draws, Shift+arrows draw lines, Delete erases, 0–3 pick a color.
+        Keyboard: arrows move, Space draws, Shift+arrows draw lines, Delete erases, 0–3 pick a colour. Right-click also erases.
       </p>
 
       <div className="se-toolbar">

@@ -1,8 +1,3 @@
-// Reads back the 4-bit indexed PNGs our generators write (encodeIndexedPng in
-// @cartridge-studio/toolchain), so ejecting a game turns its graphics into
-// editable rows again. Only that format: bit depth 4, color type 3, no
-// interlace, filter 0 on every row.
-
 import { unzlibSync } from "fflate";
 
 export function decodeIndexedPng(png: Uint8Array): string[] {

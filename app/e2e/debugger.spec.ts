@@ -1,7 +1,3 @@
-// The Coder tier's debugger drawer and creator tests: step a paused game and
-// watch a variable change; record a check by playing, then break the game and
-// see the check fail on the next build. Both panels pass axe.
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
@@ -23,7 +19,7 @@ async function eject(page: Page) {
   await codeTab(page);
   await page.getByRole("button", { name: "Edit as code…" }).click();
   await page.getByRole("dialog", { name: /as code\?/ }).getByRole("button", { name: "Make a code project" }).click();
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 }
 
@@ -112,7 +108,8 @@ test("eject Ghost Panic, pause, step 10 frames, watch score change", async ({ pa
 
 test("record a check, break the game, see the check fail", async ({ page }) => {
   await ghostPanic(page);
-  await codeTab(page);
+  await eject(page);
+  await page.getByRole("tab", { name: "Tests" }).click();
   const tests = page.getByTestId("creator-tests");
   await tests.getByRole("button", { name: "Record a check" }).click();
   // Recording restarts the game and hands it the keyboard.
@@ -142,10 +139,10 @@ test("record a check, break the game, see the check fail", async ({ page }) => {
   await expect(tests.getByTestId("tests-summary")).toHaveText("All 1 test passes.");
   expect(await axe(page), "tests passing").toEqual([]);
 
-  // Break the game: the yarn ball next to the cat is gone.
+  // Break the game: a yarn ball scores nothing.
   await page.evaluate(() =>
-    window.__cs!.kitStore!.getState().edit((d) => {
-      d.room.rows[1] = d.room.rows[1]!.replace("P  y", "P   ");
+    window.__cs!.codeStore!.getState().edit((d) => {
+      d.source = d.source.replace(" score0 = score0 + 10\n", " rem score0 = score0 + 10\n");
     }),
   );
   await expect(item.locator(".test-state")).toHaveText("Fail", { timeout: 60_000 });
@@ -154,12 +151,12 @@ test("record a check, break the game, see the check fail", async ({ page }) => {
   expect(await axe(page), "tests failing").toEqual([]);
 
   // Undo the break: it passes again.
-  await page.evaluate(() => window.__cs!.kitStore!.getState().undo());
+  await page.evaluate(() => window.__cs!.codeStore!.getState().undo());
   await expect(item.locator(".test-state")).toHaveText("Pass", { timeout: 60_000 });
 
   // The test is kept with the game: it's there after a reload.
   await page.reload();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
-  await codeTab(page);
+  await page.getByRole("tab", { name: "Tests" }).click();
   await expect(page.getByTestId("test-list").getByRole("listitem")).toContainText("Eats the first yarn");
 });

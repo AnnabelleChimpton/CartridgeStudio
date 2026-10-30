@@ -848,7 +848,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.
+ rem rule 1: When Cat touches Yarn ball, remove the Yarn ball, add 10 points and play Blip.
 rule1
  oi = 0
  if otype[oi] <> T_CAT then goto rule1_ni
@@ -866,7 +866,7 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Cat touches Catnip: remove the Catnip, set Combo to 0, turn every Dust ghost into a
+ rem rule 2: When Cat touches Catnip, remove the Catnip, set Combo to 0, turn every Dust ghost into a
  rem   Scared ghost for 6 seconds, turn every Fast ghost into a Scared ghost for 6 seconds and play
  rem   Rising tone.
 rule2
@@ -886,7 +886,7 @@ rule2_nj_2
 rule2_ni
 rule2_end
 
- rem rule 3: When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.
+ rem rule 3: When Cat touches Scared ghost, only if Combo is at least 1, add 300 points and play Chime.
 rule3
  if c_combo < 1 then goto rule3_end
  oi = 0
@@ -905,7 +905,7 @@ rule3_nj_5
 rule3_ni
 rule3_end
 
- rem rule 4: When Cat touches Scared ghost: add 1 to Combo, add 200 points, turn the Scared ghost into a
+ rem rule 4: When Cat touches Scared ghost, add 1 to Combo, add 200 points, turn the Scared ghost into a
  rem   Dust ghost, send the Scared ghost back to start and play Boom.
 rule4
  oi = 0
@@ -924,7 +924,7 @@ rule4_nj_6
 rule4_ni
 rule4_end
 
- rem rule 5: When Cat touches Dust ghost: take 1 from Lives, send every Cat back to start, protect every
+ rem rule 5: When Cat touches Dust ghost, take 1 from Lives, send every Cat back to start, protect every
  rem   Cat for 1.5 seconds and play Falling tone.
 rule5
  oi = 0
@@ -943,7 +943,7 @@ rule5_nj_7
 rule5_ni
 rule5_end
 
- rem rule 6: When a Cat is on spikes: take 1 from Lives, send every Cat back to start, protect every Cat
+ rem rule 6: When a Cat is on spikes, take 1 from Lives, send every Cat back to start, protect every Cat
  rem   for 1.5 seconds and play Crash.
 rule6
  if oddframe = 0 then goto rule6_end
@@ -964,7 +964,7 @@ rule6_hit
 rule6_next
 rule6_end
 
- rem rule 7: When Cat touches Fast ghost: take 1 from Lives, send every Cat back to start, protect every
+ rem rule 7: When Cat touches Fast ghost, take 1 from Lives, send every Cat back to start, protect every
  rem   Cat for 1.5 seconds and play Falling tone.
 rule7
  oi = 0
@@ -983,7 +983,7 @@ rule7_nj_13
 rule7_ni
 rule7_end
 
- rem rule 8: Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.
+ rem rule 8: Every 15 seconds, turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.
 rule8
  if secondtick <> 0 then goto rule8_end
  ev8 = ev8 - 1
@@ -993,7 +993,7 @@ rule8
  if ruleexit then return
 rule8_end
 
- rem rule 9: When the number of Yarn balls is 0: play Chime, add 1 to Level and start the room again.
+ rem rule 9: When the number of Yarn balls is 0, play Chime, add 1 to Level and start the room again.
 rule9
  if oddframe = 0 then goto rule9_end
  tmp2 = 0
@@ -1010,7 +1010,7 @@ rule9_off
  latches{0} = 0
 rule9_end
 
- rem rule 10: When Level is at least 4: win the game.
+ rem rule 10: When Level is at least 4, win the game.
 rule10
  if oddframe = 0 then goto rule10_end
  if levelnum < 4 then goto rule10_off
@@ -1023,7 +1023,7 @@ rule10_off
  latches{1} = 0
 rule10_end
 
- rem rule 11: When Lives is 0: lose the game.
+ rem rule 11: When Lives is 0, lose the game.
 rule11
  if oddframe = 0 then goto rule11_end
  if lives <> 0 then goto rule11_off
@@ -1039,7 +1039,7 @@ rule11_end
  return
 
  rem ---- rules run by other code: room start, created, destroyed, timer out ----
- rem rule 12: When the room starts, only if Level is at least 3: set Pace to 1.
+ rem rule 12: When the room starts, only if Level is at least 3, set Pace to 1.
 rule12
  if levelnum < 3 then return
  gosub rule12_do

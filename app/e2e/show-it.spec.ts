@@ -129,7 +129,7 @@ test("kit games print a box and manual; Show it packs everything with source", a
   await start(page);
   await showIt(page).getByRole("button", { name: /^Print the box/ }).click();
   const dialog = page.getByRole("dialog", { name: "Print the box" });
-  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip: remove the Catnip/);
+  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip, remove the Catnip/);
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(pdf.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");

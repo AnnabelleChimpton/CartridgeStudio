@@ -1,8 +1,3 @@
-// A game's creator tests in the editor: loaded from My games when the game
-// opens, saved on every change, and run again in a worker whenever a new build
-// is in the preview or the tests change. Lives in the editor, not the panel,
-// so results keep coming while another tab is open.
-
 import { useEffect, useRef, useState } from "react";
 import { loadTests, saveTests } from "../project/persist.ts";
 import type { Preview } from "../ui/usePreview.ts";

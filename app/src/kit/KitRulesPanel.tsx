@@ -1,17 +1,4 @@
-// Rules for kit games: "When <trigger>, only if <conditions>, <actions>",
-// over the game's own things and counters. Only valid combinations are
-// offered (e.g. "the second thing" only exists when two things touch), and
-// the rarer parts ("only if", "for N seconds") appear when asked for.
-//
-// Targets ("the Cat", "every Ghost whose x is less than 80", "the nearest
-// Rock", "a random Bomb") and values (a number, a counter, a thing's
-// property, how many there are, a random number, the joystick, facing, with
-// modifiers) have pickers of their own. The editor recognises the shapes it
-// can edit; the rest (rooms, "any", button 2 and the like) show as their
-// sentence, still in the game and movable. Lists are keyed on the rules'
-// stable ids, so focus and drag state stay with the right rule.
-
-import { useEffect, useId, useRef, useState } from "react";
+import { Children, Fragment, cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { SOUND_LIBRARY } from "../project/templates.ts";
 import { act, isPlayer, loseLife, moveRule, newId, newMessage, newRule, nextLevel } from "./edit.ts";
 import { triggerThing } from "./ir.ts";
@@ -145,7 +132,7 @@ const PLACES = [
 const POINTS = [10, 20, 50, 100, 200, 300, 500];
 const FIRES = [
   { fires: "while", label: "the whole time" },
-  { fires: "once", label: "once each time" },
+  { fires: "once", label: "the first time" },
 ] as const;
 const PROP_LABELS: Record<Prop, string> = { x: "x", y: "y", vx: "speed across", vy: "speed down", facing: "facing (0 to 7)", a: "a", b: "b", timer: "timer" };
 const WALL_SIDE: Record<(typeof SIDES)[number], string> = { left: "on the left", right: "on the right", top: "above", bottom: "below" };
@@ -153,6 +140,32 @@ const DEFAULT_FILTER: KitCompare = { a: { prop: "x", of: "target" }, op: "lt", b
 
 /** Sizes a select to its chosen option, so rules read as sentences without cut-off words. */
 const fit = (text: string) => ({ width: `calc(${text.length}ch + 36px)` });
+
+const isTool = (n: ReactNode) => isValidElement<{ className?: unknown }>(n) && typeof n.props.className === "string" && n.props.className.split(" ").includes("rule-tool");
+/** An action's controls as one flat list, fragments opened up. */
+function flat(node: ReactNode, key = ""): ReactNode[] {
+  return Children.toArray(node).flatMap((c, i) =>
+    isValidElement<{ children?: ReactNode }>(c) && c.type === Fragment
+      ? flat(c.props.children, `${key}${i}.`)
+      : [isValidElement(c) ? cloneElement(c as ReactElement, { key: `${key}${i}` }) : c],
+  );
+}
+/** Ends the sentence: the last word and its full stop stay on one line. */
+function endSentence(node: ReactNode): ReactNode {
+  const kids = flat(node);
+  let last = kids.length - 1;
+  while (last >= 0 && isTool(kids[last])) last--;
+  const stop = <span className="kw">.</span>;
+  if (last < 0) return [...kids, <Fragment key="stop">{stop}</Fragment>];
+  return [
+    ...kids.slice(0, last),
+    <span key="end" className="nowrap">
+      {kids[last]}
+      {stop}
+    </span>,
+    ...kids.slice(last + 1),
+  ];
+}
 
 const isCounterValue = (v: unknown): v is { counter: string } => typeof v === "object" && v !== null && Object.keys(v).length === 1 && "counter" in v;
 const isCountValue = (v: unknown): v is { count: string } => typeof v === "object" && v !== null && Object.keys(v).length === 1 && "count" in v;
@@ -468,15 +481,17 @@ function ValueField({
     return (
       <>
         <input type="number" className="num fit" aria-label={label} min={min} max={max} value={value} onChange={(e) => onChange(typed(e.target.value, min, max), key)} />
-        <button
-          type="button"
-          className="icon"
-          aria-label={`Read a value instead: ${of}, ${name}`}
-          title="Use a counter, a thing's property, how many there are, or a random number instead"
-          onClick={() => onChange(game.counters.length ? { counter: game.counters.find((c) => c.id !== "lives")?.id ?? game.counters[0]!.id } : { random: 9 })}
-        >
-          ƒ
-        </button>
+        <span className="rule-tool">
+          <button
+            type="button"
+            className="link"
+            aria-label={`Read a value instead: ${of}, ${name}`}
+            title="Use a counter, a thing's property, how many there are, or a random number instead"
+            onClick={() => onChange(game.counters.length ? { counter: game.counters.find((c) => c.id !== "lives")?.id ?? game.counters[0]!.id } : { random: 9 })}
+          >
+            counter…
+          </button>
+        </span>
       </>
     );
   }
@@ -571,15 +586,23 @@ function ValueField({
           <input type="number" className="num fit" aria-label={`Plus: ${of}, ${name}`} min={-128} max={255} value={mods.plus ?? 0} onChange={(e) => set({ plus: typed(e.target.value, -128, 255) }, `${key}:plus`)} />
         </>
       ) : (
-        <button type="button" className="icon" aria-label={`Adjust: ${of}, ${name}`} title="Multiply, divide, reverse or add to it" onClick={() => setAdjusting(true)}>
-          ±
-        </button>
+        <span className="rule-tool">
+          <button type="button" className="link" aria-label={`Adjust: ${of}, ${name}`} title="Multiply, divide, reverse or add to it" onClick={() => setAdjusting(true)}>
+            adjust…
+          </button>
+        </span>
       )}
     </span>
   );
 }
 
-export function KitRulesPanel() {
+interface Props {
+  /** The rule being worked on, by index: its tools show. */
+  selected?: number | null;
+  onSelect?: (index: number) => void;
+}
+
+export function KitRulesPanel({ selected = null, onSelect }: Props) {
   const game = useKitStore((s) => s.project);
   const edit = useKitStore((s) => s.edit);
   const ids = useId();
@@ -607,6 +630,7 @@ export function KitRulesPanel() {
     if (to < 0 || to >= game.rules.length || from === to) return;
     edit((d) => moveRule(d, from, to));
     if (focus) focusAfterMove.current = to;
+    onSelect?.(to);
     setMoved(`Rule ${from + 1} is now rule ${to + 1}.`);
   };
 
@@ -673,6 +697,7 @@ export function KitRulesPanel() {
     const left = game.rules.length - 1;
     edit((d) => void d.rules.splice(i, 1));
     setMoved(`Rule ${i + 1} deleted. Undo brings it back.`);
+    if (left > 0) onSelect?.(Math.min(i, left - 1));
     requestAnimationFrame(() => {
       const next = left > 0 ? list.current?.querySelector<HTMLElement>(`[data-rule-handle="${Math.min(i, left - 1)}"]`) : null;
       (next ?? addButton.current)?.focus();
@@ -682,10 +707,7 @@ export function KitRulesPanel() {
   return (
     <section className="panel" aria-labelledby="kit-rules-h">
       <h2 id="kit-rules-h" className="visually-hidden">Rules</h2>
-      <p className="muted lead">
-        Rules say what happens in your game. Each one reads as a sentence: change any underlined word. Rules run from the top, so order can
-        matter.
-      </p>
+      <p className="muted lead">Rules run top to bottom. Click an underlined word to change it.</p>
       <p id={`${ids}-move`} className="visually-hidden">
         Drag the handle to move a rule, or focus it and press the up and down arrows.
       </p>
@@ -751,24 +773,30 @@ export function KitRulesPanel() {
               setOver(null);
             },
           };
-          const liClass = `rule${dragging === i ? " dragging" : ""}${over === i && dragging !== i ? " drop-target" : ""}`;
+          const liClass = `rule${selected === i ? " is-selected" : ""}${dragging === i ? " dragging" : ""}${over === i && dragging !== i ? " drop-target" : ""}`;
+          const num = (
+            <span className="rule-num" aria-hidden="true">
+              {n}
+            </span>
+          );
+          const ends = (
+            <span className="rule-tool rule-ends">
+              {handle}
+              <button type="button" className="link danger" aria-label={`Delete rule ${n}`} onClick={() => deleteRule(i)}>
+                Delete
+              </button>
+            </span>
+          );
 
           if (!editableRule(rule)) {
             return (
               <li key={rule.id} className={liClass} {...dropProps}>
                 <div className="rule-row">
-                  {handle}
+                  {num}
                   <p className="rule-sentence readonly">{ruleSentence(rule, game)}</p>
+                  {ends}
                 </div>
-                <div className="rule-tools">
-                  <span className="muted small">
-                    This rule uses words the rule editor can't change yet (coming soon). It works in the game, and you can move or delete it.
-                  </span>
-                  <span className="spacer" />
-                  <button type="button" className="link danger" onClick={() => deleteRule(i)}>
-                    Delete rule {n}
-                  </button>
-                </div>
+                <p className="muted small rule-note">The rule editor can't change this one yet. It still works in the game.</p>
               </li>
             );
           }
@@ -871,15 +899,19 @@ export function KitRulesPanel() {
             value.where ? (
               <span className="rule-action">
                 <span className="kw">whose</span>
-                {compareField(value.where, `${of} filter`, ["property", "value"], whoseHere(value, "its"), (where, key) => onChange({ ...value, where }), OPS)}
-                <button type="button" className="icon" aria-label={`Every one: ${of}`} title="Every one, not only some" onClick={() => onChange({ every: value.every })}>
-                  ×
-                </button>
+                {compareField(value.where, `${of} filter`, ["property", "value"], whoseHere(value, "its"), (where) => onChange({ ...value, where }), OPS)}
+                <span className="rule-tool">
+                  <button type="button" className="icon" aria-label={`Every one: ${of}`} title="Every one, not only some" onClick={() => onChange({ every: value.every })}>
+                    ×
+                  </button>
+                </span>
               </span>
             ) : (
-              <button type="button" className="link small" aria-label={`${of}: whose…`} onClick={() => onChange({ ...value, where: DEFAULT_FILTER })}>
-                + whose…
-              </button>
+              <span className="rule-tool">
+                <button type="button" className="link small" aria-label={`${of}: whose…`} onClick={() => onChange({ ...value, where: DEFAULT_FILTER })}>
+                  + whose…
+                </button>
+              </span>
             );
           /** What set, add and take change: a counter ("Keys") or a thing's property ("x of the Cat"). */
           const settableField = (what: KitSettable, of: string, verb: "set" | "add" | "take", onChange: (s: KitSettable) => void) => {
@@ -939,14 +971,18 @@ export function KitRulesPanel() {
                 <span className="kw">for</span>
                 {numInput(value, `${label} seconds`, 1, 25, set)}
                 <span className="kw">seconds</span>
-                <button type="button" className="icon" aria-label={`${label}: for good`} title="Keep it changed for good" onClick={() => set(undefined)}>
-                  ×
-                </button>
+                <span className="rule-tool">
+                  <button type="button" className="icon" aria-label={`${label}: for good`} title="Keep it changed for good" onClick={() => set(undefined)}>
+                    ×
+                  </button>
+                </span>
               </>
             ) : (
-              <button type="button" className="link small" aria-label={`${label}: only for some seconds`} onClick={() => set(5)}>
-                + for some seconds
-              </button>
+              <span className="rule-tool">
+                <button type="button" className="link small" aria-label={`${label}: only for some seconds`} onClick={() => set(5)}>
+                  + for some seconds
+                </button>
+              </span>
             );
           const firstThing = ONE_THING.includes(kind) ? thingOf(w, "it", game) ?? ("test" in w && isCountValue(w.test.a) ? w.test.a.count : null) : null;
           const setFirstThing = (id: string) =>
@@ -965,7 +1001,7 @@ export function KitRulesPanel() {
           return (
             <li key={rule.id} className={liClass} {...dropProps}>
               <div className="rule-row">
-                {handle}
+                {num}
                 <p className="rule-sentence">
                   <span className="kw">When</span>
                   {"touch" in w && thingSelect(w.touch[0], `Rule ${n} first thing`, (id) => setRule(i, (r, d) => ("touch" in r.when && (r.when.touch[0] = id), fitActions(r, d))))}
@@ -998,20 +1034,22 @@ export function KitRulesPanel() {
                   </select>
                   {"touch" in w && thingSelect(w.touch[1], `Rule ${n} second thing`, (id) => setRule(i, (r, d) => ("touch" in r.when && (r.when.touch[1] = id), fitActions(r, d))))}
                   {("touch" in w || "onTile" in w) && (
-                    <select
-                      aria-label={`Rule ${n} fires`}
-                      className="fit"
-                      style={fit(FIRES.find((f) => f.fires === (rule.fires ?? "while"))!.label)}
-                      value={rule.fires ?? "while"}
-                      // "while" is what touching and tiles do by default, so it isn't written down.
-                      onChange={(e) => setRule(i, (r) => void (e.target.value === "once" ? (r.fires = "once") : delete r.fires))}
-                    >
-                      {FIRES.map((f) => (
-                        <option key={f.fires} value={f.fires}>
-                          {f.label}
-                        </option>
-                      ))}
-                    </select>
+                    // "while" is what touching and tiles do by default: not written down, and only shown while the rule is worked on.
+                    <span className={rule.fires === "once" ? "rule-slot" : "rule-tool"}>
+                      <select
+                        aria-label={`Rule ${n} fires`}
+                        className="fit"
+                        style={fit(FIRES.find((f) => f.fires === (rule.fires ?? "while"))!.label)}
+                        value={rule.fires ?? "while"}
+                        onChange={(e) => setRule(i, (r) => void (e.target.value === "once" ? (r.fires = "once") : delete r.fires))}
+                      >
+                        {FIRES.map((f) => (
+                          <option key={f.fires} value={f.fires}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
                   )}
                   {"message" in w && (
                     <>
@@ -1061,33 +1099,34 @@ export function KitRulesPanel() {
                     numInput(w.test.b, `Rule ${n} target`, 0, 99, (v) => setRule(i, (r) => void ("test" in r.when && (r.when.test.b = v)), `reaches:${rule.id}`))}
                   {conditions.map((c, k) => (
                     <span key={k} className="rule-action">
-                      <span className="kw">{k === 0 ? ", only if" : "and"}</span>
+                      <span className={k === 0 ? "kw punct" : "kw"}>{k === 0 ? ", only if" : "and"}</span>
                       {compareField(c, `Rule ${n} condition ${k + 1}`, [isCounterValue(c.a) ? "counter" : "first value", "value"], whoseHere(), (next, key) =>
                         setRule(i, (r) => void (r.if![k] = next), key && `if:${rule.id}:${k}:${key}`),
                       )}
-                      <button
-                        type="button"
-                        className="icon"
-                        aria-label={`Remove condition ${k + 1} from rule ${n}`}
-                        title="Remove this condition"
-                        onClick={() =>
-                          setRule(i, (r) => {
-                            r.if!.splice(k, 1);
-                            if (r.if!.length === 0) delete r.if;
-                          })
-                        }
-                      >
-                        ×
-                      </button>
+                      <span className="rule-tool">
+                        <button
+                          type="button"
+                          className="icon"
+                          aria-label={`Remove condition ${k + 1} from rule ${n}`}
+                          title="Remove this condition"
+                          onClick={() =>
+                            setRule(i, (r) => {
+                              r.if!.splice(k, 1);
+                              if (r.if!.length === 0) delete r.if;
+                            })
+                          }
+                        >
+                          ×
+                        </button>
+                      </span>
                     </span>
                   ))}
-                  <span className="kw">,</span>
+                  <span className="kw punct">,</span>
                   {rule.then.map((action, j) => {
                     const ak = actionKind(action)!;
                     const label = `Rule ${n} action ${j + 1}`;
-                    return (
-                      <span key={action.id} className="rule-action">
-                        {j > 0 && <span className="kw">and</span>}
+                    const words = (
+                      <>
                         <select
                           aria-label={label}
                           className="fit"
@@ -1313,14 +1352,18 @@ export function KitRulesPanel() {
                                     <span className="kw">across and</span>
                                     {numInput(c.dy ?? 0, `${label} moved down`, -128, 127, (v) => write((cc) => void (cc.dy = v), `act:${action.id}:dy`))}
                                     <span className="kw">down</span>
-                                    <button type="button" className="icon" aria-label={`Not moved: ${label}`} title="Don't move it" onClick={() => write((cc) => (delete cc.dx, delete cc.dy))}>
-                                      ×
-                                    </button>
+                                    <span className="rule-tool">
+                                      <button type="button" className="icon" aria-label={`Not moved: ${label}`} title="Don't move it" onClick={() => write((cc) => (delete cc.dx, delete cc.dy))}>
+                                        ×
+                                      </button>
+                                    </span>
                                   </>
                                 ) : (
-                                  <button type="button" className="link small" aria-label={`${label}: moved`} onClick={() => write((cc) => void ((cc.dx = 0), (cc.dy = 0)))}>
-                                    + moved
-                                  </button>
+                                  <span className="rule-tool">
+                                    <button type="button" className="link small" aria-label={`${label}: moved`} onClick={() => write((cc) => void ((cc.dx = 0), (cc.dy = 0)))}>
+                                      + moved
+                                    </button>
+                                  </span>
                                 )}
                                 {c.vx !== undefined || c.vy !== undefined ? (
                                   <>
@@ -1329,14 +1372,18 @@ export function KitRulesPanel() {
                                     <span className="kw">across and</span>
                                     {value(c.vy ?? 0, "speed down", -112, 112, (cc, v) => void (cc.vy = v))}
                                     <span className="kw">down</span>
-                                    <button type="button" className="icon" aria-label={`Its own speed: ${label}`} title="Start at its own speed" onClick={() => write((cc) => (delete cc.vx, delete cc.vy))}>
-                                      ×
-                                    </button>
+                                    <span className="rule-tool">
+                                      <button type="button" className="icon" aria-label={`Its own speed: ${label}`} title="Start at its own speed" onClick={() => write((cc) => (delete cc.vx, delete cc.vy))}>
+                                        ×
+                                      </button>
+                                    </span>
                                   </>
                                 ) : (
-                                  <button type="button" className="link small" aria-label={`${label}: moving`} onClick={() => write((cc) => void ((cc.vx = 0), (cc.vy = 0)))}>
-                                    + moving
-                                  </button>
+                                  <span className="rule-tool">
+                                    <button type="button" className="link small" aria-label={`${label}: moving`} onClick={() => write((cc) => void ((cc.vx = 0), (cc.vy = 0)))}>
+                                      + moving
+                                    </button>
+                                  </span>
                                 )}
                               </>
                             );
@@ -1361,43 +1408,51 @@ export function KitRulesPanel() {
                           </select>
                         )}
                         {rule.then.length > 1 && (
-                          <button
-                            type="button"
-                            className="icon"
-                            aria-label={`Remove action ${j + 1} from rule ${n}`}
-                            title="Remove this action"
-                            onClick={() => setRule(i, (r) => void r.then.splice(j, 1))}
-                          >
-                            ×
-                          </button>
+                          <span className="rule-tool">
+                            <button
+                              type="button"
+                              className="icon"
+                              aria-label={`Remove action ${j + 1} from rule ${n}`}
+                              title="Remove this action"
+                              onClick={() => setRule(i, (r) => void r.then.splice(j, 1))}
+                            >
+                              ×
+                            </button>
+                          </span>
                         )}
+                      </>
+                    );
+                    return (
+                      <span key={action.id} className="rule-action">
+                        {j > 0 && <span className="kw">and</span>}
+                        {j === rule.then.length - 1 ? endSentence(words) : words}
                       </span>
                     );
                   })}
-                  <span className="kw">.</span>
                 </p>
+                {ends}
               </div>
               <div className="rule-tools">
                 {rule.then.length < 12 && (
-                  <button type="button" className="link" onClick={() => setRule(i, (r, d) => void r.then.push(act(d, { add: { what: { counter: SCORE }, by: 10 } })))}>
-                    + another action
-                  </button>
+                  <span className="rule-tool">
+                    <button type="button" className="link" onClick={() => setRule(i, (r, d) => void r.then.push(act(d, { add: { what: { counter: SCORE }, by: 10 } })))}>
+                      + another action
+                    </button>
+                  </span>
                 )}
                 {conditions.length < 3 && (
-                  <button
-                    type="button"
-                    className="link"
-                    onClick={() =>
-                      setRule(i, (r, d) => void (r.if ??= []).push({ a: { counter: d.counters.find((c) => c.id !== "lives")?.id ?? d.counters[0]?.id ?? "seconds" }, op: "gte", b: 1 }))
-                    }
-                  >
-                    {conditions.length ? "+ and only if" : "+ only if"}
-                  </button>
+                  <span className="rule-tool">
+                    <button
+                      type="button"
+                      className="link"
+                      onClick={() =>
+                        setRule(i, (r, d) => void (r.if ??= []).push({ a: { counter: d.counters.find((c) => c.id !== "lives")?.id ?? d.counters[0]?.id ?? "seconds" }, op: "gte", b: 1 }))
+                      }
+                    >
+                      {conditions.length ? "+ and only if" : "+ only if"}
+                    </button>
+                  </span>
                 )}
-                <span className="spacer" />
-                <button type="button" className="link danger" onClick={() => deleteRule(i)}>
-                  Delete rule {n}
-                </button>
               </div>
             </li>
           );

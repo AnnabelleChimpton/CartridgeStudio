@@ -547,7 +547,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Cat touches Teacup: take 1 from Lives, send every Cat back to start, protect every Cat
+ rem rule 1: When Cat touches Teacup, take 1 from Lives, send every Cat back to start, protect every Cat
  rem   for 1.5 seconds, send the Teacup back to start and play Boom.
 rule1
  oi = 0
@@ -566,7 +566,7 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Cat touches Teapot: take 1 from Lives, send every Cat back to start, protect every Cat
+ rem rule 2: When Cat touches Teapot, take 1 from Lives, send every Cat back to start, protect every Cat
  rem   for 1.5 seconds, send the Teapot back to start and play Boom.
 rule2
  oi = 0
@@ -585,7 +585,7 @@ rule2_nj_4
 rule2_ni
 rule2_end
 
- rem rule 3: When Cat touches Fish: add 50 points, send the Fish back to start and play Blip.
+ rem rule 3: When Cat touches Fish, add 50 points, send the Fish back to start and play Blip.
 rule3
  oi = 0
  if otype[oi] <> T_CAT then goto rule3_ni
@@ -603,7 +603,7 @@ rule3_nj_7
 rule3_ni
 rule3_end
 
- rem rule 4: When 30 seconds have passed: play Chime and win the game.
+ rem rule 4: When 30 seconds have passed, play Chime and win the game.
 rule4
  if oddframe = 0 then goto rule4_end
  if seconds <> 30 then goto rule4_off
@@ -616,7 +616,7 @@ rule4_off
  latches{0} = 0
 rule4_end
 
- rem rule 5: When a Teacup leaves the screen: set the Teacup's x to a random number up to 19 x 8 and set
+ rem rule 5: When a Teacup leaves the screen, set the Teacup's x to a random number up to 19 x 8 and set
  rem   the Teacup's y to 16.
 rule5
  for oi = 1 to 5
@@ -632,7 +632,7 @@ rule5_next
  next
 rule5_end
 
- rem rule 6: When a Teapot leaves the screen: set the Teapot's x to a random number up to 19 x 8 and set
+ rem rule 6: When a Teapot leaves the screen, set the Teapot's x to a random number up to 19 x 8 and set
  rem   the Teapot's y to 16.
 rule6
  for oi = 6 to 7
@@ -648,7 +648,7 @@ rule6_next
  next
 rule6_end
 
- rem rule 7: When a Fish leaves the screen: set the Fish's x to a random number up to 19 x 8 and set the
+ rem rule 7: When a Fish leaves the screen, set the Fish's x to a random number up to 19 x 8 and set the
  rem   Fish's y to 16.
 rule7
  for oi = 8 to 9
@@ -664,7 +664,7 @@ rule7_next
  next
 rule7_end
 
- rem rule 8: When Lives is 0: lose the game.
+ rem rule 8: When Lives is 0, lose the game.
 rule8
  if oddframe = 0 then goto rule8_end
  if lives <> 0 then goto rule8_off

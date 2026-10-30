@@ -1,7 +1,3 @@
-// Help for when a kit game won't build: what to take out when it's too busy
-// (priced with the same cost model the build checks), and a next step for
-// each kind of build error.
-
 import { isPlayer, placements } from "./edit.ts";
 import { CPU_BUDGET, cpuCost } from "./generate.ts";
 import type { KitTab } from "./presets.ts";

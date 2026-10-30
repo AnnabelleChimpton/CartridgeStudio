@@ -1,8 +1,3 @@
-// Making a code project: eject a kit game or an old Classic shooter (template)
-// game (its generated game.bas and graphics, frozen) or start from a small
-// blank program. Ejecting is one way: the code project is a copy, and the
-// original game is left alone.
-
 import { strFromU8 } from "fflate";
 import { KIT_RUNTIME_VERSION } from "../kit/generate.ts";
 import { kitSourceFiles, sourceFiles } from "../files/exports.ts";

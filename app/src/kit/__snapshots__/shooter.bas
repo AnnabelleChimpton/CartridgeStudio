@@ -553,7 +553,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Sock touches Vacuum: remove the Sock, remove the Vacuum, add 10 points and play Boom.
+ rem rule 1: When Sock touches Vacuum, remove the Sock, remove the Vacuum, add 10 points and play Boom.
 rule1
  oi = 11
  if otype[oi] <> T_SHOT then goto rule1_ni
@@ -571,7 +571,7 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Dust bomb touches Laundry basket: remove the Dust bomb, take 1 from Lives, send every
+ rem rule 2: When Dust bomb touches Laundry basket, remove the Dust bomb, take 1 from Lives, send every
  rem   Laundry basket back to start, protect every Laundry basket for 1.5 seconds and play Falling tone.
 rule2
  oi = 12
@@ -589,7 +589,7 @@ rule2_nj_2
 rule2_ni
 rule2_end
 
- rem rule 3: When Vacuum touches Laundry basket: take 1 from Lives, send every Laundry basket back to
+ rem rule 3: When Vacuum touches Laundry basket, take 1 from Lives, send every Laundry basket back to
  rem   start, protect every Laundry basket for 1.5 seconds, play Falling tone and start the room again.
 rule3
  oj = 0
@@ -608,8 +608,8 @@ rule3_nj_5
 rule3_ni
 rule3_end
 
- rem rule 4: While a Vacuum reaches the bottom edge: take 1 from Lives, send every Laundry basket back to
- rem   start, protect every Laundry basket for 1.5 seconds and start the room again.
+ rem rule 4: When a Vacuum reaches the bottom edge the whole time, take 1 from Lives, send every Laundry
+ rem   basket back to start, protect every Laundry basket for 1.5 seconds and start the room again.
 rule4
  for oi = 1 to 10
  if otype[oi] <> T_INVADER then goto rule4_next
@@ -625,7 +625,7 @@ rule4_next
  next
 rule4_end
 
- rem rule 5: When the number of Vacuums is 0: play Rising tone and start the room again.
+ rem rule 5: When the number of Vacuums is 0, play Rising tone and start the room again.
 rule5
  if oddframe = 0 then goto rule5_end
  tmp2 = 0
@@ -642,7 +642,7 @@ rule5_off
  latches{0} = 0
 rule5_end
 
- rem rule 6: When button 1 is pressed, only if the number of Socks is 0: create a Sock above the Laundry
+ rem rule 6: When button 1 is pressed, only if the number of Socks is 0, create a Sock above the Laundry
  rem   basket and play Zap.
 rule6
  if !padpressed{4} then goto rule6_end
@@ -657,7 +657,7 @@ rule6_p_11
 rule6_end
 
  rem rule 7: Every frame, only if a random number up to 255 is less than 50 and the number of Dust bombs
- rem   is 0: create a Dust bomb below a random Vacuum.
+ rem   is 0, create a Dust bomb below a random Vacuum.
 rule7
  tmp2 = rand
  if tmp2 >= 50 then goto rule7_end
@@ -668,7 +668,7 @@ rule7
  if ruleexit then return
 rule7_end
 
- rem rule 8: When any Vacuum reaches the left or right edge: set every Vacuum's speed across to its speed
+ rem rule 8: When any Vacuum reaches the left or right edge, set every Vacuum's speed across to its speed
  rem   across, reversed and add 8 to every Vacuum's y.
 rule8
  for oi = 1 to 10
@@ -691,7 +691,7 @@ rule8_next
  latches{1} = 0
 rule8_end
 
- rem rule 9: When Lives is 0: lose the game.
+ rem rule 9: When Lives is 0, lose the game.
 rule9
  if oddframe = 0 then goto rule9_end
  if lives <> 0 then goto rule9_off

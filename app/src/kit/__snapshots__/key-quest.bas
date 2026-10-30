@@ -777,7 +777,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Knight touches Key: remove the Key, add 1 to Keys, add 50 points and play Rising tone.
+ rem rule 1: When Knight touches Key, remove the Key, add 1 to Keys, add 50 points and play Rising tone.
 rule1
  oi = 0
  if otype[oi] <> T_KNIGHT then goto rule1_ni
@@ -794,7 +794,7 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Knight touches Locked door, only if Keys is at least 1: remove the Locked door, take 1
+ rem rule 2: When Knight touches Locked door, only if Keys is at least 1, remove the Locked door, take 1
  rem   from Keys, add 100 points and play Chime.
 rule2
  if c_keys < 1 then goto rule2_end
@@ -813,7 +813,7 @@ rule2_nj_2
 rule2_ni
 rule2_end
 
- rem rule 3: When Knight touches Locked door, only if Keys is 0: send the Knight back to start and play
+ rem rule 3: When Knight touches Locked door, only if Keys is 0, send the Knight back to start and play
  rem   Falling tone.
 rule3
  if c_keys <> 0 then goto rule3_end
@@ -832,7 +832,7 @@ rule3_nj_3
 rule3_ni
 rule3_end
 
- rem rule 4: When Knight touches Gem: remove the Gem, add 20 points and play Blip.
+ rem rule 4: When Knight touches Gem, remove the Gem, add 20 points and play Blip.
 rule4
  oi = 0
  if otype[oi] <> T_KNIGHT then goto rule4_ni
@@ -849,7 +849,7 @@ rule4_nj_4
 rule4_ni
 rule4_end
 
- rem rule 5: When Knight touches Shadow: take 1 from Lives, send every Knight back to start, protect
+ rem rule 5: When Knight touches Shadow, take 1 from Lives, send every Knight back to start, protect
  rem   every Knight for 1.5 seconds and play Crash.
 rule5
  oi = 0
@@ -867,7 +867,7 @@ rule5_nj_5
 rule5_ni
 rule5_end
 
- rem rule 6: When a Knight is on spikes: take 1 from Lives, send every Knight back to start, protect
+ rem rule 6: When a Knight is on spikes, take 1 from Lives, send every Knight back to start, protect
  rem   every Knight for 1.5 seconds and play Falling tone.
 rule6
  if oddframe = 0 then goto rule6_end
@@ -888,7 +888,7 @@ rule6_hit
 rule6_next
 rule6_end
 
- rem rule 7: When Knight touches Crown: add 500 points, play Chime and win the game.
+ rem rule 7: When Knight touches Crown, add 500 points, play Chime and win the game.
 rule7
  oi = 0
  if otype[oi] <> T_KNIGHT then goto rule7_ni
@@ -905,7 +905,7 @@ rule7_nj_11
 rule7_ni
 rule7_end
 
- rem rule 8: When Lives is 0: lose the game.
+ rem rule 8: When Lives is 0, lose the game.
 rule8
  if oddframe = 0 then goto rule8_end
  if lives <> 0 then goto rule8_off

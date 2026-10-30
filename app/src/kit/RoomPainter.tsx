@@ -1,7 +1,3 @@
-// Room painter: paint walls and place things on the 20×11 room grid. Each
-// cell is 8×16 game pixels, which on screen is square (160A pixels are wide).
-// A drag is one undo step.
-
 import { useEffect, useRef } from "react";
 import { linePoints } from "../sprite/pixels.ts";
 import { arrowKeys, drawCursor, radioProps, useGridKeyboard } from "../ui/a11y.ts";
@@ -208,14 +204,13 @@ export function RoomPainter({ brush, setBrush }: { brush: Brush; setBrush: (b: B
         </span>
       </div>
       <p className="muted small keys-hint" id="room-keys">
-        Keyboard: arrows move, Space paints, Shift+arrows paint as you go, Delete erases, 1–9 pick a brush.
+        Keyboard: arrows move, Space paints, Shift+arrows paint as you go, Delete erases, 1–9 pick a brush. Right-click also erases.
       </p>
-      <p className="muted small">
-        Drag to paint; right-click erases. Things start in the square you put them in.
-        {busyRows.size > 0 && (
-          <span className="error"> Rows in red have more than {ZONE_BUDGET} things side by side: move some up or down a row.</span>
-        )}
-      </p>
+      {busyRows.size > 0 && (
+        <p className="muted small">
+          <span className="error">Rows in red have more than {ZONE_BUDGET} things side by side. Move some up or down a row.</span>
+        </p>
+      )}
     </section>
   );
 }

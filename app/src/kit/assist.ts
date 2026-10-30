@@ -1,13 +1,3 @@
-// The "easier" assist for younger players, worked by the console's left
-// difficulty switch the way 7800 and 2600 games are: with the assist on, the
-// switch's B position (the console's usual "novice" setting) plays easier and
-// A plays the game as made. With it off, the switch does nothing.
-//
-// Easier means other things move one speed step slower and the lives counter
-// starts two higher. The player, and what the player shoots, keep their speed.
-//
-// The setting lives on the game as `assist` (in the kit schema).
-
 import { livesOf, shootsOf } from "./edit.ts";
 import { isControlled } from "./parts.ts";
 import type { KitGame, KitType } from "./schema.ts";

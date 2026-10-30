@@ -1,7 +1,3 @@
-// What the toolchain gets for a code project: game.bas as written and one PNG
-// per graphic. Problems here are the creator's to fix, so they read like
-// build errors.
-
 import { encodeIndexedPng, type BuildInput } from "@cartridge-studio/toolchain";
 import { CodeProjectSchema, graphicFile, type CodeProject } from "./schema.ts";
 

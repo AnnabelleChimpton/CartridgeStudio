@@ -1,6 +1,3 @@
-// A code project as plain files (the source folder, code/export.ts), for the
-// source export and the submission package.
-
 import { encodeIndexedPng } from "@cartridge-studio/toolchain";
 import { strToU8 } from "fflate";
 import { KIT_TOOLCHAIN, type SourceExtras } from "../files/exports.ts";

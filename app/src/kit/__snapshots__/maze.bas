@@ -669,7 +669,7 @@ ticknext
  rem ---- rules (generated from the project), in order ----
 rules
  oddframe = frame & 1
- rem rule 1: When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.
+ rem rule 1: When Cat touches Yarn ball, remove the Yarn ball, add 10 points and play Blip.
 rule1
  oi = 0
  if otype[oi] <> T_CAT then goto rule1_ni
@@ -687,7 +687,7 @@ rule1_nj_1
 rule1_ni
 rule1_end
 
- rem rule 2: When Cat touches Dust ghost: take 1 from Lives, send every Cat back to start, protect every
+ rem rule 2: When Cat touches Dust ghost, take 1 from Lives, send every Cat back to start, protect every
  rem   Cat for 1.5 seconds and play Falling tone.
 rule2
  oi = 0
@@ -706,7 +706,7 @@ rule2_nj_2
 rule2_ni
 rule2_end
 
- rem rule 3: When Cat touches Bat: take 1 from Lives, send every Cat back to start, protect every Cat for
+ rem rule 3: When Cat touches Bat, take 1 from Lives, send every Cat back to start, protect every Cat for
  rem   1.5 seconds and play Falling tone.
 rule3
  oi = 0
@@ -724,7 +724,7 @@ rule3_nj_5
 rule3_ni
 rule3_end
 
- rem rule 4: When the number of Yarn balls is 0: play Chime and win the game.
+ rem rule 4: When the number of Yarn balls is 0, play Chime and win the game.
 rule4
  if oddframe = 0 then goto rule4_end
  tmp2 = 0
@@ -741,7 +741,7 @@ rule4_off
  latches{0} = 0
 rule4_end
 
- rem rule 5: When Lives is 0: lose the game.
+ rem rule 5: When Lives is 0, lose the game.
 rule5
  if oddframe = 0 then goto rule5_end
  if lives <> 0 then goto rule5_off

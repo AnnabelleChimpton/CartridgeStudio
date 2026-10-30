@@ -1,7 +1,3 @@
-// Pure operations on sprite frames in the project format: one string per row,
-// `0` transparent and `1`-`3` the palette's colors. Every function returns a
-// new frame and leaves its input alone.
-
 export type Frame = string[];
 export type PixelValue = 0 | 1 | 2 | 3;
 

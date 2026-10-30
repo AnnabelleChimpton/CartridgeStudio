@@ -82,7 +82,7 @@ describe("buildPrintPdf", () => {
     const game = KIT_PRESETS.find((p) => p.id === "ghost-panic")!.game;
     const subject = kitPrintSubject(game);
     expect(subject.hero?.width).toBe(8);
-    expect(subject.manual).toContain("- When Cat touches Yarn ball: remove the Yarn ball, add 10 points and play Blip.");
+    expect(subject.manual).toContain("- When Cat touches Yarn ball, remove the Yarn ball, add 10 points and play Blip.");
     expect(subject.manual).toContain("You are the Cat. Clear every Yarn ball three times to win.");
     expect(subject.controls[0]![1]).toBe("Moves the Cat");
     const bytes = await buildPrintPdf({ subject, paper: "letter", fonts, screenshot });

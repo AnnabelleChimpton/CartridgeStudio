@@ -188,15 +188,15 @@ describe("rule sentences", () => {
     const { editableRule } = await import("./KitRulesPanel.tsx");
     const g = preset("ghost-panic");
     const lines = g.rules.map((r) => ruleSentence(r, g));
-    expect(lines).toContain("When Cat touches Scared ghost, only if Combo is at least 1: add 300 points and play Chime.");
-    expect(lines).toContain("Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.");
-    expect(lines).toContain("When Level is at least 4: win the game.");
-    expect(lines).toContain("When the room starts, only if Level is at least 3: set Pace to 1.");
+    expect(lines).toContain("When Cat touches Scared ghost, only if Combo is at least 1, add 300 points and play Chime.");
+    expect(lines).toContain("Every 15 seconds, turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.");
+    expect(lines).toContain("When Level is at least 4, win the game.");
+    expect(lines).toContain("When the room starts, only if Level is at least 3, set Pace to 1.");
     expect(g.rules.every(editableRule)).toBe(true);
     // A shape the menus don't offer ("any") shows as a sentence instead.
     const fancy = { id: "r-x", when: { touch: ["cat", "ghost"] }, any: true, then: [{ id: "a-x", step: { who: { nearest: "ghost" }, dx: 8, dy: 0 } }] } as const;
     expect(editableRule(fancy as never)).toBe(false);
-    expect(ruleSentence(fancy as never, g)).toBe("When any Cat touches Dust ghost: step the nearest Dust ghost by (8, 0).");
+    expect(ruleSentence(fancy as never, g)).toBe("When any Cat touches Dust ghost, step the nearest Dust ghost by (8, 0).");
   });
 
   it("every preset's rules can be edited, or read as a sentence", async () => {

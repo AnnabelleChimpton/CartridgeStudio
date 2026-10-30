@@ -1,6 +1,3 @@
-// "Import a picture": a photo or drawing becomes a sprite frame in one undo
-// step, from a file, a drop or the keyboard alone.
-
 import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
@@ -50,7 +47,7 @@ test("a picture becomes the player's sprite, and one Undo puts it back", async (
   // A square picture: as tall as can be, and square on screen.
   await expect(dialog.getByLabel("Sprite width")).toHaveValue("8");
   await expect(dialog.getByLabel("Sprite height")).toHaveValue("16");
-  await expect(dialog.getByRole("radio", { name: "Pick new colors from the picture" })).toHaveAttribute("aria-checked", "true");
+  await expect(dialog.getByRole("radio", { name: "Pick new colours from the picture" })).toHaveAttribute("aria-checked", "true");
   expect(await axe(page)).toEqual([]);
 
   await dialog.getByRole("button", { name: "Use this picture" }).click();
@@ -77,7 +74,7 @@ test("a thing sharing colors gets its own, so the others keep theirs", async ({ 
   await page.getByRole("button", { name: "Import a picture" }).click();
   const dialog = page.getByRole("dialog", { name: "Import a picture" });
   await dialog.getByTestId("import-picture-file").setInputFiles(PICTURE);
-  await expect(dialog.getByText("Teapot gets its own colors, so Teacup won't change.")).toBeVisible();
+  await expect(dialog.getByText("Teapot gets its own colours, so Teacup won't change.")).toBeVisible();
   await dialog.getByRole("button", { name: "Use this picture" }).click();
 
   const after = await thing(page, "teapot");
@@ -107,9 +104,9 @@ test("works from the keyboard, keeping the colors, as one undo step", async ({ p
   await page.keyboard.press("+");
   await page.keyboard.press("ArrowLeft");
 
-  await dialog.getByRole("radio", { name: "Pick new colors from the picture" }).focus();
+  await dialog.getByRole("radio", { name: "Pick new colours from the picture" }).focus();
   await page.keyboard.press("ArrowUp");
-  await expect(dialog.getByRole("radio", { name: "Use the colors it has now" })).toHaveAttribute("aria-checked", "true");
+  await expect(dialog.getByRole("radio", { name: "Use the colours it has now" })).toHaveAttribute("aria-checked", "true");
   await dialog.getByLabel("Sprite width").selectOption("16");
   await dialog.getByRole("button", { name: "Use this picture" }).focus();
   await page.keyboard.press("Enter");

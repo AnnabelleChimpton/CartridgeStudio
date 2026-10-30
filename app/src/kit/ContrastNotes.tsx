@@ -1,6 +1,3 @@
-// Gentle notes when a color may be hard to see on the game's background, each
-// with a one-click fix. They never stop a build.
-
 import { ntscCss } from "../ui/ntsc.ts";
 import { contrastFix, contrastMessage, type ContrastWarning } from "./contrast.ts";
 import { useKitStore } from "./store.ts";

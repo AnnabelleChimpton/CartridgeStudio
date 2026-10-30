@@ -1,8 +1,3 @@
-// The exported source folder builds unchanged with stock 7800basic: its own
-// build.sh runs the release's 7800basic.sh, as a coder would. The release
-// runs its tools under wasmtime; here a few lines of Node's WASI stand in for
-// wasmtime, so the test needs nothing installed. The ROM must match ours.
-
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";

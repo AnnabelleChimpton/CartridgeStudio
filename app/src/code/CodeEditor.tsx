@@ -1,8 +1,3 @@
-// The code editor (Coder tier): game.bas in CodeMirror, its graphics and a
-// 7800basic quick reference in tabs on the left, the running game on the
-// right. Like the other editors it rebuilds when you pause; build errors are
-// marked on their lines and listed below the code.
-
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CARTRIDGE_EXTENSION, writeCartridgeFile } from "../files/cartridge-file.ts";
 import { folderZip, slugify } from "../files/exports.ts";
@@ -18,7 +13,6 @@ import type { BasicEditorHandle, GraphicThumbs } from "./BasicEditor.tsx";
 import { codeSourceFiles } from "./code-files.ts";
 import { parseBuildLog, type BuildProblem } from "./build-log.ts";
 import { CartridgeSpace } from "./CartridgeSpace.tsx";
-import { RomDownloads } from "./RomDownloads.tsx";
 import { CodePrint, codeEverything } from "./CodePrint.tsx";
 import { testsBytes } from "./creator-tests.ts";
 import { DebuggerDrawer } from "./DebuggerDrawer.tsx";
@@ -126,7 +120,6 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
       <TopBar
         title={project.title}
         onTitle={(t) => edit((d) => void (d.title = t), "title")}
-        kind="Code project"
         canUndo={canUndo}
         canRedo={canRedo}
         undo={undo}
@@ -169,7 +162,7 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
             <div className="code-bar">
               <strong className="code-file">game.bas</strong>
               <span className="muted small code-keys" id={`${ids}-keys`}>
-                Tab indents; press Esc then Tab to leave the editor. {isMac() ? "⌘F" : "Ctrl+F"} finds, F8 goes to the next error.
+                Tab indents. Press Esc then Tab to leave the editor. {isMac() ? "⌘F" : "Ctrl+F"} finds, F8 goes to the next error.
               </span>
             </div>
             <LazyBasicEditor
@@ -215,7 +208,6 @@ export function CodeEditor({ gameId, onOpen, onNew, back }: Props) {
             <h3 className="section-h">Cartridge</h3>
             <CartridgeSpace stats={preview.lastGood?.stats} source={preview.lastGood?.source} />
             <div className="toolbar">
-              <RomDownloads preview={preview} title={project.title} />
               <button type="button" className="secondary" title="game.bas, its graphics and build scripts, for 7800basic" onClick={() => void exportSource()}>
                 Export source
               </button>
