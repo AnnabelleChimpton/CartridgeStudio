@@ -44,7 +44,7 @@ test("the start screen, the kit editor and My games pass axe", async ({ page }) 
   // New game shows My games above the starters; it and its rename and delete dialogs pass axe.
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  const chooser = page.getByRole("dialog", { name: "Pick a cart to start from" });
+  const chooser = page.getByRole("dialog", { name: "Open a game" });
   await expect(chooser.getByRole("region", { name: "My games" }).getByRole("listitem")).toHaveCount(2);
   expect(await axe(page), "My games").toEqual([]);
   await chooser.getByRole("button", { name: "Rename Cat vs. Vacuums" }).click();
@@ -68,9 +68,9 @@ test("controls inside a <label> are named by it, not an aria-label (WCAG 2.5.3)"
         .map((e) => e.outerHTML.slice(0, 80)),
     );
   await start(page, /^Ghost Panic/);
-  await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+  // Every setting is on show (no More options to open), including the parts editor.
   await page.getByRole("button", { name: /^Dust bunny/ }).click();
-  await page.locator("details.more").evaluate((d: HTMLDetailsElement) => void (d.open = true));
+  await page.locator("details.parts").evaluate((d: HTMLDetailsElement) => void (d.open = true));
   expect(await overridden(), "Things").toEqual([]);
   await expect(page.getByLabel("How it moves")).toHaveValue("chase");
   for (const name of ["Room", "Rules", "Game"]) {

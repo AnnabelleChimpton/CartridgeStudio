@@ -24,7 +24,7 @@ test("a hard-to-read text color gets a note, and its suggestion fixes it", async
   await expect(notes).toBeEmpty();
 
   const bg = (await game(page)).background;
-  await pick(page, /^Text color/, "$02");
+  await pick(page, /^Text colour/, "$02");
   const note = page.getByTestId("contrast-text");
   await expect(note).toContainText(`The score and title text: $02 very dark gray on ${bg} black`);
   const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
@@ -44,7 +44,7 @@ test("a hard-to-read text color gets a note, and its suggestion fixes it", async
 test("the spike color is on the Game tab, and dim spikes get a note", async ({ page }) => {
   await start(page, "Ghost Panic");
   await openTab(page, "Game");
-  await pick(page, /^Spike color/, "$00");
+  await pick(page, /^Spike colour/, "$00");
   let g = await game(page);
   expect(g.palettes.find((p) => p.id === g.wallPalette)!.colors[2]).toBe("$00");
   const note = page.getByTestId("contrast-spikes");
@@ -78,7 +78,7 @@ test("a thing that disappears into the background gets a note on the Things tab"
 test("the easier assist is kept with the game", async ({ page }) => {
   await start(page, "Ghost Panic");
   await openTab(page, "Game");
-  const box = page.getByRole("checkbox", { name: /Easier for younger players/ });
+  const box = page.getByRole("checkbox", { name: "Use the switch in this game" });
   await expect(box).not.toBeChecked();
   await box.check();
   expect(((await game(page)) as { assist?: { easier: boolean } }).assist).toEqual({ easier: true });

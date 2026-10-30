@@ -143,7 +143,8 @@ test("changing a color rebuilds the preview, and undo is a cache hit", async ({ 
   expect(await vacuumsGreen()).toBe(0);
 
   await page.getByRole("button", { name: /^Vacuum / }).click();
-  await page.getByRole("button", { name: /^Vacuum color 1: \$42/ }).click();
+  await page.getByRole("radio", { name: /^Color 1:/ }).click();
+  await page.getByRole("button", { name: /^Edit colours, colour 1: \$42/ }).click();
   await page.getByRole("option", { name: /^\$C8,/ }).click();
   const edited = await waitForBuild(page, n + 1);
   expect(edited.kind).toBe("built");
@@ -322,9 +323,11 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
   });
   expect(preview?.signed).toBe(false);
 
-  await openTab(page, "Code");
-  const fetchDownload = async (name: string) => {
-    const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name }).click()]);
+  // ROM files come from Put it on a cart.
+  await page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: /^Put it on a cart/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Put it on a cart" });
+  const fetchDownload = async (name: RegExp) => {
+    const [download] = await Promise.all([page.waitForEvent("download"), dialog.getByRole("button", { name }).click()]);
     expect(download.suggestedFilename()).toMatch(/^cat-vs-vacuums\.(a78|bin)$/);
     const stream = await download.createReadStream();
     const chunks: Buffer[] = [];
@@ -332,7 +335,7 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
     return Buffer.concat(chunks);
   };
 
-  const bin = await fetchDownload("Download .bin");
+  const bin = await fetchDownload(/\(\.bin\)$/);
   expect(bin.length).toBe(32768);
   // Signing only writes the 120-byte signature, so the signed .bin differs from
   // the unsigned preview there and nowhere else.
@@ -341,7 +344,7 @@ test("previews are unsigned; downloads are signed", async ({ page }) => {
   expect(differing).toBeGreaterThan(0);
   expect(differing).toBeLessThanOrEqual(120);
 
-  const a78 = await fetchDownload("Download .a78");
+  const a78 = await fetchDownload(/\(\.a78\)$/);
   expect(a78.length).toBe(128 + 32768);
   expect(a78.subarray(1, 10).toString("latin1")).toBe("ATARI7800");
   expect(a78.subarray(128).equals(bin)).toBe(true);
@@ -422,12 +425,13 @@ test("game keys only reach the game while it has focus", async ({ page }) => {
   await startGame();
 
   // Space presses a focused button rather than firing.
-  const sound = page.getByRole("button", { name: "Sound on" });
+  const sound = page.getByRole("button", { name: "Sound", exact: true });
+  await expect(sound).toHaveAttribute("aria-pressed", "true");
   await sound.focus();
   await page.keyboard.down(" ");
   expect(await fireHeld()).toBe(false);
   await page.keyboard.up(" ");
-  await expect(page.getByRole("button", { name: "Sound off" })).toHaveAttribute("aria-pressed", "true");
+  await expect(sound).toHaveAttribute("aria-pressed", "false");
 
   await page.getByLabel("Game preview").click();
   await page.keyboard.down(" ");
@@ -457,7 +461,7 @@ test("the game keeps running while the main thread is busy", async ({ page }) =>
 test("makes the print PDF with an edited manual", async ({ page }) => {
   await open(page);
   const printDialog = async () => {
-    await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
+    await page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: /^Print the box/ }).click();
     return page.getByRole("dialog", { name: "Print the box" });
   };
   let dialog = await printDialog();
@@ -492,12 +496,13 @@ test("makes the print PDF with an edited manual", async ({ page }) => {
   await expect(manual).toHaveValue(/You start with 5 lives\./);
 });
 
-async function downloadBytes(page: Page, button: string) {
-  // Export source is in the Code tab, Everything in Show it; Save game file is always on screen.
+async function downloadBytes(page: Page, button: "Export source" | "Everything" | "Save a game file") {
+  // Export source is in the Code tab, Everything in Share and download, saving in the Game menu.
   if (button === "Export source") await openTab(page, "Code");
+  if (button === "Save a game file") await page.getByRole("button", { name: "Game", exact: true }).click();
   const control =
     button === "Everything"
-      ? page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Everything \(game, source, print kit\)/ })
+      ? page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: "Everything (.zip)" })
       : page.getByRole("button", { name: button, exact: true });
   const [download] = await Promise.all([page.waitForEvent("download", { timeout: 60_000 }), control.click()]);
   const chunks: Buffer[] = [];
@@ -509,7 +514,7 @@ test("saves a game file and opens it again", async ({ page }) => {
   await open(page);
   await page.getByLabel("Game title").fill("Moth Patrol");
   await setLives(page, 6);
-  const saved = await downloadBytes(page, "Save game file");
+  const saved = await downloadBytes(page, "Save a game file");
   expect(saved.name).toBe("moth-patrol.cartridge");
 
   const { unzipSync } = await import("fflate");

@@ -66,9 +66,11 @@ async function makeEntry(page: Page, words: { title: string; credits: string; de
 
 test("in a jam, Show it's one ZIP is the jam entry", async ({ page }) => {
   await joinAndStart(page);
-  const zip = page.getByRole("region", { name: "Show it" }).getByRole("group", { name: "One ZIP" });
-  await expect(zip.getByRole("button", { name: /^Everything/ })).toHaveCount(0);
-  await zip.getByRole("button", { name: /^Jam entry for Spooky Cartridge Jam/ }).click();
+  const showIt = page.getByRole("region", { name: "Share and download" });
+  await expect(showIt.getByRole("button", { name: /^Everything/ })).toHaveCount(0);
+  const jamZip = showIt.getByRole("button", { name: "Jam entry (.zip)" });
+  await expect(jamZip).toHaveAccessibleDescription("Fill in the entry for Spooky Cartridge Jam, then make the ZIP there");
+  await jamZip.click();
   // It hands over to the entry form, where the words and licence are.
   await expect(entryForm(page).getByLabel("Title")).toBeFocused();
 });
@@ -124,8 +126,8 @@ test("two entries become a gallery that plays with the network off", async ({ pa
   await joinAndStart(page);
 
   // A clip recorded in Show it goes into the entry.
-  const showIt = page.getByRole("region", { name: "Show it" });
-  await showIt.getByRole("button", { name: /^Make a clip/ }).click();
+  const showIt = page.getByRole("region", { name: "Share and download" });
+  await showIt.getByRole("button", { name: "Make a GIF" }).click();
   await page.keyboard.down("ArrowLeft");
   await playFrames(page, 72);
   await page.keyboard.up("ArrowLeft");
@@ -222,7 +224,7 @@ test("two entries become a gallery that plays with the network off", async ({ pa
 
   await site.getByRole("link", { name: "Play Haunt One" }).click();
   await expect(site.getByRole("heading", { name: "Haunt One" })).toBeVisible();
-  await site.getByRole("button", { name: /to play$/ }).click();
+  await site.locator("#start").click();
   await expect.poll(() => site.evaluate(() => (window as unknown as { __frames?: number }).__frames ?? 0), { timeout: 15_000 }).toBeGreaterThan(60);
   await site.getByRole("link", { name: /All entries/ }).click();
   await expect(site.getByRole("heading", { level: 1, name: "Spooky Cartridge Jam" })).toBeVisible();

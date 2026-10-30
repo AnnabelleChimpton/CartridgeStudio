@@ -134,7 +134,8 @@ test("a Classic shooter game file opens as a code project, and says so", async (
     "project.json": strToU8(JSON.stringify(classicSample)),
   });
   await page.getByLabel("Open game file").setInputFiles({ name: "classic.cartridge", mimeType: "application/zip", buffer: Buffer.from(file) });
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  // It opens in the code editor.
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   await expect(page.getByLabel("Game title")).toHaveValue(classicSample.title);
   await expect(page.getByRole("status").filter({ hasText: "Classic shooter editor, which has been retired" })).toContainText(
     "It now opens as a code project",
@@ -152,12 +153,14 @@ test("saves from before My games move into it on first load", async ({ page }) =
   await withStore(page, { "current-kit": dodger, current: classicSample, mode: "kit" }, ["library", "open"]);
   await page.reload();
   await expect(page.getByLabel("Game title")).toHaveValue(dodger.title, { timeout: 30_000 });
-  await expect(page.getByText("Game kit", { exact: true })).toBeVisible();
+  // It opens in the kit editor.
+  await expect(page.getByRole("tab", { name: "Things" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Classic shooter editor" })).toBeAttached();
   await newGameDialog(page);
   await expect(myGames(page).getByRole("listitem")).toHaveCount(2);
   await expect(card(page, classicSample.title.replace(".", "\\."))).toContainText("Code project");
   await card(page, classicSample.title.replace(".", "\\.")).getByRole("button", { name: new RegExp(`^${classicSample.title.replace(".", "\\.")}`) }).click();
-  await expect(page.getByText("Code project", { exact: true })).toBeVisible();
+  // It opens in the code editor.
+  await expect(page.locator(".code-panel .cm-editor")).toBeVisible();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
 });

@@ -56,7 +56,9 @@ test("eject Ghost Panic, pause, step 10 frames, watch score change", async ({ pa
 
   await drawer.getByRole("button", { name: "Pause" }).click();
   await expect(drawer.getByRole("button", { name: "Resume" })).toBeVisible();
-  await expect(page.getByTestId("build-status").locator("..").getByRole("button", { name: "Resume" })).toBeVisible();
+  // The TV shows it too: its power light dims.
+  await expect(page.locator(".preview .tv-stage")).toHaveClass(/tv-paused/);
+  await expect(page.locator(".preview .power-light")).toHaveClass(/paused/);
   // Settled on the frame it paused at.
   let frame = -1;
   await expect

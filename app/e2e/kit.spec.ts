@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { autosaved } from "./wait.ts";
+import { autosaved, saveGameFile } from "./wait.ts";
 
 async function start(page: Page, preset: "Cat vs. Vacuums" | "Teacup Rain" | "Ghost Panic") {
   await page.goto("/");
@@ -61,11 +61,20 @@ async function paint(page: Page, from: [number, number], to: [number, number], b
 test("starts from a kit preset and plays it", async ({ page }) => {
   await start(page, "Cat vs. Vacuums");
   await expect(page.getByLabel("Game title")).toHaveValue("Cat vs. Vacuums");
-  await expect(page.getByTestId("cpu-meter")).toContainText("How busy the console is");
-  await expect(page.getByRole("meter", { name: "How busy the console is" })).toHaveAttribute("aria-valuetext", /Room to spare|Nearly full/);
-  // Animation alternates frames every 16 frames: sample across 48.
+  // The shooter keeps the console fairly busy, so the meter shows, but it isn't over.
+  await expect(page.getByTestId("cpu-meter")).toContainText(/Busy: \d+ of 24 things moving/);
+  await expect(page.getByRole("meter", { name: "Console time" })).toHaveAttribute("aria-valuetext", /^\d+%$/);
+  // Animation alternates frames every 16 frames: sample across 48, in play (the title screen shows only the title).
   const pictures = await page.evaluate(async () => {
     const e = window.__cs!.emulator!;
+    const idle = { up: false, down: false, left: false, right: false, fire: false };
+    e.pause(true);
+    e.setInput(idle);
+    await e.stepFrames(60);
+    e.setInput({ ...idle, fire: true });
+    await e.stepFrames(2);
+    e.setInput(idle);
+    await e.stepFrames(2);
     const seen = new Set<string>();
     for (let i = 0; i < 8; i++) {
       seen.add(await e.framebufferHash());
@@ -133,7 +142,8 @@ test("the CPU meter stops a game that's too busy", async ({ page }) => {
   await openTab(page, "Room");
   await page.getByRole("radio", { name: /^Paint Dust/ }).click();
   await paint(page, [10, 5], [14, 5]);
-  await expect(page.getByTestId("cpu-meter")).toContainText("Too busy");
+  await expect(page.getByRole("meter", { name: "Console time" })).toHaveAttribute("aria-valuetext", "Too busy");
+  await expect(page.getByTestId("cpu-meter")).toContainText("Too much is happening at once");
   // The meter names the changes that would make it fit.
   await expect(page.getByTestId("cpu-meter")).toContainText(/Dust \w+ out of the room/);
   await expect(page.getByTestId("build-errors")).toContainText("too busy for the console", { timeout: 30_000 });
@@ -149,7 +159,7 @@ test("a kit game survives a reload and round-trips through a game file", async (
   await page.reload();
   await expect(page.getByLabel("Game title")).toHaveValue("Moon Patrol-ish", { timeout: 30_000 });
 
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save game file" }).click()]);
+  const [download] = await Promise.all([page.waitForEvent("download"), saveGameFile(page)]);
   const chunks: Buffer[] = [];
   for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
   const file = Buffer.concat(chunks);
@@ -175,7 +185,7 @@ test("Ghost Panic opens, builds, and every rule can be edited", async ({ page })
   await expect(page.getByLabel("Rule 3 condition 1 counter")).toHaveValue("combo");
   await expect(page.getByLabel("Rule 3 condition 1 test")).toHaveValue("gte");
   await expect(page.getByLabel("Rule 3 action 1 points")).toHaveValue("300");
-  // Catnip: set the combo, and turn every ghost for 6 seconds.
+  // Catnip: set the combo, and turn every dust bunny for 6 seconds.
   await expect(page.getByLabel("Rule 2 action 3", { exact: true })).toHaveValue("turnAll");
   await expect(page.getByLabel("Rule 2 action 3 seconds")).toHaveValue("6");
   await expect(page.getByLabel("Rule 6 trigger")).toHaveValue("onHazard");
@@ -283,11 +293,11 @@ test("builds a key-and-door rule with a counter and only if", async ({ page }) =
 test("turns, timed turns and the newer triggers can be chosen", async ({ page }) => {
   await start(page, "Ghost Panic");
   await openTab(page, "Rules");
-  // Rule 5: Cat touches Dust ghost. Make it every 20 seconds, turning every Dust ghost into a Scared ghost for 3 seconds.
+  // Rule 5: Cat touches Dust bunny. Make it every 20 seconds, turning every Dust bunny into a Scared dust for 3 seconds.
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "every" });
   await page.getByLabel("Rule 5 seconds").fill("20");
   await page.getByLabel("Rule 5 action 1", { exact: true }).selectOption({ label: "turn every" });
-  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Scared ghost" });
+  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Scared dust" });
   await workOn(page, 5);
   await page.getByRole("button", { name: "Rule 5 action 1: only for some seconds" }).click();
   await page.getByLabel("Rule 5 action 1 seconds").fill("3");
@@ -297,10 +307,10 @@ test("turns, timed turns and the newer triggers can be chosen", async ({ page })
   });
   // A thing on a goal, turning into something else for good.
   await page.getByLabel("Rule 5 trigger").selectOption({ label: "is on a goal" });
-  await page.getByLabel("Rule 5 thing").selectOption({ label: "Dust ghost" });
+  await page.getByLabel("Rule 5 thing").selectOption({ label: "Dust bunny" });
   await page.getByLabel("Rule 5 action 1", { exact: true }).selectOption({ label: "turn" });
   await expect(page.getByLabel("Rule 5 action 1 which")).toHaveValue("it");
-  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Fast ghost" });
+  await page.getByLabel("Rule 5 action 1 into").selectOption({ label: "Angry dust" });
   // A counter reaching a number.
   await page.getByLabel("Rule 7 trigger").selectOption({ label: "reaches" });
   await page.getByLabel("Rule 7 counter").selectOption({ label: "Combo" });

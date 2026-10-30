@@ -24,7 +24,7 @@ test.describe("a first visit", () => {
     await expect(mode.getByRole("radio")).toHaveText(["Kit", "Rules", "7800basic"]);
     await expect(mode.getByRole("radio", { name: "Kit" })).toHaveAttribute("aria-checked", "true");
     // Kit keeps the Rules tab: the guide's third step changes a rule.
-    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
+    await expect(page.getByRole("tablist", { name: "Edit" }).getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await page.getByRole("tab", { name: "Game" }).click();
     await expect(page.getByRole("button", { name: "Add counter" })).toBeHidden();
     expect(await axe(page)).toEqual([]);
@@ -33,12 +33,12 @@ test.describe("a first visit", () => {
     await mode.getByRole("radio", { name: "Kit" }).focus();
     await page.keyboard.press("ArrowRight");
     await expect(mode.getByRole("radio", { name: "Rules" })).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
+    await expect(page.getByRole("tablist", { name: "Edit" }).getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game"]);
     await expect(page.getByRole("button", { name: "Add counter" })).toBeVisible();
 
     // 7800basic adds the Code tab, and the choice is remembered.
     await mode.getByRole("radio", { name: "7800basic" }).click();
-    await expect(page.getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game", "Code"]);
+    await expect(page.getByRole("tablist", { name: "Edit" }).getByRole("tab")).toHaveText(["Things", "Room", "Rules", "Game", "Code"]);
     await page.reload();
     await expect(page.getByRole("radio", { name: "7800basic" })).toHaveAttribute("aria-checked", "true");
 
@@ -70,7 +70,7 @@ test("the Game menu opens with a click, closes with Escape and starts a new game
   await expect(page.getByRole("button", { name: "New game" })).toBeHidden();
   await menuButton.click();
   await expect(menuButton).toHaveAttribute("aria-expanded", "true");
-  await expect(page.locator(".menu").getByRole("button")).toHaveText(["New game", "Open a game file…", "Save a game file", "About and licences"]);
+  await expect(page.locator(".menu").getByRole("button")).toHaveText(["New game", "Open a game file…", "Save a game file", "Show the guide", "About and licences"]);
   await expect(page.getByRole("button", { name: "New game" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "New game" })).toBeHidden();
@@ -78,7 +78,7 @@ test("the Game menu opens with a click, closes with Escape and starts a new game
 
   await menuButton.click();
   await page.getByRole("button", { name: "New game" }).click();
-  await expect(page.getByRole("dialog").getByText("Pick a cart to start from")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Open a game" }).getByRole("heading", { name: "Starters" })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 });

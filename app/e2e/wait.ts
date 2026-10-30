@@ -62,3 +62,9 @@ export const savedThumbnails = (page: Page) =>
         req.onerror = () => reject(req.error);
       }),
   );
+
+/** Saves the open game as a file, from the Game menu. */
+export async function saveGameFile(page: Page) {
+  await page.getByRole("button", { name: "Game", exact: true }).click();
+  await page.getByRole("button", { name: "Save a game file", exact: true }).click();
+}

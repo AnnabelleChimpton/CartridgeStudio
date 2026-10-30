@@ -32,6 +32,8 @@
 .settings-rows > .row > :first-child { font-weight: 700; padding-top: 8px; }
 .settings-rows > .row > :not(:first-child) { grid-column: 2; }
 .settings-rows .field-stack { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+/* The swatches sit at the left of a narrow column: open the grid rightwards, or it starts off the screen. */
+.settings-rows .picker-grid { right: auto; left: 0; }
 .settings-rows > .row.slider-row { align-items: center; }
 .settings-rows > .row.slider-row > :first-child { padding-top: 0; }
 .settings-rows .slider-field { display: grid; grid-template-columns: minmax(0, 1fr) 32px; align-items: center; gap: var(--s-2); }

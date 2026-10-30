@@ -36,7 +36,15 @@ test("Send to family makes one HTML file that plays the game offline", async ({ 
   await expect(player.getByRole("heading", { name: "Ghost Panic" })).toBeVisible();
   await expect(player.locator("#start")).toHaveText("Click the screen, then press fire.");
   await player.locator("#start").click();
-  await expect.poll(() => player.evaluate(() => (window as unknown as { __frames: number }).__frames ?? 0), { timeout: 10_000 }).toBeGreaterThan(60);
+  const frames = () => player.evaluate(() => (window as unknown as { __frames: number }).__frames ?? 0);
+  await expect.poll(frames, { timeout: 10_000 }).toBeGreaterThan(60);
+  // The title screen shows only the title: fire starts the game, and the maze is drawn.
+  await expect(player.locator("#screen")).toBeFocused();
+  await player.keyboard.down(" ");
+  const at = await frames();
+  await expect.poll(frames).toBeGreaterThan(at + 10);
+  await player.keyboard.up(" ");
+  await expect.poll(frames).toBeGreaterThan(at + 40);
   // The picture isn't blank.
   const lit = await player.evaluate(() => {
     const c = document.querySelector("canvas")!.getContext("2d")!;
@@ -77,11 +85,10 @@ test("the console dialog hands over a signed ROM, with the untested table and a 
   await start(page);
   await showIt(page).getByRole("button", { name: /^Put it on a cart/ }).click();
   const dialog = page.getByRole("dialog", { name: "Put it on a cart" });
-  await expect(dialog.getByText(/needs a flash cartridge/)).toBeVisible();
-  // The compatibility table is honest: nothing has been tried on hardware.
-  const table = dialog.getByRole("table", { name: "Tested on hardware" });
-  await expect(table.getByRole("row")).toHaveCount(2);
-  await expect(table.getByRole("cell")).toHaveText(["Not yet tested on hardware."]);
+  await expect(dialog.getByText(/you need a flash cartridge/)).toBeVisible();
+  // Honest about hardware: with no reports there is no table, only a line saying so.
+  await expect(dialog.getByRole("table", { name: "Tested on hardware" })).toHaveCount(0);
+  await expect(dialog.getByText(/^Nobody has tested these games on a real/)).toBeVisible();
   // No question before a download.
   await expect(dialog.getByRole("group", { name: "Did it boot?" })).toHaveCount(0);
   expect(await dialogAxe(page)).toEqual([]);
@@ -131,7 +138,7 @@ test("kit games print a box and manual; Show it packs everything with source", a
   await start(page);
   await showIt(page).getByRole("button", { name: /^Print the box/ }).click();
   const dialog = page.getByRole("dialog", { name: "Print the box" });
-  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip, remove the Catnip/);
+  await expect(dialog.getByLabel("Manual text")).toHaveValue(/Touch the Catnip and every Dust bunny turns into a Scared dust for 6 seconds\./);
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(pdf.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");

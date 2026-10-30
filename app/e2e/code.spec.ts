@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { unzipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
+import { saveGameFile } from "./wait.ts";
 
 const status = (page: Page) => page.getByTestId("build-status");
 const buildCount = (page: Page) => page.evaluate(() => window.__cs!.builds.length);
@@ -90,7 +91,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
   await page.keyboard.press("Backspace");
   await page.keyboard.type(" rem fixed");
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
-  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "Save game file" }).click()]);
+  const [download] = await Promise.all([page.waitForEvent("download"), saveGameFile(page)]);
   expect(download.suggestedFilename()).toBe("ghost-panic.cartridge");
   const chunks: Buffer[] = [];
   for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
@@ -112,7 +113,7 @@ test("eject Ghost Panic, change the starting lives, break it, fix it, save and r
 
 test("a blank code project builds, and adding a graphic adds its incgraphic line", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /^Write code/ }).click();
+  await page.getByRole("button", { name: "Or start from a blank 7800basic program" }).click();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await page.getByRole("tab", { name: "Graphics" }).click();
   await page.getByRole("textbox", { name: "Name" }).fill("rock");
@@ -195,7 +196,7 @@ test("the code editor, See the code and the eject dialog pass axe", async ({ pag
 
 test("the keyboard can leave the code editor", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /^Write code/ }).click();
+  await page.getByRole("button", { name: "Or start from a blank 7800basic program" }).click();
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   await editor(page).click();
   // Tab indents…
@@ -220,16 +221,16 @@ async function downloadOf(page: Page, click: () => Promise<unknown>) {
 test("an ejected game still boxes up: print PDF, submission package and source folder", async ({ page }) => {
   await ghostPanic(page);
   await eject(page);
-  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Print the box/ }).click();
+  await page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: /^Print the box/ }).click();
   const dialog = page.getByRole("dialog", { name: "Print the box" });
   // The kit game's manual came along.
-  await expect(dialog.getByLabel("Manual text")).toHaveValue(/When Cat touches Catnip, remove the Catnip/);
+  await expect(dialog.getByLabel("Manual text")).toHaveValue(/Touch the Catnip and every Dust bunny turns into a Scared dust for 6 seconds\./);
   const pdf = await downloadOf(page, () => dialog.getByRole("button", { name: "Download print PDF" }).click());
   expect(pdf.name).toBe("ghost-panic-print.pdf");
   expect(new TextDecoder().decode(pdf.bytes.subarray(0, 5))).toBe("%PDF-");
   await dialog.getByRole("button", { name: "Close" }).click();
   const pkg = await downloadOf(page, () =>
-    page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Everything \(game, source, print kit\)/ }).click(),
+    page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: "Everything (.zip)" }).click(),
   );
   const names = Object.keys(unzipSync(pkg.bytes)).map((n) => n.replace("ghost-panic-submission/", ""));
   expect(names).toEqual(
