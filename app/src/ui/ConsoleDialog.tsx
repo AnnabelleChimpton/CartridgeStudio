@@ -1,8 +1,3 @@
-// "Put it on a cart": the signed ROM for a flash cartridge, what to do with
-// it, and an honest account of hardware testing. After a download it asks
-// "Did it boot?": Yes offers the First boot card, No opens the list of things
-// to try. The boot report is copied, never put in a link.
-
 import { useId, useRef, useState } from "react";
 import { sha256Hex } from "../files/package.ts";
 import { APP_VERSION } from "../version.ts";
@@ -69,10 +64,7 @@ export function ConsoleGuide({ preview, slug, title }: Props) {
 
   return (
     <div className="guide">
-      <p>
-        Your game is a 7800 ROM. To play it on a 7800, 7800+ or 2600+, the console needs a flash cartridge: a cartridge with a memory card
-        slot that loads ROM files.
-      </p>
+      <p>To play it on a console you need a flash cartridge, a cart that loads games from an SD card.</p>
       <ol>
         <li>Get a flash cartridge that plays 7800 games. Check that its seller lists 7800 games, not only 2600 ones.</li>
         <li>Download your game below and copy the file onto the cartridge's memory card.</li>
@@ -91,13 +83,17 @@ export function ConsoleGuide({ preview, slug, title }: Props) {
         {saved}
       </p>
       {error && <p className="error">{error}</p>}
+      {COMPAT.rows.length === 0 && (
+        <p className="muted small">
+          Nobody has tested these games on a real 7800+, 2600+ or 7800 yet. If you try one, press Copy boot report and post the result.
+        </p>
+      )}
 
       {file && (
         <div className="boot-ask" role="group" aria-labelledby={`${ids}-boot`}>
           <h3 className="section-h" id={`${ids}-boot`}>
             Did it boot?
           </h3>
-          <p className="muted small">Answer once you've tried {file.name} on the console.</p>
           <div className="toolbar">
             {(
               [
@@ -114,16 +110,11 @@ export function ConsoleGuide({ preview, slug, title }: Props) {
           <div aria-live="polite">
             {answer === "yes" && <FirstBoot title={title} file={file.name} report={report} />}
             {answer === "no" && <p className="small">The list below has what to try first, and the boot report to post if it still doesn't start.</p>}
-            {answer === "not-yet" && <p className="small muted">Not tried yet. The question stays here until the dialog closes.</p>}
           </div>
         </div>
       )}
 
       <CompatTable />
-      <p className="muted small">
-        Every game is checked by playing it in js7800, the emulator on this page. Nobody has tested these games on a real 7800+, 2600+ or 7800
-        yet.
-      </p>
 
       <details ref={trouble} className="small" open={troubleOpen} onToggle={(e) => setTroubleOpen(e.currentTarget.open)}>
         <summary>If it doesn't start</summary>
@@ -134,16 +125,15 @@ export function ConsoleGuide({ preview, slug, title }: Props) {
         </ul>
         <BootReport report={report} />
       </details>
-      <p className="muted small">
-        Cartridge Studio is an independent project. Atari doesn't make, test or support these games; post problems on GitHub, not to Atari.
-      </p>
+      <p className="muted small">This isn't an Atari product. Report problems on GitHub.</p>
     </div>
   );
 }
 
-/** compatibility.json as a table: one row per boot report, or the single untested row. */
+/** compatibility.json as a table, one row per boot report. Nothing until there is a report. */
 export function CompatTable() {
   const id = useId();
+  if (COMPAT.rows.length === 0) return null;
   return (
     <table className="compat small" aria-labelledby={id}>
       <caption id={id}>Tested on hardware</caption>
@@ -156,31 +146,25 @@ export function CompatTable() {
         </tr>
       </thead>
       <tbody>
-        {COMPAT.rows.length === 0 ? (
-          <tr>
-            <td colSpan={4}>{COMPAT.note}</td>
+        {COMPAT.rows.map((r, i) => (
+          <tr key={i}>
+            <td>{r.console}</td>
+            <td>
+              {r.cartridge}, {r.firmware}
+            </td>
+            <td>
+              {r.report ? (
+                <a href={r.report} target="_blank" rel="noreferrer">
+                  {r.result}
+                  <span className="visually-hidden"> (boot report, opens in a new tab)</span>
+                </a>
+              ) : (
+                r.result
+              )}
+            </td>
+            <td>{r.date}</td>
           </tr>
-        ) : (
-          COMPAT.rows.map((r, i) => (
-            <tr key={i}>
-              <td>{r.console}</td>
-              <td>
-                {r.cartridge}, {r.firmware}
-              </td>
-              <td>
-                {r.report ? (
-                  <a href={r.report} target="_blank" rel="noreferrer">
-                    {r.result}
-                    <span className="visually-hidden"> (boot report, opens in a new tab)</span>
-                  </a>
-                ) : (
-                  r.result
-                )}
-              </td>
-              <td>{r.date}</td>
-            </tr>
-          ))
-        )}
+        ))}
       </tbody>
     </table>
   );
@@ -223,7 +207,7 @@ function FirstBoot({ title, file, report }: { title: string; file: string; repor
   const [blocked, setBlocked] = useState(false);
   return (
     <div className="first-boot">
-      <p className="small">{title || "Untitled"} booted on a console. Print the First boot card for the box, and post the result so the table below can list it.</p>
+      <p className="small">{title || "Untitled"} booted on a console. Print the First boot card for the box, and post the result so others know it works.</p>
       <div className="toolbar">
         <button type="button" onClick={() => setBlocked(!firstBootCard({ title, file, date: new Date().toLocaleDateString() }))}>
           Print the First boot card

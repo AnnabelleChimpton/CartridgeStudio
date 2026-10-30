@@ -1,6 +1,3 @@
-// The jam a creator has joined, always in view: its theme and rules, the
-// organizer's page, and a way out.
-
 import { useState } from "react";
 import { ConfirmDialog } from "../ui/Dialog.tsx";
 import { APP_VERSION } from "../version.ts";
@@ -65,7 +62,7 @@ export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; on
       {leaving && (
         <ConfirmDialog
           title={`Leave ${brief.name}?`}
-          message="Your game stays; only the jam banner and entry form go."
+          message="Your game stays. The jam banner and entry form go."
           yes="Leave jam"
           no="Stay in the jam"
           onYes={() => useJamStore.getState().leave()}
@@ -76,25 +73,7 @@ export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; on
   );
 }
 
-/** Ways into jams from the start screen, for creators and organizers. */
-export function JamLinks({ onBrief }: { onBrief: (file: File) => void }) {
-  return (
-    <p className="jam-links muted small">
-      Joining a game jam?{" "}
-      <label className="jam-file-link">
-        Open its brief (.jam.json)
-        <input
-          type="file"
-          accept=".json,application/json"
-          className="visually-hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            e.target.value = "";
-            if (f) onBrief(f);
-          }}
-        />
-      </label>{" "}
-      · Running one? <a href="organize.html">How to run a jam</a>
-    </p>
-  );
+/** The start screen no longer links to jams: a brief arrives as a ?jam= link or through Open. */
+export function JamLinks(_: { onBrief: (file: File) => void }) {
+  return null;
 }

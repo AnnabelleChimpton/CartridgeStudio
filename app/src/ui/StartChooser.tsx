@@ -1,10 +1,8 @@
-// "Pick a cart to start from": the games made so far (My games), then the
-// starting games. Shown when no game is open, and from New game.
-
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { KIT_PRESETS } from "../kit/presets.ts";
 import type { KitGame } from "../kit/schema.ts";
 import type { Palette, Sprite } from "../project/schema.ts";
+import { AboutDialog } from "./About.tsx";
 import { ContextStrip } from "./ContextStrip.tsx";
 import { Dialog } from "./Dialog.tsx";
 import { MyGames, type LibraryActions } from "./MyGames.tsx";
@@ -12,7 +10,7 @@ import { ntscCss } from "./ntsc.ts";
 import { SpritePreview } from "./SpritePreview.tsx";
 import { KitText } from "./BrandMark.tsx";
 import { Brand } from "./TopBar.tsx";
-import { numberWord } from "./words.ts";
+import "./start.css";
 
 export type StartChoice = { kind: "kit"; preset: string } | { kind: "code" };
 
@@ -31,20 +29,6 @@ function CastSprite({ sprite, palette, scale, playing }: { sprite: Sprite; palet
   return <SpritePreview sprite={{ ...sprite, frames: [sprite.frames[frame]!] }} palette={palette} scale={scale} />;
 }
 
-function Screen({ background, cast, playing }: { background: string; cast: { sprite: Sprite; palette?: Palette }[]; playing: boolean }) {
-  return (
-    <span className="card-screen" style={{ background: ntscCss(background) }} aria-hidden="true">
-      <span className="cast">
-        {cast.map(({ sprite, palette }, i) => (
-          <span key={sprite.id} className="cast-member" style={{ animationDelay: `${i * 60}ms` }}>
-            <CastSprite sprite={sprite} palette={palette} scale={sprite.width > 8 ? 2 : 3} playing={playing} />
-          </span>
-        ))}
-      </span>
-    </span>
-  );
-}
-
 function kitCast(game: KitGame) {
   return game.types.slice(0, 3).map((t) => ({
     sprite: { id: t.id, role: t.id, width: t.width, height: t.height, palette: t.palette, frames: t.frames },
@@ -52,22 +36,21 @@ function kitCast(game: KitGame) {
   }));
 }
 
-/** What the chooser says above the cards, counted from the cards it shows. */
-function Intro({ only }: { only?: readonly string[] }) {
-  const count = KIT_PRESETS.filter((p) => !only || only.includes(p.id)).length;
-  const all = count === 1 ? "It plays" : `All ${numberWord(count)} play`;
+/** A cartridge seen from the front: grip ridges, then the label with its title band and a window. */
+export function Cart({ title, background, small, children }: { title?: string; background: string; small?: boolean; children: ReactNode }) {
   return (
-    <>
-      <p className="muted chooser-lead">{all} already. Change the art, the room or the rules, then press play.</p>
-      <p className="muted small">A short guide at the top of the editor walks you through the first changes.</p>
-    </>
+    <span className={`cart${small ? " cart-small" : ""}`}>
+      <span className="cart-label" style={{ background }}>
+        <span className="cart-band">{title && <KitText text={title} maxChars={20} />}</span>
+        <span className="cart-window">{children}</span>
+      </span>
+    </span>
   );
 }
 
-/** The starting games. `only` limits them to these kit presets, e.g. for a jam. */
-function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
-  const offered = (id: string) => !only || only.includes(id);
-  // The card under the pointer or keyboard plays its cast's animation.
+/** The starting games on a shelf. `only` limits them to these kit presets, e.g. for a jam. */
+function Shelf({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
+  // The cart under the pointer or keyboard plays its cast's animation.
   const [live, setLive] = useState<string | null>(null);
   const liveProps = (id: string) => ({
     onMouseEnter: () => setLive(id),
@@ -76,33 +59,51 @@ function Choices({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?
     onBlur: () => setLive((l) => (l === id ? null : l)),
   });
   return (
-    <div className="chooser-grid">
-      {KIT_PRESETS.filter((p) => offered(p.id)).map((p) => (
-        <button key={p.id} type="button" className="chooser-card" {...liveProps(p.id)} onClick={() => onChoose({ kind: "kit", preset: p.id })}>
-          <Screen background={p.game.background} cast={kitCast(p.game)} playing={live === p.id} />
-          <span className="card-body">
-            <strong>
-              <KitText text={p.name} />
-            </strong>
-            <span className="chooser-kind small">{p.kind}</span>
-            <span className="muted small">{p.description}</span>
-          </span>
-        </button>
+    <ul className="shelf">
+      {KIT_PRESETS.filter((p) => !only || only.includes(p.id)).map((p) => (
+        <li key={p.id}>
+          <button type="button" className="cart-pick" {...liveProps(p.id)} onClick={() => onChoose({ kind: "kit", preset: p.id })}>
+            <Cart title={p.name} background={ntscCss(p.game.background)}>
+              <span className="cart-cast" aria-hidden="true">
+                {kitCast(p.game).map(({ sprite, palette }) => (
+                  <CastSprite key={sprite.id} sprite={sprite} palette={palette} scale={sprite.width > 8 ? 2 : 3} playing={live === p.id} />
+                ))}
+              </span>
+            </Cart>
+            <span className="cart-note">{p.description}</span>
+          </button>
+        </li>
       ))}
-      {!only && (
-        <button type="button" className="chooser-card text-only" onClick={() => onChoose({ kind: "code" })}>
-          <span className="card-body">
-            <strong>Write code</strong>
-            <span className="chooser-kind small">For coders</span>
-            <span className="muted small">A small 7800basic program to start from, with the same live preview.</span>
-          </span>
-        </button>
-      )}
-    </div>
+    </ul>
   );
 }
 
-/** A first visit gets the chooser as the page; New game shows it in a dialog. */
+function Blank({ onChoose, only }: { onChoose: (c: StartChoice) => void; only?: readonly string[] }) {
+  if (only) return null;
+  return (
+    <p className="start-blank">
+      <button type="button" className="link" onClick={() => onChoose({ kind: "code" })}>
+        Or start from a blank 7800basic program
+      </button>
+    </p>
+  );
+}
+
+function StartFooter() {
+  const [about, setAbout] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
+  return (
+    <footer className="start-foot">
+      <button ref={opener} type="button" className="link" onClick={() => setAbout(true)}>
+        About and licences
+      </button>{" "}
+      · Running a jam? <a href="organize.html">How to run one</a>
+      {about && <AboutDialog onClose={() => setAbout(false)} returnTo={opener.current} />}
+    </footer>
+  );
+}
+
+/** A first visit gets the shelf as the page. New game shows it in a dialog, under My games. */
 export function StartChooser({
   onChoose,
   onCancel,
@@ -112,20 +113,22 @@ export function StartChooser({
   onChoose: (c: StartChoice) => void;
   onCancel?: () => void;
   only?: readonly string[];
-  /** "My games", above the starting games. */
   library?: LibraryActions;
 }) {
   if (onCancel) {
     return (
-      <Dialog title="Pick a cart to start from" wide onClose={onCancel}>
-        {library && <MyGames {...library} />}
-        <Intro only={only} />
-        <Choices onChoose={onChoose} only={only} />
-        <div className="toolbar">
-          <span className="spacer" />
-          <button type="button" className="secondary" onClick={onCancel}>
-            Cancel
-          </button>
+      <Dialog title="Open a game" wide onClose={onCancel}>
+        <div className="start-dialog">
+          {library && <MyGames {...library} />}
+          <h2 className="start-h">Starters</h2>
+          <Shelf onChoose={onChoose} only={only} />
+          <Blank onChoose={onChoose} only={only} />
+          <div className="toolbar">
+            <span className="spacer" />
+            <button type="button" className="secondary" onClick={onCancel}>
+              Cancel
+            </button>
+          </div>
         </div>
       </Dialog>
     );
@@ -138,11 +141,13 @@ export function StartChooser({
       <div className="start-strip">
         <ContextStrip />
       </div>
-      <div className="chooser">
-        <h2>Pick a cart to start from</h2>
+      <div className="start-pick">
+        <h2 className="start-title">Pick a cart to start from</h2>
+        <p className="start-lead">They all play. Open one and change it.</p>
+        <Shelf onChoose={onChoose} only={only} />
+        <Blank onChoose={onChoose} only={only} />
         {library && <MyGames {...library} />}
-        <Intro only={only} />
-        <Choices onChoose={onChoose} only={only} />
+        <StartFooter />
       </div>
     </main>
   );

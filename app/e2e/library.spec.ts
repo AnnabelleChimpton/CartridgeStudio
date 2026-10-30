@@ -1,7 +1,3 @@
-// My games: every game made in this browser stays, on the start screen with
-// its picture. New games and opened files add to it; old single-slot saves and
-// Classic shooter files move in (the Classic shooter as a code project).
-
 import { readFileSync } from "node:fs";
 import { strToU8, zipSync } from "fflate";
 import { expect, test, type Page } from "@playwright/test";
@@ -9,7 +5,7 @@ import { autosaved, savedThumbnails } from "./wait.ts";
 
 const templates = new URL("../../templates/", import.meta.url).pathname;
 const classicSample = JSON.parse(readFileSync(`${templates}fixed-shooter/sample.json`, "utf8")) as { title: string };
-const maze = JSON.parse(readFileSync(`${templates}kit/games/maze.json`, "utf8")) as { title: string };
+const dodger = JSON.parse(readFileSync(`${templates}kit/games/dodger.json`, "utf8")) as { title: string };
 
 const status = (page: Page) => page.getByTestId("build-status");
 const myGames = (page: Page) => page.getByRole("region", { name: "My games" });
@@ -23,7 +19,9 @@ async function start(page: Page, preset: RegExp) {
 async function newGameDialog(page: Page) {
   await page.getByRole("button", { name: "Game", exact: true }).click();
   await page.getByRole("button", { name: "New game" }).click();
-  return page.getByRole("dialog", { name: "Pick a cart to start from" });
+  const dialog = page.getByRole("dialog", { name: "Open a game" });
+  await expect(dialog.getByRole("heading", { level: 2, name: "Starters" })).toBeVisible();
+  return dialog;
 }
 
 /** Runs `fn` on the app's IndexedDB store, then closes it. */
@@ -51,7 +49,7 @@ test("new games add to My games, and each one opens, renames, duplicates and del
   // A first visit has no games yet.
   await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   await expect(myGames(page)).toHaveCount(0);
-  await start(page, /^Yarn Hunt/);
+  await start(page, /^Cat vs\. Vacuums/);
   await page.getByLabel("Game title").fill("Mine");
   await autosaved(page, "Mine");
   // The picture is taken a moment after the rebuild.
@@ -121,7 +119,7 @@ test("deleting the open game goes back to the start screen", async ({ page }) =>
 
 test("an edit is saved when the page goes away, even inside the autosave pause", async ({ page }) => {
   await page.goto("/");
-  await start(page, /^Yarn Hunt/);
+  await start(page, /^Cat vs\. Vacuums/);
   await page.getByLabel("Game title").fill("Quick Exit");
   // No wait: leaving the page writes the save still waiting.
   await page.reload();
@@ -130,7 +128,7 @@ test("an edit is saved when the page goes away, even inside the autosave pause",
 
 test("a Classic shooter game file opens as a code project, and says so", async ({ page }) => {
   await page.goto("/");
-  await start(page, /^Yarn Hunt/);
+  await start(page, /^Teacup Rain/);
   const file = zipSync({
     "cartridge.json": strToU8(JSON.stringify({ format: "cartridge-studio", version: 1, appVersion: "0.1.0" })),
     "project.json": strToU8(JSON.stringify(classicSample)),
@@ -144,16 +142,16 @@ test("a Classic shooter game file opens as a code project, and says so", async (
   await expect(status(page)).toContainText("Built in", { timeout: 30_000 });
   // The kit game is still in My games.
   await newGameDialog(page);
-  await expect(card(page, "Yarn Hunt")).toBeVisible();
+  await expect(card(page, "Teacup Rain")).toBeVisible();
 });
 
 test("saves from before My games move into it on first load", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("Pick a cart to start from")).toBeVisible();
   // As an older version left them: one kit game, one Classic shooter game, no library yet.
-  await withStore(page, { "current-kit": maze, current: classicSample, mode: "kit" }, ["library", "open"]);
+  await withStore(page, { "current-kit": dodger, current: classicSample, mode: "kit" }, ["library", "open"]);
   await page.reload();
-  await expect(page.getByLabel("Game title")).toHaveValue(maze.title, { timeout: 30_000 });
+  await expect(page.getByLabel("Game title")).toHaveValue(dodger.title, { timeout: 30_000 });
   await expect(page.getByText("Game kit", { exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Classic shooter editor" })).toBeAttached();
   await newGameDialog(page);

@@ -1,6 +1,3 @@
-// The jam a creator has joined and their entry's details. Both are kept in
-// this browser (localStorage) because a jam lasts days.
-
 import { create } from "zustand";
 import { parseBrief, type JamBrief } from "./brief.ts";
 

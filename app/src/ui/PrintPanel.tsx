@@ -1,8 +1,3 @@
-// "Print the box": the print PDF with box, labels and manual, as the kit and
-// code editors' print panels show it. The everything ZIP, which carries this
-// PDF, is made from Show it. pdf-lib and the fonts load only when a
-// creator downloads.
-
 import { useState } from "react";
 import { slugify } from "../files/exports.ts";
 import type { Layout, Paper, PrintSubject, Screenshot } from "../print/pdf.ts";
@@ -81,10 +76,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, o
 
   return (
     <>
-      <p className="muted small">
-        A printable box front and back, two cartridge labels and a manual. The box art uses your sprites, and the back
-        shows what's in the preview right now.
-      </p>
+      <p className="muted small">The back of the box shows what's in the preview right now.</p>
 
       <div className="print-row">
         <span>Manual</span>
@@ -97,7 +89,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, o
       <textarea className="manual-text" aria-label="Manual text" spellCheck value={text} rows={12} onChange={(e) => onText(e.target.value)} />
       <p className="muted small">
         {edited
-          ? "Edited: the manual no longer follows changes to your rules and settings."
+          ? "You have edited it, so it no longer follows changes to your rules and settings."
           : "Written from your rules and settings, and kept up to date until you edit it."}{" "}
         Start a line with “# ” for a heading or “- ” for a bullet.
       </p>
@@ -112,7 +104,7 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, o
         </label>
         <label className="print-paper">
           <span className="muted small">Manual</span>
-          <select value={layout} onChange={(e) => chooseLayout(e.target.value as Layout)} aria-describedby="print-layout-hint">
+          <select value={layout} onChange={(e) => chooseLayout(e.target.value as Layout)} aria-describedby={layout === "booklet" ? "print-layout-hint" : undefined}>
             <option value="plain">Plain pages</option>
             <option value="booklet">Booklet</option>
           </select>
@@ -121,11 +113,12 @@ export function PrintControls({ title, text, edited, onText, onReset, makePdf, o
           {busy ? "Making PDF…" : "Download print PDF"}
         </button>
       </div>
-      <p className="muted small" id="print-layout-hint">
-        {layout === "booklet"
-          ? `Booklet: ${paper === "a4" ? "A5" : "half-letter"} pages, two to a sheet. Print double-sided, flipping on the short edge, then fold and staple down the middle.`
-          : "Plain pages: the manual on full sheets, printed one side or both."}
-      </p>
+      {layout === "booklet" && (
+        <p className="muted small" id="print-layout-hint">
+          {paper === "a4" ? "A5" : "Half-letter"} pages, two to a sheet. Print double-sided, flipping on the short edge, then fold and staple
+          down the middle.
+        </p>
+      )}
       {error && <p className="error">{error}</p>}
     </>
   );

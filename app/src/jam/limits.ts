@@ -1,6 +1,3 @@
-// Jam limits the app can check. Going past one is flagged for the organizer
-// and judges to weigh, never refused: a jam's rules are the organizer's call.
-
 import { strFromU8, unzipSync } from "fflate";
 import { z } from "zod";
 import { KitGameSchema, type KitGame } from "../kit/schema.ts";

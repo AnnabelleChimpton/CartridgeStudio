@@ -1,7 +1,3 @@
-// What the print kit shows, from either kind of game: a template project (its
-// sprites by role and its manifest's manual) or a kit game (its player, its
-// most numerous thing, and rules read as sentences).
-
 import { EASIER_EXTRA_LIVES, easierOn } from "../kit/assist.ts";
 import { isPlayer, launchedBy, livesOf, placements, shootsOf } from "../kit/edit.ts";
 import { LEVEL, SCORE } from "../kit/schema.ts";
@@ -117,7 +113,7 @@ export function kitControls(g: KitGame): [string, string][] {
     if (shot) rows.push(["Fire button", `Fires a ${labelOf(g, shot)}`]);
   }
   if (g.flow.title) rows.push(["Fire button on the title screen", "Starts a game"]);
-  rows.push(["Pause", "Pauses the game; press again to carry on"], ["Reset", "Back to the title screen"]);
+  rows.push(["Pause", "Press again to carry on"], ["Reset", "Back to the title screen"]);
   if (easierOn(g)) rows.push(["Left difficulty switch", `B: everything but you moves at half speed, and you get ${inWords(EASIER_EXTRA_LIVES)} extra lives. A: as made.`]);
   return rows;
 }
@@ -167,11 +163,16 @@ export function kitFacts(g: KitGame): string[] {
   return facts;
 }
 
-/** The manual written from the game: controls, every rule as a sentence, and a few facts. */
-/** The manual written from the game: every rule as a sentence, and a few facts. The controls are the printed table's job. */
+/** The manual written from the game: what it's about, how to start, and a few facts. The printed tables follow Getting started. */
 export function draftKitManual(g: KitGame): string {
   const out = ["# How to play", kitIntro(g), ""];
-  if (g.rules.length) out.push("# Rules", ...g.rules.map((r) => `- ${ruleSentence(r, g)}`), "");
+  out.push(
+    "# Getting started",
+    "1. With the power off, push the cartridge into the slot.",
+    "2. Turn the power on.",
+    g.flow.title ? "3. Press Reset, then the fire button, to start." : "3. Press Reset to start.",
+    "",
+  );
   const facts = kitFacts(g);
   if (facts.length) out.push("# Good to know", ...facts.map((f) => `- ${f}`));
   return out.join("\n").trim() + "\n";

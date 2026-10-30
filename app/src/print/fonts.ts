@@ -1,7 +1,3 @@
-// The print kit's fonts, fetched from the app on first use: Atkinson
-// Hyperlegible regular and bold (OFL). Titles are drawn in the kit's own
-// 3×5 font as vector shapes, so they need no font file.
-
 import type { PrintFonts } from "./pdf.ts";
 
 let fontsPromise: Promise<PrintFonts> | null = null;

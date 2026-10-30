@@ -1,6 +1,3 @@
-// The creator's side of a jam: a few words about the game, a licence, then one
-// button that packs everything the organizer needs into a ZIP.
-
 import { useEffect, useId, useRef, useState } from "react";
 import { ENTRY_LIMITS, LICENCES } from "../files/package.ts";
 import { useRecentClip } from "../files/recent-clip.ts";
@@ -198,7 +195,7 @@ export function JamEntryPanel({ preview, gameTitle, madeBy, cartridgeFile, tests
         </p>
       )}
       <p className="muted small">
-        One ZIP with a page that plays the game offline, {cartridgeFile ? "the game file, " : ""}signed ROMs{clip ? ", your clip" : ""} and these
+        A ZIP with a page that plays the game offline, {cartridgeFile ? "the game file, " : ""}signed ROMs{clip ? ", your clip" : ""} and these
         details.
       </p>
       <div aria-live="polite">

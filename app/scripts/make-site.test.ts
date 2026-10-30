@@ -7,8 +7,8 @@
 //   site/play/play.json         the .a78's size and title, for anything else that wants it
 //
 // and fills every `<!-- gen:name -->…<!-- /gen:name -->` region of
-// site/index.html (download size, clip grid, counts, the rule sentence and its
-// generated 7800basic, the compatibility table from compatibility.json, the
+// site/index.html (download size, the starters on the cart, a rule and its
+// generated 7800basic, hardware results from compatibility.json, the
 // toolchain versions), so the page shows the numbers from this build and still
 // works opened from disk with scripts off.
 //
@@ -24,7 +24,7 @@ import { nodeBuilder, nodeHost } from "../src/harness/node.ts";
 import { generateKit } from "../src/kit/generate.ts";
 import { loadKit } from "../src/kit/migrations.ts";
 import { KIT_PRESETS } from "../src/kit/presets.ts";
-import { MAX_TYPES, type KitGame } from "../src/kit/schema.ts";
+import type { KitGame } from "../src/kit/schema.ts";
 import { ruleSentence } from "../src/kit/sentence.ts";
 import { buildKitRom } from "../src/kit/tests.ts";
 import { playerInfo } from "../src/player/game-info.ts";
@@ -36,17 +36,15 @@ const site = path.join(root, "site");
 const playDir = path.join(site, "play");
 const vendor = path.join(root, "app/public/vendor/js7800-core");
 
-/** The game the hero plays, and the rules the page quotes from it. */
+/** The game the hero plays, and the rule the page quotes from it. */
 const HERO = "ghost-panic";
-const STEP_RULE = "r-1";
 const BAS_RULE = "r-8";
-/** The starter shown as a still in "Who uses it" (it has no clip yet). */
+/** The starter shown as a still on the cart (it has no clip yet). */
 const STILL = "key-quest";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 const word = (n: number) => WORDS[n] ?? String(n);
-const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
 
 function loadGame(id: string): KitGame {
   const loaded = loadKit(JSON.parse(fs.readFileSync(path.join(root, "templates/kit/games", `${id}.json`), "utf8")));
@@ -57,7 +55,7 @@ function loadGame(id: string): KitGame {
 /** What each clip shows, for its alt text. Keyed by id; a clip without one gets a plain line. */
 const CLIP_ALT: Record<string, string> = {
   shooter: "a cat at the bottom of the screen slides left and right, firing up at two marching rows of vacuum cleaners and stepping out from under their falling dust.",
-  maze: "a cat threads through a brick maze collecting balls of yarn while ghosts chase it and a bat patrols the middle corridor.",
+  "ghost-panic": "the cat in a green-walled hallway with dust bunnies, catnip and the score.",
   dodger: "the player weaves along the bottom of the screen between falling hazards, catching the good things for points.",
 };
 
@@ -85,11 +83,12 @@ function replaceRegion(html: string, name: string, content: string): string {
   return html.replace(re, (_, open: string, close: string) => `${open}${content}${close}`);
 }
 
+const caption = (title: string, description: string) => (description ? `${title}. ${description}` : title);
+
 function clipItem(c: ClipEntry): string {
   const preset = KIT_PRESETS.find((p) => p.id === c.id);
   const title = preset?.name ?? c.title;
   const alt = `${title}: ${CLIP_ALT[c.id] ?? "recorded from the built ROM."}`;
-  const caption = preset?.description ? `${title}. ${preset.description}` : title;
   return `
           <li>
             <figure class="tv">
@@ -101,32 +100,57 @@ function clipItem(c: ClipEntry): string {
                        alt="${esc(alt)}">
                 </picture>
               </div>
-              <figcaption>${esc(caption)}</figcaption>
+              <figcaption>${esc(caption(title, preset?.description ?? ""))}</figcaption>
             </figure>
           </li>`;
 }
 
-function compatTable(data: { note?: string; rows?: CompatRow[] }): string {
-  const rows = data.rows ?? [];
-  const body = rows.length
-    ? rows
-        .map((r) => {
-          const result = r.report && /^https:\/\//.test(r.report) ? `<a href="${esc(r.report)}">${esc(r.result)}</a>` : esc(r.result);
-          return `
-              <tr><td>${esc(r.console)}</td><td>${esc(r.firmware)}</td><td>${esc(r.cartridge)}</td><td>${result}</td><td>${esc(r.date)}</td></tr>`;
-        })
-        .join("")
-    : `
-              <tr><td colspan="5">${esc(data.note ?? "Not yet tested on hardware.")}</td></tr>`;
+function stillItem(title: string, description: string): string {
   return `
-          <div class="table-scroll" tabindex="0" role="region" aria-labelledby="compat-title">
-            <table class="compat-table">
-              <thead><tr><th scope="col">Console</th><th scope="col">Firmware</th><th scope="col">Cartridge</th><th scope="col">Result</th><th scope="col">Date</th></tr></thead>
-              <tbody>${body}
-              </tbody>
-            </table>
-          </div>
-          `;
+          <li>
+            <figure class="tv">
+              <div class="screen">
+                <img src="play/${STILL}.png" width="${CLIP_WIDTH}" height="${CLIP_HEIGHT}" loading="lazy" decoding="async"
+                     alt="${esc(title)}, the first room a second after the start: a blue brick room with a doorway in its bottom wall.">
+              </div>
+              <figcaption>${esc(caption(title, description))}</figcaption>
+            </figure>
+          </li>`;
+}
+
+/** The hardware results, or a plain sentence until there are any. */
+function compatTable(rows: CompatRow[]): string {
+  if (!rows.length) return `
+        <p>Nobody has tested these games on real hardware yet.</p>
+        `;
+  const body = rows
+    .map((r) => {
+      const result = r.report && /^https:\/\//.test(r.report) ? `<a href="${esc(r.report)}">${esc(r.result)}</a>` : esc(r.result);
+      return `
+              <tr><td>${esc(r.console)}</td><td>${esc(r.firmware)}</td><td>${esc(r.cartridge)}</td><td>${result}</td><td>${esc(r.date)}</td></tr>`;
+    })
+    .join("");
+  return `
+        <div class="table-scroll" tabindex="0" role="region" aria-labelledby="compat-title">
+          <table class="compat-table">
+            <caption id="compat-title">Tested on hardware</caption>
+            <thead><tr><th scope="col">Console</th><th scope="col">Firmware</th><th scope="col">Cartridge</th><th scope="col">Result</th><th scope="col">Date</th></tr></thead>
+            <tbody>${body}
+            </tbody>
+          </table>
+        </div>
+        `;
+}
+
+/** Fails on a semicolon in the page's words: outside scripts, code, comments and character references. */
+function checkNoSemicolons(html: string) {
+  const words = html
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<pre[\s\S]*?<\/pre>/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/&#?\w+;/g, "");
+  const at = words.indexOf(";");
+  if (at >= 0) throw new Error(`site/index.html has a semicolon in its text: …${words.slice(Math.max(0, at - 60), at + 20)}…`);
 }
 
 it(
@@ -166,7 +190,7 @@ it(
     for (let i = 0; i < idx.length; i++) rgba.set([pal[idx[i]! * 3]!, pal[idx[i]! * 3 + 1]!, pal[idx[i]! * 3 + 2]!, 255], i * 4);
     fs.writeFileSync(path.join(playDir, `${STILL}.png`), encodeRgbaPng(CLIP_WIDTH, CLIP_HEIGHT, rgba));
 
-    // ---- One rule's sentence and the 7800basic generated for it. ----
+    // ---- A rule's sentence and the 7800basic generated for it. ----
     const gen = generateKit(game, SOUND_LIBRARY);
     if (!gen.ok) throw new Error(gen.errors.join("; "));
     const rule = (id: string) => {
@@ -174,22 +198,22 @@ it(
       if (!r) throw new Error(`${HERO} has no rule ${id}`);
       return r;
     };
-    const stepSentence = ruleSentence(rule(STEP_RULE), game);
     const basSentence = ruleSentence(rule(BAS_RULE), game);
     if (process.env.SITE_TRACE) for (const sp of gen.spans) process.stdout.write(`${sp.kind}:${sp.id} ${sp.from}-${sp.to}\n`);
     // A rule's code is in two places: its trigger in the rule loop, and its actions in a subroutine.
     const spans = gen.spans.filter((s) => s.kind === "rule" && s.id === BAS_RULE).sort((a, b) => a.from - b.from);
     if (!spans.length) throw new Error(`No source span for ${BAS_RULE}`);
     const source = gen.input.source.split("\n");
-    const bas = spans
-      .map((sp) => {
-        const lines = source.slice(sp.from - 1, sp.to);
-        const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => /^ */.exec(l)![0].length));
-        return lines.map((l) => l.slice(indent)).join("\n");
-      })
-      .join("\n\n");
-    const where = spans.map((sp) => `${sp.from} to ${sp.to}`);
-    const lineWords = `lines ${where.length > 1 ? `${where.slice(0, -1).join(", ")} and ${where.at(-1)}` : where[0]}`;
+    const blocks = spans.map((sp) => {
+      const lines = source.slice(sp.from - 1, sp.to);
+      const indent = Math.min(...lines.filter((l) => l.trim()).map((l) => /^ */.exec(l)![0].length));
+      return `
+            <figure class="bas-block">
+              <figcaption>game.bas, lines ${sp.from}-${sp.to}</figcaption>
+              <pre tabindex="0"><code>${esc(lines.map((l) => l.slice(indent)).join("\n").trimEnd())}</code></pre>
+            </figure>`;
+    });
+    const lineWords = spans.map((sp) => `${sp.from}-${sp.to}`).join(", ");
 
     // ---- Data for the regions. ----
     const clips = JSON.parse(fs.readFileSync(path.join(site, "clips/clips.json"), "utf8")) as ClipEntry[];
@@ -209,45 +233,36 @@ it(
       `
           <div class="poster" id="poster">
             <img src="clips/${esc(heroClip.still)}" width="${heroClip.width}" height="${heroClip.height}" fetchpriority="high"
-                 alt="${t}, a still from the recording: the cat in a blue brick maze with the ghosts, catnip and the score.">
+                 alt="${t}: ${esc(CLIP_ALT[HERO]!)}">
             <button class="button" type="button" id="play-here" hidden data-src="play/${HERO}.html" data-title="${t}, playable">Play ${t} here</button>
           </div>
           `,
     );
     set("download", `<a href="play/${HERO}.a78" download="${HERO}.a78">Download the .a78 (${kb} KB)</a>`);
-    set("clips", clips.filter((c) => c.id !== HERO).map(clipItem).join("") + "\n        ");
-    set("clip-count", word(clips.length));
-    set("starter-count", cap(word(KIT_PRESETS.length)));
-    set("max-types", word(MAX_TYPES));
-    const kinds = KIT_PRESETS.map((p, i) => (i === 0 ? p.kind : p.kind.replace(/^A/, "a")));
-    set("kinds", `${kinds.length > 1 ? `${kinds.slice(0, -1).join(", ")} or ${kinds.at(-1)}` : kinds[0]}.`);
-    set("rule-step", esc(stepSentence));
+    const cart = KIT_PRESETS.flatMap((p) => {
+      const clip = clips.find((c) => c.id === p.id);
+      if (clip) return [clipItem(clip)];
+      return p.id === STILL ? [stillItem(p.name, p.description)] : [];
+    });
+    set("clips", cart.join("") + "\n        ");
+    set("clip-count", word(cart.length));
     set(
       "bas",
       `
-            <figure class="bas-excerpt">
-              <figcaption>
-                <p class="rule">${esc(basSentence)}</p>
-                <p>A ${t} rule, and the 7800basic Cartridge Studio generates for it: ${lineWords} of game.bas.</p>
-              </figcaption>
-              <pre tabindex="0"><code>${esc(bas)}</code></pre>
-            </figure>
-            `,
+        <div class="bas">
+          <p class="rule">${esc(basSentence)}</p>
+          <div class="bas-code">${blocks.join("")}
+          </div>
+        </div>
+        `,
     );
-    set(
-      "still",
-      `
-            <img src="play/${STILL}.png" width="${CLIP_WIDTH}" height="${CLIP_HEIGHT}" loading="lazy" decoding="async"
-                 alt="${esc(stillGame.title)}, the first room a second after the start: a blue brick room with a doorway in its bottom wall.">
-            `,
-    );
-    set("still-title", esc(stillGame.title));
-    set("compat", compatTable(compat));
+    set("compat", compatTable(compat.rows ?? []));
     set("basic-version", esc(lock.version));
     set("js7800-commit", esc(commit));
+    checkNoSemicolons(html);
     fs.writeFileSync(path.join(site, "index.html"), html);
 
-    process.stdout.write(`${HERO}.a78: ${rom.a78.length} bytes (${kb} KB); rule ${BAS_RULE}: ${lineWords}; ${clips.length} clips, ${KIT_PRESETS.length} starters, ${(compat.rows ?? []).length} compatibility rows\n`);
+    process.stdout.write(`${HERO}.a78: ${rom.a78.length} bytes (${kb} KB); rule ${BAS_RULE}: ${lineWords}; ${cart.length} on the cart, ${(compat.rows ?? []).length} compatibility rows\n`);
   },
   10 * 60_000,
 );

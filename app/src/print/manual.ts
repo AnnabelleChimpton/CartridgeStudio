@@ -1,8 +1,3 @@
-// The manual's text (SPEC.md, "Print PDF"): drafted from the template's
-// sentences, the project's rules and its settings, then editable by the
-// creator before export. Plain text with light markup: `# ` starts a heading,
-// `- ` a bullet, and a blank line separates paragraphs.
-
 import type { Project, Template } from "../project/schema.ts";
 import { resolveParam } from "../project/validate.ts";
 
@@ -71,6 +66,9 @@ export function parseManual(text: string): ManualBlock[] {
     } else if (line.startsWith("- ")) {
       flush();
       blocks.push({ kind: "bullet", text: line.slice(2).trim() });
+    } else if (/^\d+\. /.test(line)) {
+      flush();
+      blocks.push({ kind: "paragraph", text: line });
     } else paragraph.push(line);
   }
   flush();

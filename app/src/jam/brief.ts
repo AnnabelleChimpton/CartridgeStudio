@@ -1,7 +1,3 @@
-// Jam briefs: what an organizer hands every creator. A small JSON file
-// (name.jam.json) or the same JSON in a link (?jam=<base64url>), so a jam needs
-// no server: post the link on itch.io, a forum or GitHub Pages.
-
 import { strFromU8, strToU8 } from "fflate";
 import { z } from "zod";
 import { LimitsSchema } from "./limits.ts";

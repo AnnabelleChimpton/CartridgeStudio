@@ -1,0 +1,70 @@
+.start-pick { width: fit-content; max-width: 100%; margin: clamp(var(--s-6), 9vh, 112px) auto 0; }
+h2.start-title {
+  font: 700 var(--fs-2xl) / 1.2 var(--font-ui); text-transform: none; letter-spacing: 0; color: var(--text); margin: 0 0 var(--s-2);
+}
+.start-lead { font-size: var(--fs-lg); color: var(--muted); margin: 0 0 var(--s-5); }
+h2.start-h { margin: var(--s-5) 0 var(--s-2); }
+h2.start-h:focus { outline: none; }
+.start-dialog > h2.start-h:first-child { margin-top: 0; }
+.start-dialog .shelf { justify-content: flex-start; }
+
+/* The carts stand on a shelf: a 2px line under each row, the description below it. */
+.shelf { display: flex; flex-wrap: wrap; justify-content: center; list-style: none; margin: 0; padding: 0; row-gap: var(--s-5); }
+.shelf > li { position: relative; width: 200px; padding: 8px 12px 0; }
+.shelf > li::after { content: ""; position: absolute; left: 0; right: 0; top: 208px; height: 2px; background: var(--ntsc-00); }
+
+button.cart-pick {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px; width: 100%; min-height: 0; padding: 0;
+  background: none; color: var(--text); font-weight: 400; text-align: left; border-radius: 0;
+}
+.cart-note { font-size: var(--fs-sm); line-height: 1.45; color: var(--muted); }
+
+/* Phones: each cart with its description beside it, one per row. */
+@media (max-width: 520px) {
+  .shelf > li { width: 100%; padding: 8px 0 0; }
+  .shelf button.cart-pick { flex-direction: row; align-items: flex-end; gap: 12px; padding-bottom: 0; }
+  .shelf .cart-note { padding-bottom: 6px; }
+}
+
+.cart {
+  position: relative; display: block; flex: none; width: 176px; height: 200px;
+  background-color: var(--ntsc-22);
+  background-image: repeating-linear-gradient(to bottom, var(--ntsc-20) 0 2px, transparent 2px 6px);
+  background-size: calc(100% - 32px) 30px; background-position: 16px 4px; background-repeat: no-repeat;
+  box-shadow: inset -2px -2px 0 var(--ntsc-21);
+  transition: transform var(--dur-fast) ease-out;
+}
+.cart-pick:hover .cart, .cart-pick:focus-visible .cart { transform: translateY(-8px); }
+@media (prefers-reduced-motion: reduce) {
+  .cart { transition: none; }
+  .cart-pick:hover .cart, .cart-pick:focus-visible .cart { transform: none; }
+}
+.cart-label { position: absolute; left: 16px; top: 36px; width: 144px; height: 128px; display: flex; flex-direction: column; overflow: hidden; }
+.cart-band { flex: none; display: flex; align-items: center; height: 22px; padding: 0 6px; background: var(--ntsc-0f); color: var(--ntsc-00); }
+.cart-band .kit-text svg { width: auto; height: 10px; max-width: none; }
+.cart-band .kit-fallback { font-size: var(--fs-sm); line-height: 1; white-space: nowrap; overflow: hidden; }
+.cart-window { flex: 1; display: grid; place-items: center; min-height: 0; overflow: hidden; }
+.cart-cast { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 4px 6px; max-width: 136px; }
+.cart-cast canvas { display: block; image-rendering: pixelated; }
+
+.cart-small { width: 88px; height: 100px; background-size: calc(100% - 16px) 15px; background-position: 8px 2px; background-image: repeating-linear-gradient(to bottom, var(--ntsc-20) 0 1px, transparent 1px 3px); }
+.cart-small .cart-label { left: 8px; top: 18px; width: 72px; height: 64px; }
+.cart-small .cart-band { height: 11px; padding: 0 3px; }
+.cart-small .cart-window img { display: block; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+.start-blank { margin: var(--s-5) 0 0; }
+.start-blank .link { padding-left: 0; }
+.start-foot { margin: var(--s-6) 0 0; color: var(--muted); font-size: var(--fs-sm); }
+.start-foot button.link, .start-foot a { font: inherit; padding: 0; min-height: 0; color: var(--accent-text); }
+
+.my-games { margin: var(--s-6) 0 0; }
+.start-dialog .my-games { margin: 0 0 var(--s-5); }
+.my-games > p { margin: 0 0 var(--s-3); }
+.my-games-shelf { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-3); list-style: none; margin: 0; padding: 0; }
+.my-game { width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.my-game .cart-pick { gap: 8px; }
+.my-game-name { font-weight: 700; overflow-wrap: anywhere; }
+/* Titles at 2x: the kit font draws at 3x or more, so scale it down by a third. */
+.my-game-name .kit-text { zoom: calc(2 / 3); }
+.my-game-actions { display: flex; flex-wrap: wrap; gap: 2px; }
+.my-game-actions button { min-height: 28px; padding: 2px 6px; font-size: var(--fs-sm); }

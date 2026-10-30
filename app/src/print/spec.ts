@@ -1,7 +1,3 @@
-// The box back's spec plate, measured from the build: the cartridge image's
-// size, what the game takes of it (from the toolchain's "bytes of ROM space
-// left" report), display objects per zone, the date and the toolchain.
-
 import type { BuildStats } from "../code/build-log.ts";
 import type { PrintSpec } from "./pdf.ts";
 

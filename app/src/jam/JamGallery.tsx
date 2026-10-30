@@ -1,7 +1,3 @@
-// The organizer's gallery builder (organize.html#gallery): drop in every entry
-// ZIP, check them against the brief, and get one static site to post, plus a
-// judges' sheet and, once it comes back filled in, a results page.
-
 import { useId, useState } from "react";
 import { slugify } from "../files/exports.ts";
 import { licenceName, readPackage } from "../files/package.ts";
@@ -114,8 +110,8 @@ export function JamGallery() {
   return (
     <JamPageShell title="Build the jam gallery" current="gallery">
       <p>
-        Add every entry ZIP your creators sent. You'll get one ZIP with a gallery page and a player for each game: post it on itch.io as
-        an HTML project, put it on GitHub Pages, or open <code>index.html</code> from a folder. It works with no internet.
+        Add every entry ZIP your creators sent. You get a ZIP with a gallery page and a player for each game. Post it on itch.io as an
+        HTML project, put it on GitHub Pages, or open <code>index.html</code> from a folder with no internet.
       </p>
 
       <section aria-labelledby={`${id}-add`}>

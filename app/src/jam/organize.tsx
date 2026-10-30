@@ -1,6 +1,3 @@
-// The organizer's pages (organize.html), apart from the creator app: the
-// guide with the brief maker, and the gallery builder (#gallery).
-
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { JamGallery } from "./JamGallery.tsx";
