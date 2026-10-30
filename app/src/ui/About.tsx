@@ -2,11 +2,6 @@ import { CREDITS, LICENSE_URL, NOTICES_URL, versionLabel } from "./about.ts";
 import { Dialog } from "./Dialog.tsx";
 import "./about.css";
 
-/** The start screen has the About link now, and the editor has it in the Game menu. */
-export function AboutFooter() {
-  return null;
-}
-
 export function AboutDialog({ onClose, returnTo }: { onClose: () => void; returnTo?: HTMLElement | null }) {
   return (
     <Dialog title="About and licences" onClose={onClose} returnTo={returnTo} wide>

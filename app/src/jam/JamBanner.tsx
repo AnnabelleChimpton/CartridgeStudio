@@ -72,8 +72,3 @@ export function JamBanner({ onNewGame, onStarter }: { onNewGame?: () => void; on
     </aside>
   );
 }
-
-/** The start screen no longer links to jams: a brief arrives as a ?jam= link or through Open. */
-export function JamLinks(_: { onBrief: (file: File) => void }) {
-  return null;
-}

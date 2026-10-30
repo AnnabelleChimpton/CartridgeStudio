@@ -75,7 +75,7 @@
                        alt="Cat vs. Vacuums: a cat at the bottom of the screen slides left and right, firing up at two marching rows of vacuum cleaners and stepping out from under their falling dust.">
                 </picture>
               </div>
-              <figcaption>Cat vs. Vacuums. A line of vacuums marches down. Throw socks at them before they reach the floor.</figcaption>
+              <figcaption>Cat vs. Vacuums. Vacuums march down the living room. Throw socks at them before they reach the floor.</figcaption>
             </figure>
           </li>
           <li>
@@ -88,7 +88,7 @@
                        alt="Ghost Panic: the cat in a green-walled hallway with dust bunnies, catnip and the score.">
                 </picture>
               </div>
-              <figcaption>Ghost Panic. Catnip scares the dust bunnies for six seconds. Catch them while it lasts, and mind the spikes.</figcaption>
+              <figcaption>Ghost Panic. Catnip sends the dust bunnies running for 6 seconds. Clear the hallway 3 times. It speeds up.</figcaption>
             </figure>
           </li>
           <li>
@@ -101,16 +101,20 @@
                        alt="Teacup Rain: the player weaves along the bottom of the screen between falling hazards, catching the good things for points.">
                 </picture>
               </div>
-              <figcaption>Teacup Rain. Teacups fall for thirty seconds. Weave between them and catch the fish.</figcaption>
+              <figcaption>Teacup Rain. Teacups fall off the shelf for 30 seconds. Dodge them and catch the fish.</figcaption>
             </figure>
           </li>
           <li>
             <figure class="tv">
               <div class="screen">
-                <img src="play/key-quest.png" width="320" height="240" loading="lazy" decoding="async"
-                     alt="Pantry Raid, the first room a second after the start: a blue brick room with a doorway in its bottom wall.">
+                <picture>
+                  <source srcset="clips/key-quest.png" media="(prefers-reduced-motion: reduce)">
+                  <img class="clip" src="clips/key-quest.gif" width="320" height="240" loading="lazy" decoding="async"
+                       data-still="clips/key-quest.png" data-moving="clips/key-quest.gif"
+                       alt="Pantry Raid: recorded from the built ROM.">
+                </picture>
               </div>
-              <figcaption>Pantry Raid. Four rooms, a key, a locked door and a crown. Shadows follow you from room to room.</figcaption>
+              <figcaption>Pantry Raid. 4 rooms, a key and a locked pantry. Robot vacuums patrol every room.</figcaption>
             </figure>
           </li>
         <!-- /gen:clips --></ul>
@@ -122,11 +126,11 @@
         <h2 id="writes-title">What it writes</h2>
         <!-- gen:bas -->
         <div class="bas">
-          <p class="rule">Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.</p>
+          <p class="rule">Every 15 seconds, turn every Dust bunny into an Angry dust for 4 seconds and play Zap.</p>
           <div class="bas-code">
             <figure class="bas-block">
-              <figcaption>game.bas, lines 986-994</figcaption>
-              <pre tabindex="0"><code> rem rule 8: Every 15 seconds: turn every Dust ghost into a Fast ghost for 4 seconds and play Zap.
+              <figcaption>game.bas, lines 1023-1031</figcaption>
+              <pre tabindex="0"><code> rem rule 8: Every 15 seconds, turn every Dust bunny into an Angry dust for 4 seconds and play Zap.
 rule8
  if secondtick &#60;&#62; 0 then goto rule8_end
  ev8 = ev8 - 1
@@ -137,13 +141,13 @@ rule8
 rule8_end</code></pre>
             </figure>
             <figure class="bas-block">
-              <figcaption>game.bas, lines 1135-1144</figcaption>
+              <figcaption>game.bas, lines 1172-1181</figcaption>
               <pre tabindex="0"><code>rule8_do
  for ak = 1 to 2
- if otype[ak] &#60;&#62; T_GHOST then goto tgt_16
+ if otype[ak] &#60;&#62; T_DUST then goto tgt_16
  if oback[ak] = EMPTY then oback[ak] = otype[ak]
  otimer[ak] = 40
- otype[ak] = T_FAST_GHOST
+ otype[ak] = T_FAST_DUST
 tgt_16
  next
  playsfx sfx_zap

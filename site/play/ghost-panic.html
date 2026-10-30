@@ -109,13 +109,17 @@
   .nojs #start, .nojs .bar button, .nojs #pad, .nojs #skip { display: none; }
   main { display: contents; }
   #game { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
-  /* The same plain TV bezel as the app, with its power light: on while the game runs, dim while paused. */
-  .bezel { position: relative; box-sizing: border-box; width: min(100%, calc((100vh - 250px) * 4 / 3 + 24px)); padding: 12px 12px 22px;
-    border-radius: var(--r-lg); background: var(--raised); border: 1px solid var(--line); }
-  #power { position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px; background: var(--power-off); }
+  /* The same TV as the app: black plastic, a rounded screen opening, and the power light in the chin. */
+  .bezel { box-sizing: border-box; width: min(100%, calc((100vh - 270px) * 4 / 3 + 40px)); padding: 20px 20px 0;
+    border-radius: 6px; background: var(--ntsc-00); }
+  .chin { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 40px; }
+  .chin svg { display: block; fill: var(--muted); }
+  #power { width: 6px; height: 6px; background: var(--power-off); }
   .playing #power { background: var(--power-on); }
   .playing.paused #power { background: var(--power-paused); }
-  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--mat); touch-action: none; }
+  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--ntsc-00); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--ntsc-02); touch-action: none; }
+  #stage:fullscreen { border-radius: 0; box-shadow: none; }
   #stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; display: grid; place-items: center; }
   #screen { width: 100%; height: 100%; image-rendering: pixelated; display: block; outline: none; }
   #screen:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -131,11 +135,7 @@
   button { font: 700 15px / 1.2 var(--font-ui); border: 0; border-radius: var(--r-sm); cursor: pointer; min-height: 44px; padding: 8px 14px; margin-bottom: 2px; }
   button:active { transform: translateY(2px); box-shadow: none; }
   button:focus-visible, a:focus-visible, summary:focus-visible, pre:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  /* Keycaps: the accent with its 2px edge, or the raised grey with its line. */
-  #start { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); z-index: 2; white-space: nowrap;
-    font-size: clamp(15px, min(2.6vw, 4vh), 22px); padding: 10px 18px; background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
-  #start:hover { background: var(--accent-hover); }
-  #start:active { transform: translate(-50%, 2px); }
+  #start { margin: 0; color: var(--muted); font-size: 15px; text-align: center; cursor: pointer; }
   button.plain { background: var(--raised); color: var(--text); box-shadow: 0 2px 0 var(--line); }
   button.plain:hover { background: var(--line); }
   #skip { position: absolute; right: 8px; bottom: 8px; z-index: 2; }
@@ -173,8 +173,9 @@
     .touch h1 { font-size: 16px; }
     .touch h1 svg { width: auto; height: 15px; }
     .touch #game { flex-direction: row; justify-content: center; gap: 12px; }
-    .touch .bezel { width: min(calc(100vw - 2 * 196px), calc((100vh - 120px) * 4 / 3 + 24px)); order: 2; padding: 6px 6px 16px; }
-    .touch #power { bottom: 4px; }
+    .touch .bezel { width: min(calc(100vw - 2 * 196px), calc((100vh - 120px) * 4 / 3 + 12px)); order: 2; padding: 6px 6px 0; }
+    .touch .chin { height: 18px; }
+    .touch #start { display: none; }
     .touch #pad { display: contents; }
     .touch .dpad { order: 1; flex: none; }
     .touch #fire { order: 3; flex: none; margin-left: 0; }
@@ -189,15 +190,15 @@
 
 <div id="game">
   <div class="bezel">
-  <span id="power" aria-hidden="true"></span>
   <div id="stage">
     <canvas id="screen" width="320" height="240" tabindex="0" role="application" aria-roledescription="game" aria-label="Ghost Panic" aria-describedby="controls"></canvas>
     <div id="box" aria-hidden="true"><canvas width="320" height="240"></canvas><p class="box-title"><svg width="344" height="40" viewBox="0 0 43 5" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="0" width="2" height="1"/><rect x="4" y="0" width="1" height="1"/><rect x="6" y="0" width="1" height="1"/><rect x="9" y="0" width="1" height="1"/><rect x="13" y="0" width="2" height="1"/><rect x="16" y="0" width="3" height="1"/><rect x="24" y="0" width="2" height="1"/><rect x="29" y="0" width="1" height="1"/><rect x="32" y="0" width="2" height="1"/><rect x="36" y="0" width="3" height="1"/><rect x="41" y="0" width="2" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="17" y="1" width="1" height="1"/><rect x="24" y="1" width="1" height="1"/><rect x="26" y="1" width="1" height="1"/><rect x="28" y="1" width="1" height="1"/><rect x="30" y="1" width="1" height="1"/><rect x="32" y="1" width="1" height="1"/><rect x="34" y="1" width="1" height="1"/><rect x="37" y="1" width="1" height="1"/><rect x="40" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="4" y="2" width="3" height="1"/><rect x="8" y="2" width="1" height="1"/><rect x="10" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="17" y="2" width="1" height="1"/><rect x="24" y="2" width="2" height="1"/><rect x="28" y="2" width="3" height="1"/><rect x="32" y="2" width="1" height="1"/><rect x="34" y="2" width="1" height="1"/><rect x="37" y="2" width="1" height="1"/><rect x="40" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="1" height="1"/><rect x="10" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="17" y="3" width="1" height="1"/><rect x="24" y="3" width="1" height="1"/><rect x="28" y="3" width="1" height="1"/><rect x="30" y="3" width="1" height="1"/><rect x="32" y="3" width="1" height="1"/><rect x="34" y="3" width="1" height="1"/><rect x="37" y="3" width="1" height="1"/><rect x="40" y="3" width="1" height="1"/><rect x="1" y="4" width="2" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="12" y="4" width="2" height="1"/><rect x="17" y="4" width="1" height="1"/><rect x="24" y="4" width="1" height="1"/><rect x="28" y="4" width="1" height="1"/><rect x="30" y="4" width="1" height="1"/><rect x="32" y="4" width="1" height="1"/><rect x="34" y="4" width="1" height="1"/><rect x="36" y="4" width="3" height="1"/><rect x="41" y="4" width="2" height="1"/></svg></p></div>
     <p id="paused" role="status" hidden>Paused</p>
-    <button id="start" type="button">Press Space or Start to play</button>
     <button id="skip" class="plain" type="button">Skip</button>
   </div>
+  <div class="chin" aria-hidden="true"><span id="power"></span><svg width="19" height="5" viewBox="0 0 19 5" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="2" height="1"/><rect x="5" y="0" width="1" height="1"/><rect x="8" y="0" width="1" height="1"/><rect x="10" y="0" width="1" height="1"/><rect x="12" y="0" width="3" height="1"/><rect x="16" y="0" width="2" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="2" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="6" y="1" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="12" y="1" width="1" height="1"/><rect x="16" y="1" width="1" height="1"/><rect x="18" y="1" width="1" height="1"/><rect x="0" y="2" width="2" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="8" y="2" width="3" height="1"/><rect x="12" y="2" width="2" height="1"/><rect x="16" y="2" width="2" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="8" y="3" width="3" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="18" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="3" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="18" y="4" width="1" height="1"/></svg></div>
   </div>
+  <p id="start">Click the screen, then press fire.</p>
   <!-- display: contents (sideways phones) drops the pad's own aria-hidden in some browsers, so each part says it too. -->
   <div id="pad" aria-hidden="true">
     <div id="dpad" class="dpad free" aria-hidden="true"><span class="arrow up"></span><span class="arrow left"></span><span class="arrow right"></span><span class="arrow down"></span></div>
@@ -10720,11 +10721,7 @@ function hp(e) {
 
 window.JS7800 = { Audio: ed, Cartridge: ja, Database: dp, Events: Jn, Maria: zl, Memory: gi, ProSystem: ef, Region: yd, Sound: Eu };
 })();</script>
-<script>// The offline player's runtime: plain JavaScript inlined into a one-file HTML
-// page with the ROM and the js7800 core (src/player/player.ts). It runs the
-// emulator on the page itself, so the file works when opened from a disk, a
-// phone or a smart TV's browser, with no server. Mirrors CoreHost
-// (src/emulator/core-host.ts) and the preview's input and audio.
+<script>// Keep in step with src/emulator/core-host.ts.
 /* global JS7800, GAME */
 (function () {
   "use strict";

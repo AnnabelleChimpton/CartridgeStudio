@@ -3,6 +3,7 @@ import { paintCell, showCounter } from "./edit.ts";
 import { CPU_BUDGET, cpuCost } from "./generate.ts";
 import { busyFixes, errorAdvice, explainError } from "./help.ts";
 import { KIT_PRESETS } from "./presets.ts";
+import { plural } from "./sentence.ts";
 import type { KitGame } from "./schema.ts";
 
 const preset = (id: string): KitGame => structuredClone(KIT_PRESETS.find((p) => p.id === id)!.game);
@@ -10,12 +11,12 @@ const preset = (id: string): KitGame => structuredClone(KIT_PRESETS.find((p) => 
 describe("busyFixes", () => {
   it("suggests single changes that each make a too-busy game fit", () => {
     const g = preset("ghost-panic");
-    const dust = g.types.find((t) => t.id === "dust" || t.id === "ghost")!;
+    const dust = g.types.find((t) => t.id === "dust")!;
     for (const col of [10, 11, 12, 13, 14]) paintCell(g, col, 5, dust.id);
     expect(cpuCost(g)).toBeGreaterThan(CPU_BUDGET);
     const fixes = busyFixes(g);
     expect(fixes.length).toBeGreaterThan(0);
-    expect(fixes[0]!.text).toMatch(new RegExp(`^Take (one ${dust.label}|\\d+ of the \\d+ ${dust.label}s) out of the room$`));
+    expect(fixes[0]!.text).toMatch(new RegExp(`^Take (one ${dust.label}|\\d+ of the \\d+ ${plural(dust.label)}) out of the room$`));
     for (const f of fixes) {
       expect(f.enough).toBe(true);
       expect(f.after).toBeLessThanOrEqual(CPU_BUDGET);

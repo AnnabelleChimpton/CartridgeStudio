@@ -6,7 +6,7 @@ import { useCodeStore } from "./code/store.ts";
 import { readCartridgeFile } from "./files/cartridge-file.ts";
 import { useGuide } from "./kit/guide.ts";
 import { JAM_EXTENSION, JAM_PARAM, decodeBriefParam, offeredPresets, readBriefText } from "./jam/brief.ts";
-import { JamBanner, JamLinks } from "./jam/JamBanner.tsx";
+import { JamBanner } from "./jam/JamBanner.tsx";
 import { useJamStore } from "./jam/store.ts";
 import { KitEditor } from "./kit/KitEditor.tsx";
 import { KIT_PRESETS } from "./kit/presets.ts";
@@ -251,7 +251,6 @@ export function App() {
         {banner}
         <JamBanner onStarter={openStarter} />
         <StartChooser onChoose={choose} only={only} library={library} />
-        <JamLinks onBrief={(f) => void openBrief(f)} />
       </>
     );
   }

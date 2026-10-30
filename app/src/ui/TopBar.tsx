@@ -40,8 +40,6 @@ export interface MenuItem {
 interface Props {
   title: string;
   onTitle: (title: string) => void;
-  /** No longer shown. */
-  kind?: string;
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -51,8 +49,6 @@ interface Props {
   onNew: () => void;
   /** Editor-specific entries in the Game menu, after saving. */
   menuItems?: MenuItem[];
-  /** No longer shown. */
-  extra?: ReactNode;
 }
 
 export function TopBar({ title, onTitle, canUndo, canRedo, undo, redo, onOpen, onSave, onNew, menuItems = [] }: Props) {
