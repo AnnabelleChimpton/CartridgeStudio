@@ -1,7 +1,7 @@
 [
   {
     "id": "dodger",
-    "title": "Rock Fall",
+    "title": "Teacup Rain",
     "gif": "dodger.gif",
     "still": "dodger.png",
     "width": 320,
@@ -9,7 +9,7 @@
     "seconds": 7,
     "score": [
       0,
-      100
+      150
     ]
   },
   {
@@ -22,20 +22,20 @@
     "seconds": 7,
     "score": [
       0,
-      740
+      750
     ]
   },
   {
-    "id": "maze",
-    "title": "Yarn Hunt",
-    "gif": "maze.gif",
-    "still": "maze.png",
+    "id": "key-quest",
+    "title": "Pantry Raid",
+    "gif": "key-quest.gif",
+    "still": "key-quest.png",
     "width": 320,
     "height": 240,
     "seconds": 7,
     "score": [
       0,
-      70
+      650
     ]
   },
   {
@@ -47,8 +47,8 @@
     "height": 240,
     "seconds": 7,
     "score": [
-      50,
-      120
+      0,
+      50
     ]
   }
 ]
