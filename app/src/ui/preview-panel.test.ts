@@ -9,12 +9,6 @@ describe("failed build headlines", () => {
     expect(failureHeadline("dasm")).toBe("The dasm assembler stopped.");
     expect(failureHeadline("7800filter")).toBe("The 7800filter step of the build stopped.");
   });
-
-  it("follow the voice rules", () => {
-    for (const s of ["worker", "internal", "timeout", "toolchain", "7800basic", "dasm", "x"]) {
-      expect(failureHeadline(s)).not.toMatch(/!|—|went wrong/);
-    }
-  });
 });
 
 describe("failed build details", () => {

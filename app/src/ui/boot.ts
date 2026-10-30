@@ -1,8 +1,3 @@
-// Boot reports: what someone who tried a game on a console copies into the
-// GitHub issue template, and the compatibility table those reports fill in
-// (compatibility.json at the repo root, which the site reads too). Nothing
-// goes in a URL.
-
 import compat from "../../../compatibility.json";
 
 /** The issue form at .github/ISSUE_TEMPLATE/boot-report.yml. The report itself is pasted, never sent in the link. */

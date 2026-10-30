@@ -1,12 +1,9 @@
-/* AppStatus: offline indicator, install link and update prompt. */
 .app-status {
   max-width: 1440px; margin: 0 auto; padding: 0 16px 12px;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .app-status:empty { display: none; }
-.offline-indicator { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
-/* Offline is said in words; the bezel's power light is the app's only status light. */
-.offline-dot { display: none; }
+.offline-indicator { color: var(--muted); }
 
 /* Bottom corner, clear of the editor's controls, and dismissible. */
 .update-prompt {

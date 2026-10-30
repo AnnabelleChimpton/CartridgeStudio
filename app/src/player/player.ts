@@ -1,8 +1,3 @@
-// "Send to family": one self-contained HTML file that plays the game in any
-// modern browser, offline, with no install: the ROM, the js7800 core
-// (built from upstream with two I/O stand-ins, GPL v2 or later, with its
-// licence) and a small runtime, inline.
-
 import runtime from "./runtime.js?raw";
 import { fontRows } from "../kit/font.ts";
 import { tokensCss } from "../ui/tokens.ts";
@@ -142,13 +137,17 @@ ${tokensCss()}  :root { --black: var(--mat); }
   .nojs #start, .nojs .bar button, .nojs #pad, .nojs #skip { display: none; }
   main { display: contents; }
   #game { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
-  /* The same plain TV bezel as the app, with its power light: on while the game runs, dim while paused. */
-  .bezel { position: relative; box-sizing: border-box; width: min(100%, calc((100vh - 250px) * 4 / 3 + 24px)); padding: 12px 12px 22px;
-    border-radius: var(--r-lg); background: var(--raised); border: 1px solid var(--line); }
-  #power { position: absolute; right: 16px; bottom: 7px; width: 8px; height: 8px; background: var(--power-off); }
+  /* The same TV as the app: black plastic, a rounded screen opening, and the power light in the chin. */
+  .bezel { box-sizing: border-box; width: min(100%, calc((100vh - 270px) * 4 / 3 + 40px)); padding: 20px 20px 0;
+    border-radius: 6px; background: var(--ntsc-00); }
+  .chin { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 40px; }
+  .chin svg { display: block; fill: var(--muted); }
+  #power { width: 6px; height: 6px; background: var(--power-off); }
   .playing #power { background: var(--power-on); }
   .playing.paused #power { background: var(--power-paused); }
-  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--mat); touch-action: none; }
+  #stage { position: relative; width: 100%; aspect-ratio: 4 / 3; background: var(--ntsc-00); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--ntsc-02); touch-action: none; }
+  #stage:fullscreen { border-radius: 0; box-shadow: none; }
   #stage:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; display: grid; place-items: center; }
   #screen { width: 100%; height: 100%; image-rendering: pixelated; display: block; outline: none; }
   #screen:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -164,11 +163,7 @@ ${tokensCss()}  :root { --black: var(--mat); }
   button { font: 700 15px / 1.2 var(--font-ui); border: 0; border-radius: var(--r-sm); cursor: pointer; min-height: 44px; padding: 8px 14px; margin-bottom: 2px; }
   button:active { transform: translateY(2px); box-shadow: none; }
   button:focus-visible, a:focus-visible, summary:focus-visible, pre:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  /* Keycaps: the accent with its 2px edge, or the raised grey with its line. */
-  #start { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); z-index: 2; white-space: nowrap;
-    font-size: clamp(15px, min(2.6vw, 4vh), 22px); padding: 10px 18px; background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 0 var(--edge); }
-  #start:hover { background: var(--accent-hover); }
-  #start:active { transform: translate(-50%, 2px); }
+  #start { margin: 0; color: var(--muted); font-size: 15px; text-align: center; cursor: pointer; }
   button.plain { background: var(--raised); color: var(--text); box-shadow: 0 2px 0 var(--line); }
   button.plain:hover { background: var(--line); }
   #skip { position: absolute; right: 8px; bottom: 8px; z-index: 2; }
@@ -206,8 +201,9 @@ ${tokensCss()}  :root { --black: var(--mat); }
     .touch h1 { font-size: 16px; }
     .touch h1 svg { width: auto; height: 15px; }
     .touch #game { flex-direction: row; justify-content: center; gap: 12px; }
-    .touch .bezel { width: min(calc(100vw - 2 * 196px), calc((100vh - 120px) * 4 / 3 + 24px)); order: 2; padding: 6px 6px 16px; }
-    .touch #power { bottom: 4px; }
+    .touch .bezel { width: min(calc(100vw - 2 * 196px), calc((100vh - 120px) * 4 / 3 + 12px)); order: 2; padding: 6px 6px 0; }
+    .touch .chin { height: 18px; }
+    .touch #start { display: none; }
     .touch #pad { display: contents; }
     .touch .dpad { order: 1; flex: none; }
     .touch #fire { order: 3; flex: none; margin-left: 0; }
@@ -222,15 +218,15 @@ ${back}<main>
 ${by}
 <div id="game">
   <div class="bezel">
-  <span id="power" aria-hidden="true"></span>
   <div id="stage">
     <canvas id="screen" width="320" height="240" tabindex="0" role="application" aria-roledescription="game" aria-label="${t}" aria-describedby="controls"></canvas>
     <div id="box" aria-hidden="true"><canvas width="320" height="240"></canvas><p class="box-title">${kitTitle(title.trim() || "My game", 8, true)}${madeBy ? kitTitle(`BY ${madeBy}`, 3, true) : ""}</p></div>
     <p id="paused" role="status" hidden>Paused</p>
-    <button id="start" type="button">Press Space or ${fireLabel} to play</button>
     <button id="skip" class="plain" type="button">Skip</button>
   </div>
+  <div class="chin" aria-hidden="true"><span id="power"></span>${kitTitle("POWER", 1, true)}</div>
   </div>
+  <p id="start">Click the screen, then press fire.</p>
   <!-- display: contents (sideways phones) drops the pad's own aria-hidden in some browsers, so each part says it too. -->
   <div id="pad" aria-hidden="true">
     ${dpad}

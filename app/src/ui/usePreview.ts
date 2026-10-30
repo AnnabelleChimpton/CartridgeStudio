@@ -1,10 +1,8 @@
-// The preview loop both editors share: one build service and one emulator per
-// editor; every change to the game rebuilds 300 ms later and reloads the ROM.
-
 import { toast } from "./Toaster.tsx";
 import { useEffect, useRef, useState } from "react";
 import { InlineBuildService, WorkerBuildService, type BuildService, type ReadyInfo } from "../build/build-service.ts";
 import type { GameSource, ProjectBuildResult } from "../build/project-build.ts";
+import type { ConsoleButton, Difficulty, Switches } from "../emulator/emulator.ts";
 import { WorkerEmulator } from "../emulator/worker-emulator.ts";
 import type { Screenshot } from "../print/pdf.ts";
 import type { useKitStore } from "../kit/store.ts";
@@ -14,7 +12,7 @@ import { parseBuildLog } from "../code/build-log.ts";
 import { builtStatus, cartFill } from "./build-status.ts";
 
 const BUILD_DEBOUNCE_MS = 300;
-/** In TV mode, holding Select this long leaves (a short press plays again). */
+/** In TV mode, holding Select this long leaves (a short press is the console's Select). */
 const HOLD_TO_LEAVE_MS = 1000;
 /** In TV mode the mouse pointer shows for this long after it moves, then hides while the game plays. */
 const POINTER_SHOWS_MS = 2000;
@@ -86,6 +84,8 @@ export function usePreview(source: GameSource) {
   const [tv, setTv] = useState(false);
   /** Goes up each time TV mode starts (from enterTv or the browser going full screen), for the guide. */
   const [tvStarts, setTvStarts] = useState(0);
+  /** Where the console's difficulty switches are; null until a game is loaded. */
+  const [switches, setSwitches] = useState<Switches | null>(null);
 
   /**
    * A fresh emulator on a fresh canvas (a canvas can be handed to a worker only
@@ -108,6 +108,7 @@ export function usePreview(source: GameSource) {
     emuContainer.current!.replaceChildren(canvas);
     const emu = new WorkerEmulator(canvas);
     emu.onFault((message) => setEmuFault(message));
+    emu.onSwitches(setSwitches);
     emulator.current = emu;
     window.__cs!.emulator = emu;
     return emu;
@@ -241,11 +242,11 @@ export function usePreview(source: GameSource) {
       : result?.kind === "built"
         ? builtStatus(record?.wallMs ?? result.totalMs, cartFill(result.stats, result.source))
         : result?.kind === "invalid"
-          ? "Needs a fix: see below"
+          ? "Needs a fix, see below"
           : result?.kind === "failed"
             ? isCodeProject(source)
               ? "Doesn't build yet"
-              : "The build stopped. Your game is saved; the details are below."
+              : "The build stopped. Your game is saved. The details are below."
             : "";
 
   const timing = record
@@ -259,13 +260,14 @@ export function usePreview(source: GameSource) {
     pausedRef.current = p;
     setPausedState(p);
   };
-  /** Back to the title screen, playing. */
-  const restart = () => {
-    if (pausedRef.current) setPaused(false);
-    emulator.current?.reset();
+  /** Presses a console button. Pause while the preview is frozen carries on instead. */
+  const pressConsole = (button: ConsoleButton) => {
+    if (button === "pause" && pausedRef.current) setPaused(false);
+    else emulator.current?.pressConsole(button);
   };
-  const restartRef = useRef(restart);
-  restartRef.current = restart;
+  const pressConsoleRef = useRef(pressConsole);
+  pressConsoleRef.current = pressConsole;
+  const setDifficulty = (side: keyof Switches, position: Difficulty) => emulator.current?.setDifficulty(side, position);
   const setPausedRef = useRef(setPaused);
   setPausedRef.current = setPaused;
 
@@ -279,7 +281,7 @@ export function usePreview(source: GameSource) {
     return () => document.removeEventListener("fullscreenchange", changed);
   }, []);
 
-  // TV mode from the sofa: Start pauses, Select plays again from the title, holding Select leaves.
+  // TV mode from the sofa: Start pauses, Select is the console's Select, holding Select leaves.
   // The mouse pointer hides while the game plays and comes back when it moves.
   useEffect(() => {
     const el = stage.current;
@@ -303,7 +305,7 @@ export function usePreview(source: GameSource) {
         selectUsed = true;
         void document.exitFullscreen?.().catch(() => {});
       }
-      if (!b(SELECT) && was[SELECT] && !selectUsed) restartRef.current();
+      if (!b(SELECT) && was[SELECT] && !selectUsed) pressConsoleRef.current("select");
       was = pad.buttons.map((_, i) => b(i));
     };
     raf = requestAnimationFrame(poll);
@@ -342,7 +344,9 @@ export function usePreview(source: GameSource) {
     tvStarts,
     paused,
     setPaused,
-    restart,
+    pressConsole,
+    switches,
+    setDifficulty,
     source: currentSource,
     emulator,
     ready,

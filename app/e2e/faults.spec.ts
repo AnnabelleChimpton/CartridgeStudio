@@ -56,6 +56,8 @@ test("an emulator fault offers a restart that brings the game back", async ({ pa
   await alert.getByText("Details").click();
   await expect(alert.locator("pre")).toContainText("Injected fault");
   expect(await nextFrame(page)).toBeNull();
+  // The console's own buttons wait for the preview to come back.
+  await expect(page.getByRole("group", { name: "Console" }).getByRole("button", { name: /^reset$/i })).toBeDisabled();
 
   await alert.getByRole("button", { name: "Restart the preview" }).click();
   await expect(alert).toBeHidden();

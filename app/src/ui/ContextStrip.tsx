@@ -1,12 +1,3 @@
-// The context strip: one line under the top bar for the one thing that
-// matters right now. It shows a single item: an error first, otherwise a
-// note (something that changed about your game). See design/DIRECTION.md,
-// Context strip.
-//
-//   useContextItem(failed && { kind: "error", message: "The file isn't a Cartridge Studio game.", onDismiss })
-//
-// The strip itself is part of the top bar.
-
 import { useId, useLayoutEffect, useSyncExternalStore, type ReactNode } from "react";
 import { Icon } from "./Icon.tsx";
 

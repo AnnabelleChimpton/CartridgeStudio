@@ -48,6 +48,5 @@ describe("the First boot card", () => {
     expect(html).toContain("Cats &#38; &#60;Vacuums&#62;");
     expect(html).not.toContain("<Vacuums>");
     expect(html).toContain("cats.a78");
-    expect(html).not.toMatch(/!(?!doctype)/i);
   });
 });

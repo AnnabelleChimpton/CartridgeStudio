@@ -31,11 +31,18 @@ describe("the status line's numbers", () => {
     expect(cartFill(buildStats(""), "")).toBeUndefined();
   });
 
-  it("read as “Built in 0.4 s · 13 of 32 KB”", () => {
+  it("read as “Built in 412 ms · 13 of 32 KB”, in seconds from one second up", () => {
     const fill = cartFill(buildStats(LOG), "")!;
-    expect(builtStatus(412, fill)).toBe("Built in 0.4 s · 13 of 32 KB");
+    expect(builtStatus(412.4, fill)).toBe("Built in 412 ms · 13 of 32 KB");
+    expect(builtStatus(0.3, undefined)).toBe("Built in 0 ms");
+    expect(builtStatus(999.7, undefined)).toBe("Built in 1.0 s");
     expect(builtStatus(1260, undefined)).toBe("Built in 1.3 s");
     expect(kb(48 * 1024)).toBe("48");
     expect(kb(2560)).toBe("2.5");
+  });
+
+  it("say when the cartridge is nearly full", () => {
+    const near = cartFill(buildStats("   1000 bytes of ROM space left in the main area."), "")!;
+    expect(builtStatus(300, near)).toBe("Built in 300 ms · 31 of 32 KB, nearly full");
   });
 });

@@ -1,7 +1,3 @@
-// Recording the joystick for creator tests (code/creator-tests.ts): the
-// emulator worker notes which controls were held for each frame it runs,
-// from power-on, as runs of identical frames.
-
 import type { JoystickInput } from "./core-host.ts";
 import type { Recording } from "./protocol.ts";
 

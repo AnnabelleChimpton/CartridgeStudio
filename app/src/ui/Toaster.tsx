@@ -1,7 +1,3 @@
-// Short confirmations that slide up and leave on their own: "Saved", "Downloaded".
-// Call toast() from anywhere; <Toaster /> is mounted by the top bar. The region
-// is always in the page so screen readers announce new messages politely.
-
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 

@@ -1,4 +1,3 @@
-/* A failed build or a stopped preview: the raw log behind a "Details" disclosure. */
 .raw-log { margin-top: 8px; }
 .raw-log summary { cursor: pointer; }
 .raw-log pre {

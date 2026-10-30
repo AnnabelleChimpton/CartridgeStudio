@@ -7,10 +7,11 @@ import { autosaved } from "./wait.ts";
 /** Opens the start screen and waits for the service worker to take over. */
 async function firstVisit(page: Page) {
   await page.goto("/");
-  await expect(page.getByRole("button", { name: /^Yarn Hunt/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Cat vs\. Vacuums/ })).toBeVisible();
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await expect(page.getByTestId("offline-status")).toHaveText("Works offline", { timeout: 30_000 });
-  expect(await page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller), { timeout: 30_000 }).toBe(true);
+  // Online, nothing is said about it.
+  await expect(page.getByTestId("offline-status")).toHaveCount(0);
 }
 
 const cachedPaths = (page: Page) =>
@@ -40,9 +41,9 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
   await firstVisit(page);
   await context.setOffline(true);
   await page.reload();
-  await expect(page.getByTestId("offline-status")).toHaveText("Offline: everything still works");
+  await expect(page.getByTestId("offline-status")).toHaveText("Offline. Your game still builds and saves.");
 
-  await page.getByRole("button", { name: /^Yarn Hunt/ }).click();
+  await page.getByRole("button", { name: /^Cat vs\. Vacuums/ }).click();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
   const build = await page.evaluate(() => {
     const b = window.__cs!.last!;
@@ -56,7 +57,7 @@ test("after one visit the app builds and saves a ROM offline", async ({ page, co
     .not.toBeNull();
 
   // The signed ROM, from Show it's console guide.
-  await page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Put it on a cart/ }).click();
+  await page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: /^Put it on a cart/ }).click();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("dialog", { name: "Put it on a cart" }).getByRole("button", { name: /\.a78/ }).click(),
@@ -85,7 +86,6 @@ test("a new version offers a reload", async ({ page }) => {
   await expect(prompt).toBeVisible({ timeout: 30_000 });
 
   await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: "Reload" }).click()]);
-  await expect(page.getByTestId("offline-status")).toHaveText("Works offline");
-  expect(await page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/sw\.js\?next$/);
+  await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller?.scriptURL)).toMatch(/\/sw\.js\?next$/);
   await expect(prompt).toHaveCount(0);
 });

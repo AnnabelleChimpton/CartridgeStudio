@@ -21,7 +21,7 @@ async function playerFile(page: Page, preset: Preset): Promise<string> {
   await start(page, preset);
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
-    page.getByRole("region", { name: "Show it" }).getByRole("button", { name: /^Send to family/ }).click(),
+    page.getByRole("region", { name: "Share and download" }).getByRole("button", { name: /^Send to family/ }).click(),
   ]);
   const chunks: Buffer[] = [];
   for await (const c of await download.createReadStream()) chunks.push(c as Buffer);
@@ -150,7 +150,7 @@ test("on a computer: a box front, then keys only reach the game away from button
   await expect(player.getByText("Made with Cartridge Studio.", { exact: false })).toBeVisible();
   await expect(player.getByRole("link", { name: "Made with Cartridge Studio" })).toHaveCount(0);
 
-  await player.getByRole("button", { name: /to play$/ }).click();
+  await player.locator("#start").click();
   await expect(player.getByRole("application", { name: "Ghost Panic" })).toBeFocused();
   await expect.poll(() => frames(player), { timeout: 10_000 }).toBeGreaterThan(30);
 
@@ -199,49 +199,51 @@ test("where scripts don't run, the page says why and what to do instead", async 
   const player = await openPlayer(browser, html, { javaScriptEnabled: false });
   await expect(player.getByText(/If you can read this, the game isn't running/)).toBeVisible();
   await expect(player.getByText(/iPhone or iPad/)).toBeVisible();
-  await expect(player.getByRole("button", { name: /to play$/ })).toBeHidden();
+  await expect(player.locator("#start")).toBeHidden();
   await expect(player.getByRole("heading", { name: "Ghost Panic" })).toBeVisible();
   // With scripts, it's gone.
   const live = await openPlayer(browser, html);
   await expect(live.getByText(/If you can read this/)).toBeHidden();
 });
 
-test("TV mode: a gamepad pauses, plays again and leaves, and the pointer hides only while playing", async ({ page, browserName }) => {
+test("TV mode: a gamepad pauses, presses Select and leaves, and the pointer hides only while playing", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Headless Firefox and WebKit don't go full screen");
   await page.addInitScript(fakeGamepad);
   await start(page, "Ghost Panic");
   const stage = page.locator(".tv-stage");
-  const resets = await page.evaluate(() => {
+  const selects = await page.evaluate(() => {
     const emu = window.__cs!.emulator!;
-    const w = window as unknown as { __resets: number };
-    w.__resets = 0;
-    const reset = emu.reset.bind(emu);
-    emu.reset = () => {
-      w.__resets++;
-      reset();
+    const w = window as unknown as { __selects: number };
+    w.__selects = 0;
+    const press = emu.pressConsole.bind(emu);
+    emu.pressConsole = (b) => {
+      if (b === "select") w.__selects++;
+      press(b);
     };
-    return w.__resets;
+    return w.__selects;
   });
-  expect(resets).toBe(0);
+  expect(selects).toBe(0);
+  const selectCount = () => page.evaluate(() => (window as unknown as { __selects: number }).__selects);
 
   await page.getByRole("button", { name: "Full screen (for a TV)" }).click();
   await expect.poll(() => page.evaluate(() => document.fullscreenElement?.className ?? null)).toContain("tv-stage");
-  await expect(stage.locator(".tv-hint")).toContainText("Start pauses. Select plays again. Hold Select");
+  await expect(stage.locator(".tv-hint")).toHaveText("Stick or d-pad to move, a face button to fire. Start is Pause. Hold Select, or press Esc, to leave.");
   await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).cursor)).toBe("none");
 
   await pressButton(page, 9);
-  await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
-  await expect(stage.locator(".tv-hint")).toContainText("Paused. Press Start to carry on.");
+  await expect(stage).toHaveClass(/tv-paused/);
+  await expect(stage.locator(".tv-hint")).toHaveText("Paused. Press Start to carry on.");
   await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).cursor)).toBe("auto");
-
-  // Select, pressed and let go: back to the title, playing.
-  await pressButton(page, 8);
-  await expect(page.getByRole("button", { name: "Pause" })).toBeVisible();
-  expect(await page.evaluate(() => (window as unknown as { __resets: number }).__resets)).toBe(1);
+  await pressButton(page, 9);
+  await expect(stage).not.toHaveClass(/tv-paused/);
   await expect.poll(() => stage.evaluate((el) => getComputedStyle(el).cursor)).toBe("none");
 
-  // Select, held: out of TV mode without playing again.
+  // Select, pressed and let go: the console's Select.
+  await pressButton(page, 8);
+  await expect.poll(selectCount).toBe(1);
+
+  // Select, held: out of TV mode without pressing Select.
   await pressButton(page, 8, 1300);
   await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBeNull();
-  expect(await page.evaluate(() => (window as unknown as { __resets: number }).__resets)).toBe(1);
+  expect(await selectCount()).toBe(1);
 });

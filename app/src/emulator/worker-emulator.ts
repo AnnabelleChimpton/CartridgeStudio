@@ -1,9 +1,4 @@
-// Main-thread side of the emulator worker. Owns input (keyboard and the
-// Gamepad API, mapped to one joystick with one button) and audio output.
-// The keyboard only reaches the game while its canvas has focus, so arrows,
-// Space and Z keep working everywhere else on the page (WCAG 2.1.4).
-
-import type { Emulator, JoystickState } from "./emulator.ts";
+import type { ConsoleButton, Difficulty, Emulator, JoystickState, Switches } from "./emulator.ts";
 import type { EmuRequest, EmuResponse, Peek, Recording } from "./protocol.ts";
 
 const CORE_URL = () => new URL(`${import.meta.env.BASE_URL}vendor/js7800-core/js7800-core.js`, location.href).href;
@@ -31,6 +26,9 @@ export class WorkerEmulator implements Emulator {
   private readonly frameListeners = new Set<(frame: number) => void>();
   private readonly clipFullListeners = new Set<() => void>();
   private readonly faultListeners = new Set<(message: string) => void>();
+  private readonly switchListeners = new Set<(switches: Switches) => void>();
+  /** Where the difficulty switches are, once a game is loaded. */
+  switches: Switches | null = null;
   /** Why the emulator stopped, once it has; a stopped emulator needs replacing. */
   fault: string | null = null;
   private keyboard: JoystickState = { ...IDLE };
@@ -52,6 +50,10 @@ export class WorkerEmulator implements Emulator {
         else if (msg.type === "init-error") reject(new Error(msg.message));
         else if (msg.type === "frame") for (const cb of this.frameListeners) cb(msg.frame);
         else if (msg.type === "clip-full") for (const cb of this.clipFullListeners) cb();
+        else if (msg.type === "switches") {
+          this.switches = msg.switches;
+          for (const cb of this.switchListeners) cb(msg.switches);
+        }
         else if (msg.type === "fault") this.fail(msg.message);
         else if (msg.type === "reply") {
           const r = this.replies.get(msg.id);
@@ -103,6 +105,19 @@ export class WorkerEmulator implements Emulator {
   setInput(state: JoystickState) {
     this.external = { ...state };
     this.sendInput();
+  }
+
+  pressConsole(button: ConsoleButton) {
+    this.post({ type: "console", button });
+  }
+
+  setDifficulty(side: keyof Switches, position: Difficulty) {
+    this.post({ type: "difficulty", side, position });
+  }
+
+  onSwitches(cb: (switches: Switches) => void): () => void {
+    this.switchListeners.add(cb);
+    return () => this.switchListeners.delete(cb);
   }
 
   onFrame(cb: (frame: number) => void): () => void {
@@ -204,6 +219,7 @@ export class WorkerEmulator implements Emulator {
     this.post({ type: "input", state: merged });
   }
 
+  /** The keyboard reaches the game only while its canvas has focus, so arrows and Space work as usual everywhere else. */
   private listenForInput() {
     const canvas = this.canvas;
     canvas.tabIndex = 0;

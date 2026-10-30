@@ -1,6 +1,3 @@
-// The numbers behind the Play panel's status line, from the build itself:
-// how long it took and how much of the cartridge the game fills.
-
 import type { BuildStats } from "../code/build-log.ts";
 
 /** The ROM size game.bas asks for (`set romsize 48k`); 32 KB is 7800basic's default. */
@@ -33,8 +30,11 @@ export const kb = (bytes: number) => {
   return k < 10 ? String(Math.round(k * 10) / 10) : String(Math.round(k));
 };
 
-/** "Built in 0.4 s · 12 of 32 KB". */
+/** "Built in 214 ms · 19 of 32 KB", or "Built in 1.3 s" from a second up. */
 export function builtStatus(ms: number, fill: CartFill | undefined): string {
-  const time = `Built in ${(ms / 1000).toFixed(1)} s`;
-  return fill ? `${time} · ${kb(fill.used)} of ${kb(fill.total)} KB` : time;
+  const whole = Math.round(ms);
+  const time = whole < 1000 ? `Built in ${whole} ms` : `Built in ${(ms / 1000).toFixed(1)} s`;
+  if (!fill) return time;
+  const full = fill.level === "over" ? ", too full" : fill.level === "near" ? ", nearly full" : "";
+  return `${time} · ${kb(fill.used)} of ${kb(fill.total)} KB${full}`;
 }

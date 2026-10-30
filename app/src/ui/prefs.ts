@@ -1,9 +1,6 @@
-// Per-browser display preference: the tier, named by what you touch (what
-// the editor shows by default). It is written to
-// <html data-tier="kit|rules|7800basic"> so CSS can follow it.
-
 import { useSyncExternalStore } from "react";
 
+/** Written to <html data-tier> so CSS can follow it. */
 export type Tier = "kit" | "rules" | "7800basic";
 
 export const TIERS: { id: Tier; label: string; detail: string }[] = [
@@ -12,7 +9,7 @@ export const TIERS: { id: Tier; label: string; detail: string }[] = [
   { id: "7800basic", label: "7800basic", detail: "Everything, with the generated code and cartridge stats open beside it." },
 ];
 
-/** What the tiers were called before Oct 2026, as older browsers stored them. */
+/** Older stored names. */
 const OLD_TIERS: Record<string, Tier> = { starter: "kit", maker: "rules", coder: "7800basic" };
 
 /** A stored tier, with the old names read as the new ones; null for anything else. */
@@ -29,7 +26,6 @@ function pref<T extends string>(key: string, read: (stored: string | null) => T 
     const stored = localStorage.getItem(key);
     const v = read(stored);
     if (v !== null) value = v;
-    // Old names are rewritten once, so the stored value is always a current one.
     if (v !== null && v !== stored) localStorage.setItem(key, v);
   } catch {
     // Storage blocked: keep the default for this visit.
