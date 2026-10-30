@@ -1,10 +1,8 @@
 # Cartridge Studio: design direction
 
-This is the look and feel of Cartridge Studio, and the rules that keep it
-consistent as more people add to it. The code that carries it out is `app/src/styles.css` (tokens first,
-then components, then screens) and the shell in `app/src/ui/`:
+How Cartridge Studio looks, and where that lives in the code:
 
-- `app/src/ui/tokens.ts`, the one token set, which
+- `app/src/ui/tokens.ts`, the token set, which
   `app/scripts/make-identity.mjs` writes out as `app/src/tokens.css`, the
   tokens block in `site/styles.css`, the manifest, every `theme-color` and
   the icons;
@@ -16,39 +14,27 @@ then components, then screens) and the shell in `app/src/ui/`:
 `node harness/check-hex.mjs` fails on any hex colour outside the generated
 files and `ui/ntsc.ts`, and on generated files that are out of date.
 
-## 1. Identity: the console's own workbench
+## 1. Identity
 
-Cartridge Studio is a workbench for making real cartridges. It should feel
-like a well-made tool built from the console's own materials: its 256
-colours, its 3×5 character set and its pixels. The game is always the
+Interface colours are NTSC palette entries (§3) and display titles use the
+kit's 3×5 font, so the editor looks like the thing it builds. The game is the
 brightest thing on screen.
 
-- **Built from the palette.** Every colour in the interface is an entry from
-  the 7800's NTSC palette (§3). Neutral console greys carry the chrome, and
-  `$3B` *cartridge orange* marks the one thing to do next.
-- **Tactile.** Buttons have a small solid "keycap" edge and press down when
-  clicked. Panels are flat trays with 4 px corners, one level deep.
-- **Honest pixels.** Editor canvases draw exactly what the ROM draws: room
-  tiles come from the kit's own tile glyphs, and sprites use 2:1 pixels.
-- **Restrained.** A plain CSS TV bezel frames the game. There are no CRT
-  shaders or scanlines, no curvature, no glows, no blur, no dot grids, no
-  mascot, no illustrated hardware, and no UI sound effects.
-- **Two registers only.** Everything is made of what goes on the cart, or
-  borrows from 1980s cartridge-era print (box backs, end labels, booklets,
-  crop marks). Nothing else: no retro costume fonts, no AI sparkle.
-- **Ours.** No console makers' logos, wordmarks, rainbow stripes, fonts, trade
-  dress or console likenesses. Consoles are named in plain text only where a
-  creator needs to know what plays their game.
+Two materials. The workbench (editor) is `$01`/`$02`. The console side (the
+TV, its Pause/Select/Reset keys and difficulty switches, and the cartridge
+actions) is `$00` black plastic. Starters are drawn as cartridges on a shelf,
+with the label in the game's background colour. Headings are sentence case,
+never tracked capitals.
 
-**Dark theme only for this pass.** A light theme is deferred. The tokens are
-built so one could be added later by redefining the semantic layer.
+Dark theme only for now. The semantic layer can be redefined for a light
+theme later.
 
 ## 2. Type
 
 | Role | Font | Where |
 | --- | --- | --- |
 | Interface and reading | **Atkinson Hyperlegible** (OFL, `app/public/fonts/`) | Everything you read or operate, including the start screen headline, step numbers, badges and site headings. It was designed for low vision; the slashed zero and distinct I, l and 1 matter in names, numbers and `$XX` colours. |
-| Game-derived display | **The kit's own 3×5 font** (`kit/font.ts`), drawn as square pixels by `KitText` (`ui/BrandMark.tsx`) | Short strings that come from the game: the wordmark, preset and game titles on cards, the TV-mode title, box, label and player titles, and the "BY …" credit. Uppercase, at whole-number scales of 3× or more. |
+| Game-derived display | **The kit's 3×5 font** (`kit/font.ts`), drawn as square pixels by `KitText` (`ui/BrandMark.tsx`) | Short strings that come from the game: the wordmark, preset and game titles on cards, the TV-mode title, box, label and player titles, and the "BY …" credit. Uppercase, at whole-number scales of 3× or more. |
 | Code and bytes | System monospace | Code views, the build log, ROM sizes in tables. |
 
 The kit font has A to Z, 0 to 9 and `. ! ? - : '`. A title with any other
@@ -65,7 +51,7 @@ Scale (px): `--fs-xs` 12 (hints, `.small`), `--fs-sm` 13 (secondary UI,
 badges), `--fs-md` 14 (controls, panel body), `--fs-body` 15 (reading text,
 rule sentences), `--fs-lg` 18 (titles), `--fs-xl` 22 (dialog titles),
 `--fs-2xl` 30 (the start screen headline). Panel headings (`h2` in panels)
-are small tracked labels: 13 px, 700, uppercase, muted.
+are 13 px, 700, sentence case, muted.
 
 ## 3. Colour: tokens named after the palette
 
@@ -89,7 +75,7 @@ Two layers.
 | `--field-line` | `$08` `#878787` | Edges of things you type in or choose |
 | `--muted` | `$0B` `#b5b5b5` | Secondary text |
 | `--text` | `$0F` `#f2f2f2` | Body text |
-| `--accent` | `$3B` `#eda37e` | Primary button fill, selection fill |
+| `--accent` | `$3B` `#eda37e` | Primary button fill (the one thing to do next), selection fill |
 | `--accent-hover`, `--accent-text` | `$3C` `#fcb38d` | Hovered primary; accent as text or a thin line (links, the "fit" selects, the active tab) |
 | `--on-accent` | `$20` `#330b00` | Text on the accent fill |
 | `--edge` | `$37` `#b06641` | The keycap edge under primary buttons |
@@ -133,7 +119,8 @@ grid: pixel art is drawn for a TV, and its colours read truest on black.
   round except a native control.
 - **Depth:** flat. Panels are separated by a 1 px `--line`, with no shadow.
   `--shadow-2` is only for dialogs, menus and toasts. Keycap buttons, here
-  and on the site, use a 2 px solid edge, not a blur.
+  and on the site, use a 2 px solid edge, not a blur, and press down by that
+  edge when clicked.
 - **One container level.** A panel or tray holds rows, not cards. Inside it,
   rules and spacing separate things: rules and counters are rows with
   dividers, guide steps are an inline list, the CPU meter is a plain row
@@ -197,7 +184,7 @@ Two groups, in this order:
 - **Share it**: "Send to family" (the one-file player), then "Make a clip".
 
 TV mode and full screen are **one control**, "Play on a TV", which sits with
-the game's own controls in the Play panel. It shows the game title and the
+the game's controls in the Play panel. It shows the game title and the
 gamepad prompt.
 
 ### The game's bezel
@@ -212,6 +199,7 @@ the player page use the same bezel and light.
 
 ## 6. Editors
 
+- **Sprites** are drawn with 2:1 pixels, as 160A mode shows them.
 - **Room painter**: tiles are drawn from `TILE_GLYPHS` in `kit/font.ts`,
   repeated 2×2 per cell in the wall palette's colours, exactly as the ROM's
   `plotmap` draws them. Things are drawn at game scale.
