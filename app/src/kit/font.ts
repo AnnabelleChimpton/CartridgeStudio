@@ -1,7 +1,3 @@
-// The kit's character set: a 3×5 font in 4×8 cells (160A characters), plus
-// the wall, hazard and goal tiles. One graphic serves text, the score digits
-// and the room's tiles.
-
 const GLYPHS: Record<string, string> = {
   "0": "111101101101111", "1": "010110010010111", "2": "111001111100111", "3": "111001111001111",
   "4": "101101111001001", "5": "111100111001111", "6": "111100111101111", "7": "111001010010010",
@@ -20,7 +16,7 @@ const GLYPHS: Record<string, string> = {
 /** A textured wall block in colors 1 and 2. */
 const WALL = ["1111", "1112", "1112", "2222", "1111", "2111", "2111", "2222"];
 /** Hazard tile (`~`): spikes in color 3. */
-const HAZARD = ["0000", "0300", "0300", "3330", "0000", "0003", "0003", "3033"];
+const HAZARD = ["0000", "0030", "0030", "0333", "0333", "3333", "3333", "0000"];
 /** Goal tile (`*`): a dotted square in color 2. */
 const GOAL = ["2020", "0000", "2000", "0000", "2000", "0000", "2000", "0000"];
 /** Room tiles by map character, 4 pixels × 8 lines each, colors 1-3 of the wall palette. */

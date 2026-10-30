@@ -1,13 +1,3 @@
-// The success measure for the kit model: eight
-// game ideas the kit wasn't designed around, written as kit data. Each one
-// that Phase A can express must validate, build, play its core moment and
-// hold 60 fps. The count that matters is engine special cases (runtime code
-// that exists for one kind of game): the last test checks the runtime and
-// the emitter mention no game, genre or thing by name, so that count is 0.
-//
-// What Phase A can't express yet says so: Tag needs joystick 2 (the Player 2
-// part is reserved), and Sokoban needs positional targets (cut with Phase C).
-
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -338,7 +328,7 @@ describe("eight games the kit wasn't designed for", () => {
       fs.readFileSync(path.resolve(import.meta.dirname, "ir.ts"), "utf8"),
     ].join("\n");
     const presets = fs.readdirSync(path.resolve(import.meta.dirname, "../../../templates/kit/games")).filter((f) => f.endsWith(".json") && !f.endsWith(".tests.json"));
-    const names = new Set<string>(["shooter", "maze", "dodger", "march", "invader", "projectile", "bomb", "bullet", "snake", "sokoban", "platform"]);
+    const names = new Set<string>(["shooter", "dodger", "march", "projectile", "bomb", "bullet", "snake", "sokoban", "platform"]);
     for (const f of presets) {
       const g = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../../../templates/kit/games", f), "utf8")) as KitGameInput;
       for (const t of g.types) names.add(t.id).add(t.label.toLowerCase());

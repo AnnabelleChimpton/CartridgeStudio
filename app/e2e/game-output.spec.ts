@@ -1,14 +1,10 @@
-// What games put on screen: contrast notes with one-click fixes, the spike
-// color, the easier assist, and a room painter that draws tiles the way the
-// ROM does.
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { contrastRatio, SHAPE_RATIO, TEXT_RATIO } from "../src/kit/contrast.ts";
 import { TILE_GLYPHS } from "../src/kit/font.ts";
 import { ntscRgb } from "../src/ui/ntsc.ts";
 
-async function start(page: Page, preset: "Cat vs. Vacuums" | "Yarn Hunt" | "Ghost Panic") {
+async function start(page: Page, preset: "Cat vs. Vacuums" | "Ghost Panic") {
   await page.goto("/");
   await page.getByRole("button", { name: new RegExp(`^${preset.replace(".", "\\.")}`) }).click();
   await expect(page.getByTestId("build-status")).toContainText("Built in", { timeout: 30_000 });
@@ -60,7 +56,7 @@ test("the spike color is on the Game tab, and dim spikes get a note", async ({ p
 });
 
 test("a thing that disappears into the background gets a note on the Things tab", async ({ page }) => {
-  await start(page, "Yarn Hunt");
+  await start(page, "Ghost Panic");
   const t = (await game(page)).types[0]!;
   await page.evaluate((id) => {
     const s = window.__cs!.kitStore!.getState();
@@ -80,7 +76,7 @@ test("a thing that disappears into the background gets a note on the Things tab"
 });
 
 test("the easier assist is kept with the game", async ({ page }) => {
-  await start(page, "Yarn Hunt");
+  await start(page, "Ghost Panic");
   await openTab(page, "Game");
   const box = page.getByRole("checkbox", { name: /Easier for younger players/ });
   await expect(box).not.toBeChecked();

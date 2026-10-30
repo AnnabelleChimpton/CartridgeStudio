@@ -1,17 +1,8 @@
-// Cost measurements for the CPU model (not part of the normal run):
-//   KIT_MEASURE=1 npx vitest run src/kit/kit-measure.test.ts --silent=false
-// The kit runs too fast for the old method (a base game plus "still"
-// fillers until it drops below 60 fps: 23 things now fit). Instead each game
-// gets ballast: a busy loop in its user_frame hook (coder mode's hook, with
-// no declared cost), and a binary search finds the most ballast that still
-// holds 60 fps, its headroom. A part costs the headroom it takes away,
-// divided by how many copies the variant adds.
-//
-// Points: 100 is a whole frame. A hero alone leaves N0 units of headroom, and
-// the runtime's fixed work (input, the score and lives, drawscreen) plus the
-// hero is taken as BASE points, so a unit is (100 - BASE) / N0 points. Any
-// BASE keeps the model right at the 60 fps boundary, as long as parts add up.
-// The model's numbers (COST in generate.ts) come from this run.
+// Run with: KIT_MEASURE=1 npx vitest run src/kit/kit-measure.test.ts --silent=false
+// Each game gets a busy loop in user_frame, and a binary search finds the most
+// ballast that still holds 60 fps: its headroom. A part costs the headroom it
+// takes away, per copy. 100 points is a whole frame; COST in generate.ts comes
+// from this run.
 
 import { beforeAll, describe, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";

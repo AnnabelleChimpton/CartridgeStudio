@@ -8,11 +8,15 @@
   },
   {
    "id": "crockery",
-   "colors": [ "$0F", "$86", "$02" ]
+   "colors": [ "$0F", "$44", "$02" ]
   },
   {
    "id": "fish",
    "colors": [ "$1E", "$0F", "$00" ]
+  },
+  {
+   "id": "shelf",
+   "colors": [ "$26", "$22", "$20" ]
   },
   {
    "id": "text",
@@ -20,7 +24,7 @@
   }
  ],
  "background": "$80",
- "wallPalette": "text",
+ "wallPalette": "shelf",
  "textPalette": "text",
  "types": [
   {
@@ -46,7 +50,7 @@
    "width": 8,
    "height": 8,
    "frames": [
-    [ "00000000", "11111100", "12222110", "11111101", "11111101", "01111110", "00111100", "11111111" ]
+    [ "00000000", "22222200", "11111100", "11111111", "11111101", "01111110", "00111100", "11111111" ]
    ],
    "palette": "crockery",
    "move": { "vx": 0, "vy": 16, "wall": "through", "edge": "pass" }
@@ -57,7 +61,7 @@
    "width": 8,
    "height": 8,
    "frames": [
-    [ "00011000", "00111100", "11111110", "11222211", "01111101", "01111101", "00111110", "00000000" ]
+    [ "00011000", "00111100", "00111101", "10111111", "11222211", "01111110", "00111100", "00000000" ]
    ],
    "palette": "crockery",
    "move": { "vx": 0, "vy": 32, "wall": "through", "edge": "pass" }
@@ -76,8 +80,8 @@
  ],
  "room": {
   "rows": [
-   " r    b   r     r   ",
-   "    s        b      ",
+   "####################",
+   " r  s b   r  b  r   ",
    "r        r       s  ",
    "                    ",
    "                    ",
@@ -85,10 +89,10 @@
    "                    ",
    "                    ",
    "                    ",
-   "                    ",
-   "         P          "
+   "         P          ",
+   "####################"
   ],
-  "legend": { "r": "teacup", "b": "teapot", "s": "fish", "P": "cat" }
+  "legend": { "#": "wall", "r": "teacup", "b": "teapot", "s": "fish", "P": "cat" }
  },
  "counters": [
   { "id": "lives", "label": "Lives", "start": 3 }
@@ -258,7 +262,7 @@
    ]
   }
  ],
- "text": { "title": "Teacup Rain", "win": "30 SECONDS. STILL HERE.", "lose": "OUT OF LIVES" },
+ "text": { "title": "Teacup Rain", "win": "YOU MADE IT", "lose": "GAME OVER" },
  "flow": {
   "title": true,
   "attract": null,

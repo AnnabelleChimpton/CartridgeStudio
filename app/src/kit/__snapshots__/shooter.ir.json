@@ -63,13 +63,13 @@
   },
   {
    "index": 1,
-   "id": "invader",
+   "id": "vacuum",
    "label": "Vacuum",
-   "sym": "T_INVADER",
-   "name": "invader",
-   "sprite": "spr_invader",
-   "width": 12,
-   "height": 8,
+   "sym": "T_VACUUM",
+   "name": "vacuum",
+   "sprite": "spr_vacuum",
+   "width": 8,
+   "height": 12,
    "palette": 1,
    "frames": "2 frame(s)",
    "anim": 2,
@@ -109,7 +109,7 @@
    },
    "span": {
     "kind": "type",
-    "id": "invader"
+    "id": "vacuum"
    }
   },
   {
@@ -166,7 +166,7 @@
   {
    "index": 3,
    "id": "bomb",
-   "label": "Dust bomb",
+   "label": "Dust clump",
    "sym": "T_BOMB",
    "name": "bomb",
    "sprite": "spr_bomb",
@@ -1237,11 +1237,11 @@
    ]
   },
   {
-   "id": "enemy",
+   "id": "vacuum",
    "colors": [
-    "$96",
     "$42",
-    "$90"
+    "$08",
+    "$0F"
    ]
   },
   {
@@ -1255,9 +1255,9 @@
   {
    "id": "bomb",
    "colors": [
-    "$46",
-    "$46",
-    "$46"
+    "$08",
+    "$06",
+    "$06"
    ]
   },
   {

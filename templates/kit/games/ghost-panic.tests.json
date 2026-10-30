@@ -73,7 +73,7 @@
             },
             {
               "turnAll": {
-                "type": "ghost",
+                "type": "dust",
                 "into": "scared",
                 "seconds": 2
               }

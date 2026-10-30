@@ -1,13 +1,3 @@
-// Editing operations on kit games. Each mutates a draft (they run inside the
-// store's edit recipes) and keeps the game consistent: room cells, rules and
-// parts never point at things or counters that no longer exist.
-//
-// The editor offers the simple words first: a thing moves like a preset
-// ("Chases the player"), the player shoots something, a thing drops
-// something. Underneath those are the kit's movement parts and rules, so these
-// helpers translate: a preset becomes parts, shooting becomes a "button
-// pressed" rule, dropping an "every frame" rule.
-
 import { BEHAVIOURS, PLAYER_BEHAVIOURS, isControlled, presetOf, presetParts, presetRule, type Behaviour } from "./parts.ts";
 import { loseLifeActions } from "./migrations.ts";
 import {

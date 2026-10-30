@@ -1,10 +1,3 @@
-// The music player in a real ROM: a small test program includes every tune
-// in the library through templates/kit/audio.bas.hbs and plays them in js7800.
-// The player's RAM must match MusicPlayerModel frame for frame, and the
-// console's audio output must be sound where the model has a note and
-// silence where it has none. TIA's registers can't be read back, so the
-// audio output stands in for them.
-
 import { beforeAll, describe, expect, it } from "vitest";
 import type { WasiBuilder } from "@cartridge-studio/toolchain";
 import { parseSymbols, type CoreHost, type JoystickInput } from "../emulator/core-host.ts";

@@ -1,6 +1,4 @@
-// Snapshots of what every preset compiles to: its IR (without the pixels)
-// and its 7800basic. A change to generated code shows up here in review.
-// Update them with: npx vitest run src/kit/snapshots.test.ts -u
+// Update with: npx vitest run src/kit/snapshots.test.ts -u
 
 import { describe, expect, it } from "vitest";
 import { SOUND_LIBRARY } from "../project/templates.ts";

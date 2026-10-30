@@ -1,8 +1,7 @@
-// Kit code generation, step 3 of 3: emit 7800basic from the IR (ir.ts). Compiled,
-// not interpreted: each kind of thing gets its own update and draw loop over
-// its known slot range, with its size, speeds and reactions written in as
-// literals, and a part it doesn't have is no code at all. Rules compile to
-// straight-line checks. There's no per-frame dispatch on type or behaviour.
+// Emits 7800basic from the IR (ir.ts). Each kind of thing gets its own update
+// and draw loop over its known slot range, with its size, speeds and reactions
+// written in as literals, and a part it doesn't have is no code at all. Rules
+// compile to straight-line checks.
 //
 // Sections are tagged with source spans (`@@span kind:id` … `@@end` lines),
 // which generate.ts strips into a line map for coder mode.

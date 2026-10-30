@@ -69,14 +69,14 @@ describe("contrast warnings", () => {
   });
 
   it("only checks tiles the room uses", () => {
-    const g = preset("maze");
-    // Maze has no spikes, so a black spike color on black is fine.
-    expect(colors(g, g.wallPalette)[2]).toBe("$00");
+    const g = preset("dodger");
+    // Teacup Rain has no spikes, so a spike color the same as the background is fine.
+    colors(g, g.wallPalette)[2] = g.background;
     expect(gameContrast(g).map((w) => w.id)).not.toContain("spikes");
   });
 
   it("warns about a thing only when none of its colors stand out", () => {
-    const g = preset("maze");
+    const g = preset("ghost-panic");
     const t = g.types[0]!;
     const c = colors(g, t.palette);
     c.splice(0, 3, "$00", "$00", "$00");
@@ -103,7 +103,7 @@ describe("the easier assist", () => {
   });
 
   it("is kept in the game and survives saving and loading", () => {
-    const g = preset("maze");
+    const g = preset("ghost-panic");
     expect(easierOn(g)).toBe(false);
     setEasier(g, true);
     expect(assistData(g).hasEasier).toBe(true);

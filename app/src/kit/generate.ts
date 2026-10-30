@@ -1,8 +1,3 @@
-// Kit code generation: validate → a typed IR (ir.ts) → emit
-// 7800basic (emit.ts) into the runtime template. The cost model lives here
-// too: it prices a game from its IR, part by part, and generation refuses a
-// game that wouldn't hold 60 fps.
-
 import Handlebars from "handlebars";
 import { encodeIndexedPng, type BuildInput } from "@cartridge-studio/toolchain";
 import { lintBasic } from "../codegen/lint.ts";
